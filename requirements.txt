@@ -1,6 +1,0 @@
-playwright
-Click
-pytest
-substrate
-easyocr
-numpy
