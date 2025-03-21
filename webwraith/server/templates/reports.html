@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebWraith - Reports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>WebWraith</h1>
+            <p>A powerful web crawling tool that outputs markdown and images</p>
+        </header>
+        
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('list_reports') }}" class="active">Reports</a></li>
+            </ul>
+        </nav>
+        
+        <main>
+            <section class="card">
+                <h2>Generated Reports</h2>
+                {% if reports %}
+                <div class="reports-list">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Report Name</th>
+                                <th>Created</th>
+                                <th>Size</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for report in reports %}
+                            <tr>
+                                <td>{{ report.filename }}</td>
+                                <td>{{ report.created }}</td>
+                                <td>{{ (report.size / 1024)|round(1) }} KB</td>
+                                <td>
+                                    <a href="{{ url_for('serve_report', filename=report.filename) }}" class="btn small">View Markdown</a>
+                                    {% if report.filename.endswith('.md') %}
+                                    <a href="{{ url_for('serve_report', filename=report.filename.replace('.md', '.html')) }}" class="btn small">View HTML</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <p>No reports generated yet. Start by crawling some URLs from the home page.</p>
+                </div>
+                {% endif %}
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025 WebWraith. All rights reserved.</p>
+        </footer>
+    </div>
+    <script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+</body>
+</html>

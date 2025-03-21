@@ -1,1 +1,117 @@
-<!-- Main page template -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebWraith - Web Crawling Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>WebWraith</h1>
+            <p>A powerful web crawling tool that outputs markdown and images</p>
+        </header>
+        
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('index') }}" class="active">Home</a></li>
+                <li><a href="{{ url_for('list_reports') }}">Reports</a></li>
+            </ul>
+        </nav>
+        
+        <main>
+            <section class="card">
+                <h2>Crawl URLs</h2>
+                <div class="crawl-form">
+                    <div class="form-group">
+                        <label for="crawl-method">Input Method:</label>
+                        <select id="crawl-method">
+                            <option value="url">Single URL</option>
+                            <option value="urls">Multiple URLs</option>
+                        </select>
+                    </div>
+                    
+                    <div id="single-url-input" class="form-group">
+                        <label for="url">URL:</label>
+                        <input type="url" id="url" placeholder="https://example.com">
+                    </div>
+                    
+                    <div id="multiple-urls-input" class="form-group" style="display: none;">
+                        <label for="urls">URLs (one per line):</label>
+                        <textarea id="urls" placeholder="https://example.com
+https://another-example.com"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="report-title">Report Title:</label>
+                        <input type="text" id="report-title" placeholder="My Web Crawl Report">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="output-format">Output Format:</label>
+                        <select id="output-format">
+                            <option value="markdown">Markdown</option>
+                            <option value="image">Images Only</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="crawl-btn" class="btn primary">Start Crawling</button>
+                    </div>
+                </div>
+                
+                <div id="crawl-status" class="status-box" style="display: none;">
+                    <p>Status: <span id="status-text">Idle</span></p>
+                    <div class="progress-bar">
+                        <div id="progress-indicator"></div>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="card">
+                <h2>Upload Image</h2>
+                <div class="upload-form">
+                    <div class="form-group">
+                        <label for="image-upload">Select Image:</label>
+                        <input type="file" id="image-upload" accept="image/*">
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="upload-btn" class="btn primary">Upload & Extract Text</button>
+                    </div>
+                </div>
+                
+                <div id="upload-result" class="result-box" style="display: none;">
+                    <h3>Uploaded Image</h3>
+                    <div class="image-preview">
+                        <img id="preview-image" src="" alt="Uploaded image">
+                    </div>
+                    
+                    <h3>Extracted Text</h3>
+                    <div class="extracted-text">
+                        <pre id="extracted-text-content"></pre>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="crawl-results" class="card" style="display: none;">
+                <h2>Crawl Results</h2>
+                <div id="results-summary"></div>
+                <div id="results-content"></div>
+                <div id="results-actions">
+                    <a id="report-link" href="#" class="btn secondary" style="display: none;">View Report</a>
+                    <a id="html-link" href="#" class="btn secondary" style="display: none;">View HTML</a>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025 WebWraith. All rights reserved.</p>
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

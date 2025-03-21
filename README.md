@@ -1,8 +1,47 @@
 # WebWraith: Advanced Web Content Analysis
 
-## Overview
+A powerful web crawling and content analysis tool that outputs markdown and images, built with Python, Quart, and Playwright. Created by Kord Campbell (creator of Loggly and the Grub crawler). WebWraith can be run both as a command-line tool and as a web service.
 
-WebWraith is a powerful tool for analyzing web content before direct interaction. It enables users to extract, evaluate, and summarize web pages while minimizing exposure to deceptive or harmful elements. By integrating multiple analysis techniques, WebWraith provides a robust and flexible system for examining online content in various contexts.
+## Features
+
+- Crawl web pages and capture screenshots with advanced automation
+- Extract text from web pages using OCR and multiple parsing methods
+- Generate comprehensive markdown and HTML reports
+- Upload images and extract text from them
+- Smart content analysis with promotional content detection
+- Browser extension integration for pre-click analysis
+- Docker support for easy, isolated deployment
+
+## Directory Structure
+
+```
+webwraith/
+├── app.py                 # Main application file
+├── requirements.txt       # Python dependencies
+├── Dockerfile             # Docker configuration
+├── docker-compose.yml     # Docker Compose configuration
+├── .dockerignore          # Docker ignore file
+├── server/                # Web server assets
+│   ├── static/            # Static files (CSS, JS)
+│   │   ├── css/           # CSS styles
+│   │   │   └── styles.css # Main stylesheet
+│   │   └── js/            # JavaScript files
+│   │       └── script.js  # Main script file
+│   └── templates/         # HTML templates
+│       ├── index.html     # Homepage template
+│       └── reports.html   # Reports page template
+└── extension/             # Browser extension (optional)
+    ├── manifest.json      # Extension manifest
+    ├── popup.html         # Extension popup
+    ├── background.js      # Extension background script
+    └── content.js         # Extension content script
+```
+
+## Prerequisites
+
+- Docker and Docker Compose (for containerized deployment)
+- Python 3.10 or higher (for local development)
+- Chrome/Chromium browser (for Playwright)
 
 ## Purpose and Integration
 
@@ -36,73 +75,147 @@ The foundational codebase that powers both the server and the extension, featuri
 - **Text Processing** for summarization and classification.
 - **Image Handling** for webpage snapshots.
 
-## Installation and Setup
+## Installation
 
-### Requirements
+### Using Docker (Recommended)
 
-Install the required environment using Conda:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/kordcampbell/webwraith.git
+   cd webwraith
+   ```
+
+2. Build and start the Docker container:
+   ```bash
+   docker-compose up -d
+   ```
+
+3. Access the web interface at http://localhost:5678
+
+### Manual Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/kordcampbell/webwraith.git
+   cd webwraith
+   ```
+
+2. Create a virtual environment and install dependencies:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. Install Playwright browsers:
+   ```bash
+   playwright install chromium
+   ```
+
+4. Install NLTK data for text processing:
+   ```bash
+   python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"
+   ```
+
+5. Run the application:
+   ```bash
+   python app.py
+   ```
+
+6. Access the web interface at http://localhost:5678
+
+## Usage
+
+### As a Web Service
+
+1. Start the server using Docker Compose or the manual method described above.
+2. Open your browser and navigate to http://localhost:5678
+3. Use the web interface to crawl URLs or upload images for text extraction.
+
+### As a Command-Line Tool
+
+Run the `app.py` script with appropriate command-line arguments:
 
 ```bash
-conda env create -f environment.yml
-conda activate webwraith
-python -m playwright install chromium
-python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"
+# Crawl a single URL
+python app.py crawl -u https://example.com -o markdown -t "Example Report"
+
+# Crawl multiple URLs from a file
+python app.py crawl -f urls.txt -o both -t "Multiple URLs Report"
 ```
 
-### Running the Server
+### Using the Browser Extension
 
-```bash
-cd server
-python app.py
-```
-
-This launches the API at [http://localhost:5000](http://localhost:5000).
-
-### Installing the Browser Extension
-
-1. Open the browser’s extension manager.
-2. Enable "Developer mode."
-3. Load the `extension` directory as an unpacked extension.
-4. Pin the extension for easy access.
+1. Install the extension from the `extension` directory.
+2. Configure the extension to connect to your WebWraith instance (default: http://localhost:5678).
+3. Right-click on a web page and select "Capture with WebWraith" to capture and analyze the page.
 
 ## Usage
 
 ### Web Interface
 
-1. Visit [http://localhost:5000](http://localhost:5000).
-2. Enter a URL.
-3. Analyze and review the report.
+1. Visit http://localhost:5678
+2. Enter a URL or upload an image
+3. Select your desired output format (markdown, image, or both)
+4. Click "Start Crawling" or "Upload & Extract Text"
+5. View the generated report with screenshots and extracted text
 
 ### Browser Extension
 
-1. Right-click a link or page and select "Analyze with WebWraith."
-2. View the results in a new tab.
+1. Right-click a link or page and select "Analyze with WebWraith"
+2. View the analysis in a new tab or in the extension popup
+3. Use visual indicators to identify potentially problematic sites
 
 ### Command Line
 
-```bash
-python webwraith.py analyze https://example.com
-python webwraith.py crawl -f urls.txt -o both
-```
-
-## Containerized Deployment
-
-Run WebWraith within Docker for isolated and consistent execution:
+For advanced users, WebWraith can be used directly from the command line:
 
 ```bash
-docker build -t webwraith .
-docker run -p 5000:5000 webwraith
+# Analyze a single URL
+python app.py crawl -u https://example.com -o both -t "Example Report"
+
+# Crawl multiple URLs from a file
+python app.py crawl -f urls.txt -o markdown -t "Multiple URLs Report"
+
+# Convert a markdown report to HTML
+python app.py convert_markdown report.md -o report.html
 ```
 
-The included `Dockerfile` configures the system with all dependencies pre-installed.
+## API Endpoints
+
+- `GET /` - Web interface homepage
+- `GET /reports` - List generated reports
+- `GET /reports/<filename>` - View a specific report
+- `GET /screenshots/<filename>` - View a specific screenshot
+- `POST /api/crawl` - Crawl URLs and generate reports
+- `POST /api/upload` - Upload and analyze images
+
+## Persistent Storage
+
+When running with Docker, WebWraith stores data in the following locations:
+
+- Reports: `/data/reports`
+- Screenshots: `/data/screenshots`
+- Logs: `/data/webwraith.log`
+
+These directories are persisted using Docker volumes.
+
+## Configuration
+
+WebWraith can be configured using environment variables:
+
+- `WEBWRAITH_STORAGE_PATH` - Path for storing data (default: ~/.webwraith)
+- `QUART_APP` - Quart application name (default: app:app)
+- `QUART_ENV` - Quart environment (default: production)
 
 ## Security Considerations
 
-WebWraith interacts with web pages on the user’s behalf. Ensure ethical use and compliance with legal and security standards.
+WebWraith interacts with web pages on the user's behalf. Ensure ethical use and compliance with legal and security standards. The Docker container provides an additional layer of isolation for safer web content analysis.
 
-## Conclusion
+## About the Creator
 
-WebWraith provides a comprehensive solution for pre-visit web content analysis, offering a secure and efficient approach to digital exploration. Its integration with other tools expands its utility, making it a valuable asset for automated workflows and intelligent browsing.
+WebWraith was created by Kord Campbell, founder of Loggly (cloud-based log management service) and creator of the Grub crawler. With extensive experience in web technologies and data analysis, Kord designed WebWraith to address the growing need for safer web browsing and content evaluation.
 
-For inquiries or contributions, refer to the project repository.
+## License
 
+This project is licensed under the MIT License - see the LICENSE file for details.

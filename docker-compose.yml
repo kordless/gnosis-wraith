@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  webwraith:
+    build: .
+    container_name: webwraith-service
+    ports:
+      - "5678:5678"
+    volumes:
+      - webwraith-data:/data
+    restart: unless-stopped
+    environment:
+      - WEBWRAITH_STORAGE_PATH=/data
+      - QUART_APP=app:app
+      - QUART_ENV=production
+
+volumes:
+  webwraith-data:
+    driver: local
