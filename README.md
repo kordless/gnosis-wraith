@@ -1,6 +1,6 @@
 # WebWraith: Advanced Web Content Analysis
 
-A powerful web crawling and content analysis tool that outputs markdown and images, built with Python, Quart, and Playwright. Created by Kord Campbell (creator of Loggly and the Grub crawler). WebWraith can be run both as a command-line tool and as a web service.
+A powerful web crawling and content analysis tool that outputs markdown and images, built with Python, Quart, and Playwright. WebWraith can be run both as a command-line tool and as a web service.
 
 ## Features
 
