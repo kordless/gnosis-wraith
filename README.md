@@ -81,7 +81,7 @@ The foundational codebase that powers both the server and the extension, featuri
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/kordcampbell/webwraith.git
+   git clone https://github.com/kordless/webwraith.git
    cd webwraith
    ```
 
@@ -96,7 +96,7 @@ The foundational codebase that powers both the server and the extension, featuri
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/kordcampbell/webwraith.git
+   git clone https://github.com/kordless/webwraith.git
    cd webwraith
    ```
 
