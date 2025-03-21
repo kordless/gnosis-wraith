@@ -48,6 +48,9 @@ logger.addHandler(f_handler)
 # Create Quart app
 app = Quart(__name__, static_folder='server/static', template_folder='server/templates')
 
+# Ensure the downloads directory exists
+os.makedirs(os.path.join(os.path.dirname(__file__), 'server/static/downloads'), exist_ok=True)
+
 # Browser Control class
 class BrowserControl:
     def __init__(self):
@@ -453,6 +456,31 @@ async def serve_report(filename):
 async def serve_screenshot(filename):
     """Serve a screenshot file."""
     return await send_from_directory(SCREENSHOTS_DIR, filename)
+
+@app.route('/extension')
+async def serve_extension():
+    """Generate and serve the extension zip file."""
+    downloads_dir = os.path.join(os.path.dirname(__file__), 'server/static/downloads')
+    zip_path = os.path.join(downloads_dir, 'webwraith-extension.zip')
+    
+    # Check if extension zip exists, create it if not
+    if not os.path.exists(zip_path):
+        extension_dir = os.path.join(os.path.dirname(__file__), 'webwraith/extension')
+        if os.path.exists(extension_dir):
+            # Create downloads directory if it doesn't exist
+            os.makedirs(downloads_dir, exist_ok=True)
+            
+            # Create zip file
+            import zipfile
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(extension_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, os.path.join(extension_dir, '..'))
+                        zipf.write(file_path, arcname)
+    
+    # Redirect to the static file
+    return redirect(url_for('static', filename='downloads/webwraith-extension.zip'))
 
 # Main entry point
 if __name__ == '__main__':

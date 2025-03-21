@@ -35,6 +35,13 @@ RUN playwright install chromium
 # Copy application code
 COPY . .
 
+# Create extension zip file
+RUN apt-get update && apt-get install -y zip && \
+    mkdir -p /app/server/static/downloads && \
+    cd /app/webwraith && \
+    zip -r /app/server/static/downloads/webwraith-extension.zip extension && \
+    rm -rf extension
+
 # Volume for persistent storage
 VOLUME /data
 

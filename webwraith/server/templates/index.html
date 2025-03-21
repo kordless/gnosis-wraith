@@ -17,8 +17,21 @@
             <ul>
                 <li><a href="{{ url_for('index') }}" class="active">Home</a></li>
                 <li><a href="{{ url_for('list_reports') }}">Reports</a></li>
+                <li class="settings-link"><a href="#" id="settings-btn">Settings</a></li>
             </ul>
         </nav>
+        
+        <div id="settings-panel" class="card" style="display: none;">
+            <h2>Settings</h2>
+            <div class="form-group">
+                <label for="server-url">Server URL:</label>
+                <input type="url" id="server-url" placeholder="http://localhost:5678">
+            </div>
+            <div class="form-group">
+                <button id="save-settings-btn" class="btn primary">Save Settings</button>
+                <button id="default-settings-btn" class="btn secondary">Reset to Default</button>
+            </div>
+        </div>
         
         <main>
             <section class="card">
@@ -103,6 +116,26 @@ https://another-example.com"></textarea>
                 <div id="results-actions">
                     <a id="report-link" href="#" class="btn secondary" style="display: none;">View Report</a>
                     <a id="html-link" href="#" class="btn secondary" style="display: none;">View HTML</a>
+                </div>
+            </section>
+            
+            <section class="card">
+                <h2>Browser Extension</h2>
+                <p>Download the WebWraith browser extension to analyze links before clicking and capture screenshots directly from your browser.</p>
+                <div class="download-section">
+                    <a href="{{ url_for('static', filename='downloads/webwraith-extension.zip') }}" class="btn primary">
+                        <i class="download-icon"></i> Download Extension
+                    </a>
+                    <div class="extension-info">
+                        <p>Compatible with Chrome, Firefox, and Edge browsers.</p>
+                        <p>Installation instructions:</p>
+                        <ol>
+                            <li>Download and extract the zip file</li>
+                            <li>Open your browser's extension management page</li>
+                            <li>Enable "Developer mode"</li>
+                            <li>Click "Load unpacked" and select the extracted folder</li>
+                        </ol>
+                    </div>
                 </div>
             </section>
         </main>

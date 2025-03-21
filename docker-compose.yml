@@ -13,6 +13,7 @@ services:
       - WEBWRAITH_STORAGE_PATH=/data
       - QUART_APP=app:app
       - QUART_ENV=production
+    command: ["python", "app.py"]
 
 volumes:
   webwraith-data:

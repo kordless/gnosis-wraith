@@ -208,6 +208,199 @@ WebWraith can be configured using environment variables:
 - `QUART_APP` - Quart application name (default: app:app)
 - `QUART_ENV` - Quart environment (default: production)
 
+
+## API Crawling Example
+
+Here's a basic example of how to use the WebWraith API for crawling:
+
+```python
+import requests
+import json
+import time
+from urllib.parse import urljoin
+
+class WebWraithCrawler:
+    def __init__(self, api_base_url, api_key=None):
+        """
+        Initialize the WebWraith API crawler.
+        
+        Args:
+            api_base_url (str): Base URL of the WebWraith API
+            api_key (str, optional): API key for authentication
+        """
+        self.api_base_url = api_base_url
+        self.headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+        
+        if api_key:
+            self.headers['Authorization'] = f'Bearer {api_key}'
+    
+    def start_crawl(self, start_urls, max_depth=3, follow_external=False, custom_settings=None):
+        """
+        Start a new crawling job.
+        
+        Args:
+            start_urls (list): List of URLs to start crawling from
+            max_depth (int): Maximum crawl depth
+            follow_external (bool): Whether to follow external links
+            custom_settings (dict): Additional crawler settings
+            
+        Returns:
+            str: Job ID for the crawling task
+        """
+        payload = {
+            'start_urls': start_urls,
+            'max_depth': max_depth,
+            'follow_external': follow_external
+        }
+        
+        if custom_settings:
+            payload.update(custom_settings)
+        
+        response = requests.post(
+            urljoin(self.api_base_url, '/api/v1/crawl/start'),
+            headers=self.headers,
+            data=json.dumps(payload)
+        )
+        
+        response.raise_for_status()
+        return response.json().get('job_id')
+    
+    def get_crawl_status(self, job_id):
+        """
+        Check the status of a crawling job.
+        
+        Args:
+            job_id (str): The job ID of the crawling task
+            
+        Returns:
+            dict: Status information about the crawling job
+        """
+        response = requests.get(
+            urljoin(self.api_base_url, f'/api/v1/crawl/status/{job_id}'),
+            headers=self.headers
+        )
+        
+        response.raise_for_status()
+        return response.json()
+    
+    def get_crawl_results(self, job_id, page=1, per_page=100):
+        """
+        Retrieve results from a completed crawling job.
+        
+        Args:
+            job_id (str): The job ID of the crawling task
+            page (int): Page number for paginated results
+            per_page (int): Number of results per page
+            
+        Returns:
+            dict: Crawled data results
+        """
+        response = requests.get(
+            urljoin(self.api_base_url, f'/api/v1/crawl/results/{job_id}'),
+            headers=self.headers,
+            params={'page': page, 'per_page': per_page}
+        )
+        
+        response.raise_for_status()
+        return response.json()
+    
+    def wait_for_completion(self, job_id, check_interval=10, timeout=3600):
+        """
+        Wait for a crawling job to complete.
+        
+        Args:
+            job_id (str): The job ID of the crawling task
+            check_interval (int): Time in seconds between status checks
+            timeout (int): Maximum time to wait in seconds
+            
+        Returns:
+            dict: Final job status
+        """
+        start_time = time.time()
+        
+        while time.time() - start_time < timeout:
+            status = self.get_crawl_status(job_id)
+            
+            if status['status'] in ['completed', 'failed']:
+                return status
+            
+            time.sleep(check_interval)
+        
+        raise TimeoutError(f"Crawling job did not complete within {timeout} seconds")
+
+
+# Usage example
+if __name__ == "__main__":
+    # Initialize the crawler with API base URL and optional API key
+    crawler = WebWraithCrawler(
+        api_base_url="https://api.webwraith.example.com",
+        api_key="your_api_key_here"
+    )
+    
+    # Start a new crawling job
+    job_id = crawler.start_crawl(
+        start_urls=["https://example.com"],
+        max_depth=2,
+        follow_external=False,
+        custom_settings={
+            'user_agent': 'WebWraith Bot/1.0',
+            'respect_robots_txt': True,
+            'crawl_delay': 1.0,
+            'extract_images': True,
+            'extract_links': True
+        }
+    )
+    
+    print(f"Crawling job started with ID: {job_id}")
+    
+    # Wait for the job to complete
+    try:
+        final_status = crawler.wait_for_completion(job_id)
+        print(f"Crawling job completed with status: {final_status['status']}")
+        
+        if final_status['status'] == 'completed':
+            # Retrieve and process results
+            results = crawler.get_crawl_results(job_id)
+            
+            print(f"Retrieved {results['total']} pages")
+            for page in results['items']:
+                print(f"URL: {page['url']}")
+                print(f"Title: {page['title']}")
+                print(f"Links found: {len(page['links'])}")
+                print("-" * 50)
+    
+    except TimeoutError as e:
+        print(f"Error: {e}")
+```
+
+## Advanced Features
+
+- **Distributed Crawling**: Scale your crawling operations across multiple nodes
+- **Custom Extractors**: Define custom data extraction patterns
+- **Rate Limiting**: Respect website crawl policies
+- **Data Export**: Export crawled data in various formats (JSON, CSV, XML)
+- **Webhook Notifications**: Get notified when crawling jobs complete
+
+## Configuration
+
+The API crawler supports the following configuration options:
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| max_depth | Maximum depth to crawl | 3 |
+| follow_external | Follow links to external domains | False |
+| respect_robots_txt | Respect robots.txt directives | True |
+| crawl_delay | Delay between requests (seconds) | 0.5 |
+| user_agent | Custom User-Agent string | WebWraith/1.0 |
+| timeout | Request timeout (seconds) | 30 |
+| max_retries | Maximum number of retry attempts | 3 |
+| extract_images | Extract image URLs | False |
+| extract_links | Extract link URLs | True |
+
+
 ## Security Considerations
 
 WebWraith interacts with web pages on the user's behalf. Ensure ethical use and compliance with legal and security standards. The Docker container provides an additional layer of isolation for safer web content analysis.
@@ -218,4 +411,4 @@ WebWraith was created by Kord Campbell, founder of Loggly (cloud-based log manag
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the The WebWraith AI-Sovereign License (v1.0)

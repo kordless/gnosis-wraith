@@ -314,6 +314,50 @@ table tr:hover {
     justify-content: flex-end;
 }
 
+/* Download section */
+.download-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 20px;
+}
+
+.download-section .btn {
+    display: inline-flex;
+    align-items: center;
+    font-size: 1.1rem;
+    padding: 12px 24px;
+    margin-bottom: 20px;
+}
+
+.download-icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/%3E%3Cpolyline points='7 10 12 15 17 10'/%3E%3Cline x1='12' y1='15' x2='12' y2='3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.extension-info {
+    background-color: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: var(--border-radius);
+    padding: 15px;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.extension-info ol {
+    margin-left: 20px;
+    margin-top: 5px;
+}
+
+.extension-info li {
+    margin-bottom: 5px;
+}
+
 /* Footer */
 footer {
     text-align: center;
