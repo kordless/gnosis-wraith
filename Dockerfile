@@ -21,6 +21,7 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libgbm1 \
     libasound2 \
+    zip \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements file
@@ -36,11 +37,11 @@ RUN playwright install chromium
 COPY . .
 
 # Create extension zip file
-RUN apt-get update && apt-get install -y zip && \
-    mkdir -p /app/server/static/downloads && \
-    cd /app/webwraith && \
-    zip -r /app/server/static/downloads/webwraith-extension.zip extension && \
-    rm -rf extension
+RUN mkdir -p /app/server/static/downloads && \
+    if [ -d "/app/webwraith/extension" ]; then \
+      cd /app/webwraith && \
+      zip -r /app/server/static/downloads/webwraith-extension.zip extension; \
+    fi
 
 # Volume for persistent storage
 VOLUME /data
@@ -51,5 +52,5 @@ ENV WEBWRAITH_STORAGE_PATH=/data
 # Expose the port
 EXPOSE 5678
 
-# Command to run
-CMD ["python", "app.py"]
+# Command to run - point directly to webwraith/app.py
+CMD ["python", "webwraith/app.py"]

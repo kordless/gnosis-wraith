@@ -11,9 +11,9 @@ services:
     restart: unless-stopped
     environment:
       - WEBWRAITH_STORAGE_PATH=/data
-      - QUART_APP=app:app
+      - QUART_APP=webwraith.app:app
       - QUART_ENV=production
-    command: ["python", "app.py"]
+    command: ["python", "webwraith/app.py"]
 
 volumes:
   webwraith-data:
