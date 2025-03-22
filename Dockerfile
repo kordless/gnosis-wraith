@@ -37,10 +37,10 @@ RUN playwright install chromium
 COPY . .
 
 # Create extension zip file
-RUN mkdir -p /app/server/static/downloads && \
+RUN mkdir -p /app/webwraith/server/static/downloads && \
     if [ -d "/app/webwraith/extension" ]; then \
       cd /app/webwraith && \
-      zip -r /app/server/static/downloads/webwraith-extension.zip extension; \
+      zip -r /app/webwraith/server/static/downloads/webwraith-extension.zip extension; \
     fi
 
 # Volume for persistent storage
@@ -52,5 +52,5 @@ ENV WEBWRAITH_STORAGE_PATH=/data
 # Expose the port
 EXPOSE 5678
 
-# Command to run - point directly to webwraith/app.py
-CMD ["python", "webwraith/app.py"]
+# Command to run
+CMD ["python", "webwraith/server/app.py"]

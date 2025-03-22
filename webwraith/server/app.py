@@ -46,7 +46,7 @@ logger.addHandler(c_handler)
 logger.addHandler(f_handler)
 
 # Create Quart app
-app = Quart(__name__, static_folder='server/static', template_folder='server/templates')
+app = Quart(__name__, static_folder='static', template_folder='templates')
 
 # Ensure the downloads directory exists
 os.makedirs(os.path.join(os.path.dirname(__file__), 'server/static/downloads'), exist_ok=True)
@@ -193,7 +193,12 @@ def generate_markdown_report(title, crawl_results):
 async def save_markdown_report(title, crawl_results):
     """Save a markdown report to disk and return the file path."""
     report_content = generate_markdown_report(title, crawl_results)
-    filename = f"{re.sub(r'[^\w\-_]', '_', title)}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+
+    import string
+    valid_chars = string.ascii_letters + string.digits + '-_'
+    safe_title = ''.join(c if c in valid_chars else '_' for c in title)
+    filename = f"{safe_title}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+
     report_path = os.path.join(REPORTS_DIR, filename)
     
     async with aiofiles.open(report_path, 'w') as f:
@@ -288,7 +293,11 @@ async def async_crawl_cli(urls, output_format, title, output_dir):
         
         if output_format in ['markdown', 'both']:
             report_content = generate_markdown_report(title, crawl_results)
-            filename = f"{re.sub(r'[^\w\-_]', '_', title)}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+            import string
+            valid_chars = string.ascii_letters + string.digits + '-_'
+            safe_title = ''.join(c if c in valid_chars else '_' for c in title)
+            filename = f"{safe_title}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+
             markdown_path = os.path.join(output_dir, filename)
             
             async with aiofiles.open(markdown_path, 'w') as f:

@@ -8,12 +8,15 @@ services:
       - "5678:5678"
     volumes:
       - webwraith-data:/data
+      # Add access to the right template directories
+      - ./webwraith/server/templates:/app/server/templates
+      - ./webwraith/server/static:/app/server/static
     restart: unless-stopped
     environment:
       - WEBWRAITH_STORAGE_PATH=/data
-      - QUART_APP=webwraith.app:app
+      - QUART_APP=webwraith.server.app:app
       - QUART_ENV=production
-    command: ["python", "webwraith/app.py"]
+    command: ["python", "webwraith/server/app.py"]
 
 volumes:
   webwraith-data:
