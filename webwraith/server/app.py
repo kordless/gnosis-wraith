@@ -8,7 +8,7 @@ import datetime
 import uuid
 from typing import Dict, Any, List, Optional, Union
 from pathlib import Path
-
+import random
 import click
 import aiofiles
 import markdown
@@ -51,7 +51,6 @@ app = Quart(__name__, static_folder='static', template_folder='templates')
 # Ensure the downloads directory exists
 os.makedirs(os.path.join(os.path.dirname(__file__), 'server/static/downloads'), exist_ok=True)
 
-# Browser Control class
 class BrowserControl:
     def __init__(self):
         self.browser = None
@@ -69,32 +68,6 @@ class BrowserControl:
             logger.error(f"Failed to initialize EasyOCR: {str(e)}")
             self.ocr_reader = None
 
-    async def start_browser(self):
-        """Start a headless browser session."""
-        try:
-            playwright = await async_playwright().start()
-            self.browser = await playwright.chromium.launch(headless=True)
-            self.context = await self.browser.new_context()
-            self.page = await self.context.new_page()
-            logger.info("Browser started successfully")
-        except Exception as e:
-            logger.error(f"Failed to start browser: {str(e)}")
-            raise
-
-    async def navigate(self, url):
-        """Navigate to a URL."""
-        if not self.page:
-            await self.start_browser()
-        await self.page.goto(url)
-        logger.info(f"Navigated to {url}")
-
-    async def screenshot(self, path):
-        """Take a screenshot and save it to the specified path."""
-        if not self.page:
-            raise Exception("Browser not started")
-        await self.page.screenshot(path=path)
-        logger.info(f"Screenshot saved to {path}")
-
     async def extract_text_from_screenshot(self, screenshot_path):
         """Extract text from a screenshot using OCR."""
         if not self.ocr_reader:
@@ -102,19 +75,262 @@ class BrowserControl:
             if not self.ocr_reader:
                 raise Exception("OCR reader not available")
                 
-        image = Image.open(screenshot_path)
-        image_np = np.array(image)
-        results = self.ocr_reader.readtext(image_np)
-        extracted_text = ' '.join([result[1] for result in results])
-        logger.info(f"Extracted {len(results)} text regions from {screenshot_path}")
-        return extracted_text
+        try:
+            image = Image.open(screenshot_path)
+            image_np = np.array(image)
+            results = self.ocr_reader.readtext(image_np)
+            extracted_text = ' '.join([result[1] for result in results])
+            logger.info(f"Extracted {len(results)} text regions from {screenshot_path}")
+            return extracted_text
+        except Exception as e:
+            logger.error(f"Error extracting text from screenshot: {str(e)}")
+            return f"Text extraction failed: {str(e)}"
+
+    async def screenshot(self, path):
+        """Take a screenshot and save it to the specified path."""
+        if not self.page:
+            raise Exception("Browser not started")
+        
+        try:
+            await self.page.screenshot(path=path)
+            logger.info(f"Screenshot saved to {path}")
+        except Exception as e:
+            logger.error(f"Error taking screenshot: {str(e)}")
+            
+            # Create a simple error image if screenshot fails
+            try:
+                from PIL import Image, ImageDraw, ImageFont
+                
+                # Create a blank image
+                img = Image.new('RGB', (1280, 800), color=(240, 240, 240))
+                draw = ImageDraw.Draw(img)
+                
+                # Add error text
+                try:
+                    font = ImageFont.truetype("Arial", 20)
+                except:
+                    # Fallback to default font if Arial not available
+                    font = ImageFont.load_default()
+                    
+                error_message = f"Failed to capture screenshot: {str(e)}"
+                draw.text((50, 50), "Error Capturing Page", fill=(255, 0, 0), font=font)
+                draw.text((50, 100), error_message, fill=(0, 0, 0), font=font)
+                draw.text((50, 150), f"URL: {self.page.url}", fill=(0, 0, 0), font=font)
+                
+                # Save the error image
+                img.save(path)
+                logger.info(f"Created error image at {path}")
+            except Exception as img_error:
+                logger.error(f"Error creating error image: {str(img_error)}")
+                raise e
+
+    async def navigate(self, url):
+        """Navigate to a URL with improved error handling and retry logic."""
+        if not self.page:
+            logger.info("Browser not started, initializing before navigation")
+            await self.start_browser()
+        
+        # Set maximum retries
+        max_retries = 2
+        retry_count = 0
+        
+        while retry_count <= max_retries:
+            try:
+                # Set a reasonable timeout for navigation
+                logger.info(f"Navigating to {url} (attempt {retry_count + 1}/{max_retries + 1})")
+                
+                # Set a longer timeout for complex sites
+                await self.page.goto(url, timeout=45000, wait_until='domcontentloaded')
+                
+                # Wait a bit for the page to stabilize
+                await asyncio.sleep(2)
+                
+                logger.info(f"Successfully navigated to {url}")
+                return
+            except Exception as e:
+                retry_count += 1
+                error_message = str(e)
+                logger.warning(f"Navigation error on attempt {retry_count}/{max_retries + 1} for {url}: {error_message}")
+                
+                if "Page crashed" in error_message:
+                    logger.info("Page crash detected, recreating page")
+                    try:
+                        # Close the crashed page if it exists
+                        if self.page and not self.page.is_closed():
+                            await self.page.close()
+                        
+                        # Create a new page
+                        self.page = await self.context.new_page()
+                        logger.info("Created new page after crash")
+                        
+                        # If we have retries left, continue to next attempt
+                        if retry_count <= max_retries:
+                            continue
+                    except Exception as recovery_error:
+                        logger.error(f"Error during page recreation: {str(recovery_error)}")
+                
+                # If we've reached max retries, raise the exception
+                if retry_count > max_retries:
+                    logger.error(f"Failed to navigate to {url} after {max_retries + 1} attempts")
+                    raise
+                
+                # Wait before retrying
+                await asyncio.sleep(2)
+                
+    def get_random_user_agent(self):
+        """Return a random, realistic user agent string."""
+        chrome_versions = ['112.0.5615.138', '114.0.5735.199', '115.0.5790.171', '116.0.5845.96', '117.0.5938.132', '118.0.5993.117', '119.0.6045.106', '120.0.6099.109', '121.0.6167.85', '122.0.6261.69', '123.0.6312.58', '134.0.0.0']
+        
+        os_versions = [
+            ('Windows NT 10.0; Win64; x64', 'Windows 10'),
+            ('Windows NT 11.0; Win64; x64', 'Windows 11'),
+            ('Macintosh; Intel Mac OS X 10_15_7', 'macOS'),
+            ('Macintosh; Intel Mac OS X 11_6_0', 'macOS'),
+            ('X11; Linux x86_64', 'Linux'),
+            ('X11; Ubuntu; Linux x86_64', 'Ubuntu')
+        ]
+        
+        chrome_version = random.choice(chrome_versions)
+        os_info, os_name = random.choice(os_versions)
+        
+        return f'Mozilla/5.0 ({os_info}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome_version} Safari/537.36'
+
+    def get_random_viewport(self):
+        """Return a random viewport size based on common screen resolutions."""
+        common_resolutions = [
+            {'width': 1366, 'height': 768},    # Most common
+            {'width': 1920, 'height': 1080},   # Full HD
+            {'width': 1536, 'height': 864},    # Common laptop
+            {'width': 1440, 'height': 900},    # Common on Macs
+            {'width': 1280, 'height': 800},    # Smaller laptops
+            {'width': 1680, 'height': 1050},   # Larger monitors
+            {'width': 1600, 'height': 900},    # Another common size
+            {'width': 1280, 'height': 720},    # HD
+            {'width': 1920, 'height': 1200},   # Widescreen monitors
+            {'width': 2560, 'height': 1440}    # QHD screens
+        ]
+        
+        # Add slight variations to make fingerprinting harder
+        selected = random.choice(common_resolutions)
+        jitter = random.randint(-10, 10)  # Small random adjustment
+        
+        return {
+            'width': selected['width'] + jitter,
+            'height': selected['height'] + jitter
+        }
+
+    async def start_browser(self):
+        """Start a browser session with JavaScript disabled by default."""
+        try:
+            logger.info("Starting Playwright and browser")
+            playwright = await async_playwright().start()
+            
+            # Configure browser with more robust settings
+            browser_args = [
+                '--disable-gpu',
+                '--no-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-accelerated-video-decode',
+                '--disable-features=site-per-process',
+                '--disable-extensions',
+                '--disable-background-networking',
+                '--disable-default-apps',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--metrics-recording-only',
+                '--mute-audio',
+                '--no-first-run'
+            ]
+            
+            # Determine headless mode
+            headless_mode = True
+            if headless_mode:
+                browser_args.extend([
+                    '--headless=new',
+                    '--disable-notifications',
+                    '--disable-infobars'
+                ])
+            
+            logger.info(f"Launching browser with enhanced arguments (headless={headless_mode}, js_disabled=True)")
+            self.browser = await playwright.chromium.launch(
+                headless=headless_mode,
+                args=browser_args
+            )
+            
+            # Get random viewport and user agent
+            viewport = self.get_random_viewport()
+            user_agent = self.get_random_user_agent()
+            
+            # Random timezone from common options
+            timezone_ids = [
+                'America/New_York', 
+                'America/Chicago', 
+                'America/Los_Angeles',
+                'Europe/London', 
+                'Europe/Paris',
+                'Asia/Tokyo'
+            ]
+            timezone_id = random.choice(timezone_ids)
+            
+            # Random locale
+            locales = ['en-US', 'en-GB', 'en-CA', 'fr-FR', 'de-DE', 'es-ES']
+            locale = random.choice(locales)
+            
+            logger.info(f"Using viewport: {viewport}, user agent: {user_agent}, timezone: {timezone_id}")
+            
+            # Create a more realistic browser context with JavaScript DISABLED by default
+            self.context = await self.browser.new_context(
+                viewport=viewport,
+                user_agent=user_agent,
+                locale=locale,
+                timezone_id=timezone_id,
+                has_touch=random.choice([True, False]),
+                java_script_enabled=False,  # JavaScript disabled by default
+                ignore_https_errors=True
+            )
+            
+            logger.info("Creating new page")
+            self.page = await self.context.new_page()
+            
+            # Set HTTP headers to appear more like a real browser
+            await self.page.set_extra_http_headers({
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1'
+            })
+            
+            logger.info("Browser started successfully with JavaScript disabled")
+        except Exception as e:
+            logger.error(f"Failed to start browser: {str(e)}", exc_info=True)
+            # Try to clean up resources if initialization fails
+            try:
+                if self.browser:
+                    await self.browser.close()
+            except:
+                pass
+            raise
 
     async def close(self):
-        """Close the browser session."""
-        if self.browser:
-            await self.browser.close()
-            logger.info("Browser closed")
-
+        """Close the browser session and release resources."""
+        try:
+            if self.browser:
+                logger.info("Closing browser")
+                await self.browser.close()
+                self.browser = None
+                self.context = None
+                self.page = None
+                logger.info("Browser closed successfully")
+        except Exception as e:
+            logger.error(f"Error closing browser: {str(e)}")
+        
 # URL extraction function
 def extract_urls(content):
     """Extract URLs from the given content."""
@@ -122,21 +338,49 @@ def extract_urls(content):
     return url_pattern.findall(content)
 
 async def crawl_url(url, browser_control):
-    """Crawl a single URL and return the results."""
+    """Crawl a single URL and return the results with better error handling."""
     # Create a safe filename from the URL
     filename = url.replace('https://', '').replace('http://', '').replace('/', '_').replace('.', '_')
     filename = re.sub(r'[^\w\-_.]', '_', filename)
     screenshot_path = os.path.join(SCREENSHOTS_DIR, f"{filename}_{uuid.uuid4().hex[:8]}.png")
     
     try:
-        await browser_control.navigate(url)
-        await browser_control.screenshot(screenshot_path)
+        logger.info(f"Attempting to navigate to {url}")
+        try:
+            await browser_control.navigate(url)
+            logger.info(f"Successfully navigated to {url}")
+        except Exception as nav_error:
+            logger.error(f"Navigation failed for {url}: {str(nav_error)}")
+            # Continue with a blank page instead of failing
+            await browser_control.page.set_content(f"<html><body><h1>Failed to load {url}</h1><p>Error: {str(nav_error)}</p></body></html>")
+            
+        # Take screenshot even if navigation failed
+        try:
+            await browser_control.screenshot(screenshot_path)
+            logger.info(f"Screenshot saved at {screenshot_path}")
+        except Exception as ss_error:
+            logger.error(f"Screenshot failed for {url}: {str(ss_error)}")
+            # Create a simple error image
+            with open(screenshot_path, 'w') as f:
+                f.write("Error capturing screenshot")
         
-        # Extract text from the screenshot
-        extracted_text = await browser_control.extract_text_from_screenshot(screenshot_path)
+        # Extract text from the screenshot if it exists
+        extracted_text = ""
+        if os.path.exists(screenshot_path):
+            try:
+                extracted_text = await browser_control.extract_text_from_screenshot(screenshot_path)
+                logger.info(f"Text extraction complete for {url}")
+            except Exception as ocr_error:
+                logger.error(f"OCR failed for {url}: {str(ocr_error)}")
+                extracted_text = f"Text extraction failed: {str(ocr_error)}"
         
-        # Get page title
-        title = await browser_control.page.title()
+        # Get page title safely
+        title = "Untitled Page"
+        try:
+            title = await browser_control.page.title()
+            logger.info(f"Retrieved page title: '{title}' for {url}")
+        except Exception as title_error:
+            logger.error(f"Failed to get title for {url}: {str(title_error)}")
         
         return {
             'url': url,
@@ -146,23 +390,42 @@ async def crawl_url(url, browser_control):
         }
         
     except Exception as e:
-        logger.error(f"Error processing {url}: {str(e)}")
+        logger.error(f"Unhandled error processing {url}: {str(e)}", exc_info=True)
+        # Return a basic error result
         return {
             'url': url,
-            'error': str(e)
+            'error': f"Processing failed: {str(e)}",
+            'screenshot': None,
+            'extracted_text': ''
         }
 
 async def crawl_urls(urls):
     """Crawl each URL and take screenshots, returning results."""
     browser_control = BrowserControl()
-    await browser_control.start_browser()
+    try:
+        logger.info("Starting browser for crawling multiple URLs")
+        await browser_control.start_browser()
+        
+        results = []
+        for url in urls:
+            try:
+                logger.info(f"Processing URL: {url}")
+                result = await crawl_url(url, browser_control)
+                results.append(result)
+            except Exception as e:
+                logger.error(f"Error processing URL {url}: {str(e)}", exc_info=True)
+                results.append({
+                    'url': url,
+                    'error': f"Processing error: {str(e)}"
+                })
+    finally:
+        # Ensure browser is always closed
+        try:
+            logger.info("Closing browser after URL processing")
+            await browser_control.close()
+        except Exception as e:
+            logger.error(f"Error closing browser: {str(e)}")
     
-    results = []
-    for url in urls:
-        result = await crawl_url(url, browser_control)
-        results.append(result)
-
-    await browser_control.close()
     return results
 
 def generate_markdown_report(title, crawl_results):
@@ -491,6 +754,53 @@ async def serve_extension():
     # Redirect to the static file
     return redirect(url_for('static', filename='downloads/webwraith-extension.zip'))
 
+@app.route('/settings')
+async def settings():
+    """Render the settings page."""
+    # Default settings
+    settings_data = {
+        'server_url': os.environ.get('WEBWRAITH_SERVER_URL', 'http://localhost:5678'),
+        'llm_api_token': os.environ.get('WEBWRAITH_LLM_API_TOKEN', ''),
+        'screenshot_quality': os.environ.get('WEBWRAITH_SCREENSHOT_QUALITY', 'medium'),
+        'javascript_enabled': os.environ.get('WEBWRAITH_JAVASCRIPT_ENABLED', 'false') == 'true',
+        'storage_path': STORAGE_PATH
+    }
+    
+    return await render_template('settings.html', **settings_data)
+
+@app.route('/api/reports/<path:filename>', methods=['DELETE'])
+async def delete_report(filename):
+    """Delete a report file."""
+    try:
+        file_path = os.path.join(REPORTS_DIR, filename)
+        
+        if not os.path.exists(file_path):
+            return jsonify({
+                "success": False,
+                "error": "File not found"
+            }), 404
+        
+        # Delete the file
+        os.remove(file_path)
+        
+        # If HTML version exists, delete it too
+        if filename.endswith('.md'):
+            html_path = file_path.replace('.md', '.html')
+            if os.path.exists(html_path):
+                os.remove(html_path)
+        
+        return jsonify({
+            "success": True,
+            "message": f"Report {filename} deleted successfully"
+        })
+    
+    except Exception as e:
+        logger.error(f"Error deleting report {filename}: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+    
 # Main entry point
 if __name__ == '__main__':
     # Check if running as CLI or as a web service

@@ -5,55 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebWraith - Web Crawling Tool</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-ghost"></i>
+            <span>webwraith</span>
+        </div>
+        <ul class="nav-menu">
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle">
+                    <i class="fas fa-bars"></i>
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a href="{{ url_for('list_reports') }}">Reports</a></li>
+                    <li><a href="{{ url_for('settings') }}">Settings</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+    
     <div class="container">
-        <header>
-            <h1>WebWraith</h1>
-            <p>A powerful web crawling tool that outputs markdown and images</p>
-        </header>
-        
-        <nav>
-            <ul>
-                <li><a href="{{ url_for('index') }}" class="active">Home</a></li>
-                <li><a href="{{ url_for('list_reports') }}">Reports</a></li>
-                <li class="settings-link"><a href="#" id="settings-btn">Settings</a></li>
-            </ul>
-        </nav>
-        
-        <div id="settings-panel" class="card" style="display: none;">
-            <h2>Settings</h2>
-            <div class="form-group">
-                <label for="server-url">Server URL:</label>
-                <input type="url" id="server-url" placeholder="http://localhost:5678">
-            </div>
-            <div class="form-group">
-                <button id="save-settings-btn" class="btn primary">Save Settings</button>
-                <button id="default-settings-btn" class="btn secondary">Reset to Default</button>
-            </div>
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="single-crawl">Single URL Crawl</button>
+            <button class="tab-btn" data-tab="multi-crawl">Multi-URL Crawl</button>
+            <button class="tab-btn" data-tab="image-upload">Upload Image</button>
+            <button class="tab-btn" data-tab="extension">Browser Extension</button>
         </div>
         
         <main>
-            <section class="card">
-                <h2>Crawl URLs</h2>
+            <!-- Single URL Crawl Tab -->
+            <section id="single-crawl" class="tab-content card active">
+                <h2>Crawl Single URL</h2>
                 <div class="crawl-form">
                     <div class="form-group">
-                        <label for="crawl-method">Input Method:</label>
-                        <select id="crawl-method">
-                            <option value="url">Single URL</option>
-                            <option value="urls">Multiple URLs</option>
-                        </select>
-                    </div>
-                    
-                    <div id="single-url-input" class="form-group">
                         <label for="url">URL:</label>
                         <input type="url" id="url" placeholder="https://example.com">
-                    </div>
-                    
-                    <div id="multiple-urls-input" class="form-group" style="display: none;">
-                        <label for="urls">URLs (one per line):</label>
-                        <textarea id="urls" placeholder="https://example.com
-https://another-example.com"></textarea>
                     </div>
                     
                     <div class="form-group">
@@ -83,7 +72,45 @@ https://another-example.com"></textarea>
                 </div>
             </section>
             
-            <section class="card">
+            <!-- Multi URL Crawl Tab -->
+            <section id="multi-crawl" class="tab-content card">
+                <h2>Crawl Multiple URLs</h2>
+                <div class="crawl-form">
+                    <div class="form-group">
+                        <label for="urls">URLs (one per line):</label>
+                        <textarea id="urls" placeholder="https://example.com
+https://another-example.com"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="multi-report-title">Report Title:</label>
+                        <input type="text" id="multi-report-title" placeholder="My Multi-URL Crawl Report">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="multi-output-format">Output Format:</label>
+                        <select id="multi-output-format">
+                            <option value="markdown">Markdown</option>
+                            <option value="image">Images Only</option>
+                            <option value="both">Both</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button id="multi-crawl-btn" class="btn primary">Start Crawling</button>
+                    </div>
+                </div>
+                
+                <div id="multi-crawl-status" class="status-box" style="display: none;">
+                    <p>Status: <span id="multi-status-text">Idle</span></p>
+                    <div class="progress-bar">
+                        <div id="multi-progress-indicator"></div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Image Upload Tab -->
+            <section id="image-upload" class="tab-content card">
                 <h2>Upload Image</h2>
                 <div class="upload-form">
                     <div class="form-group">
@@ -107,8 +134,78 @@ https://another-example.com"></textarea>
                         <pre id="extracted-text-content"></pre>
                     </div>
                 </div>
+                
+                <div class="code-section">
+                    <h3>Python Code for API Upload</h3>
+                    <div class="code-container">
+                        <button class="copy-btn" title="Copy to clipboard">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <pre class="language-python"><code>import requests
+import os
+
+def upload_image_to_webwraith(image_path):
+    """
+    Upload an image to the WebWraith API and extract text.
+    
+    Args:
+        image_path (str): Path to the image file
+        
+    Returns:
+        dict: API response with extracted text
+    """
+    url = "http://localhost:5678/api/upload"
+    
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image file not found: {image_path}")
+    
+    files = {
+        'image': (os.path.basename(image_path), open(image_path, 'rb'), 'image/png')
+    }
+    
+    try:
+        response = requests.post(url, files=files)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error uploading image: {e}")
+        return None
+    finally:
+        files['image'][1].close()
+
+# Example usage
+if __name__ == "__main__":
+    result = upload_image_to_webwraith("path/to/your/image.png")
+    if result and result.get("success"):
+        print(f"Extracted text: {result['extracted_text']}")
+    else:
+        print("Failed to extract text from image")</code></pre>
+                    </div>
+                </div>
             </section>
             
+            <!-- Browser Extension Tab -->
+            <section id="extension" class="tab-content card">
+                <h2>Browser Extension</h2>
+                <p class="extension-description">Download the WebWraith browser extension to analyze links before clicking, capture screenshots, and extract text from webpages directly in your browser.</p>
+                
+                <div class="install-instructions">
+                    <h3>Installation Instructions</h3>
+                    <ol>
+                        <li>Download and extract the zip file</li>
+                        <li>Open your browser's extension management page</li>
+                        <li>Enable "Developer mode"</li>
+                        <li>Click "Load unpacked" and select the extracted folder</li>
+                    </ol>
+                    <p>Compatible with Chrome, Firefox, and Edge browsers.</p>
+                    
+                    <a href="{{ url_for('static', filename='downloads/webwraith-extension.zip') }}" class="btn primary download-btn">
+                        <i class="fas fa-download"></i> Download Extension
+                    </a>
+                </div>
+            </section>
+            
+            <!-- Crawl Results Section (Shared between tabs) -->
             <section id="crawl-results" class="card" style="display: none;">
                 <h2>Crawl Results</h2>
                 <div id="results-summary"></div>
@@ -116,26 +213,6 @@ https://another-example.com"></textarea>
                 <div id="results-actions">
                     <a id="report-link" href="#" class="btn secondary" style="display: none;">View Report</a>
                     <a id="html-link" href="#" class="btn secondary" style="display: none;">View HTML</a>
-                </div>
-            </section>
-            
-            <section class="card">
-                <h2>Browser Extension</h2>
-                <p>Download the WebWraith browser extension to analyze links before clicking and capture screenshots directly from your browser.</p>
-                <div class="download-section">
-                    <a href="{{ url_for('static', filename='downloads/webwraith-extension.zip') }}" class="btn primary">
-                        <i class="download-icon"></i> Download Extension
-                    </a>
-                    <div class="extension-info">
-                        <p>Compatible with Chrome, Firefox, and Edge browsers.</p>
-                        <p>Installation instructions:</p>
-                        <ol>
-                            <li>Download and extract the zip file</li>
-                            <li>Open your browser's extension management page</li>
-                            <li>Enable "Developer mode"</li>
-                            <li>Click "Load unpacked" and select the extracted folder</li>
-                        </ol>
-                    </div>
                 </div>
             </section>
         </main>
@@ -146,5 +223,7 @@ https://another-example.com"></textarea>
     </div>
     
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
 </body>
 </html>
