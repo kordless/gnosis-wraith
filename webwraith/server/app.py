@@ -219,8 +219,8 @@ class BrowserControl:
             'height': selected['height'] + jitter
         }
 
-    async def start_browser(self):
-        """Start a browser session with JavaScript disabled by default."""
+    async def start_browser(self, javascript_enabled=False):
+        """Start a browser session with configurable JavaScript setting."""
         try:
             logger.info("Starting Playwright and browser")
             playwright = await async_playwright().start()
@@ -253,7 +253,7 @@ class BrowserControl:
                     '--disable-infobars'
                 ])
             
-            logger.info(f"Launching browser with enhanced arguments (headless={headless_mode}, js_disabled=True)")
+            logger.info(f"Launching browser with enhanced arguments (headless={headless_mode}, js_enabled={javascript_enabled})")
             self.browser = await playwright.chromium.launch(
                 headless=headless_mode,
                 args=browser_args
@@ -280,14 +280,14 @@ class BrowserControl:
             
             logger.info(f"Using viewport: {viewport}, user agent: {user_agent}, timezone: {timezone_id}")
             
-            # Create a more realistic browser context with JavaScript DISABLED by default
+            # Create browser context with configurable JavaScript setting
             self.context = await self.browser.new_context(
                 viewport=viewport,
                 user_agent=user_agent,
                 locale=locale,
                 timezone_id=timezone_id,
                 has_touch=random.choice([True, False]),
-                java_script_enabled=False,  # JavaScript disabled by default
+                java_script_enabled=javascript_enabled,  # Use the provided JavaScript setting
                 ignore_https_errors=True
             )
             
@@ -307,7 +307,7 @@ class BrowserControl:
                 'Sec-Fetch-User': '?1'
             })
             
-            logger.info("Browser started successfully with JavaScript disabled")
+            logger.info(f"Browser started successfully with JavaScript {'enabled' if javascript_enabled else 'disabled'}")
         except Exception as e:
             logger.error(f"Failed to start browser: {str(e)}", exc_info=True)
             # Try to clean up resources if initialization fails
@@ -337,7 +337,7 @@ def extract_urls(content):
     url_pattern = re.compile(r'https?://\S+')
     return url_pattern.findall(content)
 
-async def crawl_url(url, browser_control):
+async def crawl_url(url, browser_control, javascript_enabled=False):
     """Crawl a single URL and return the results with better error handling."""
     # Create a safe filename from the URL
     filename = url.replace('https://', '').replace('http://', '').replace('/', '_').replace('.', '_')
@@ -386,7 +386,8 @@ async def crawl_url(url, browser_control):
             'url': url,
             'title': title,
             'screenshot': screenshot_path,
-            'extracted_text': extracted_text
+            'extracted_text': extracted_text,
+            'javascript_enabled': javascript_enabled  # Include JavaScript setting in result
         }
         
     except Exception as e:
@@ -396,27 +397,29 @@ async def crawl_url(url, browser_control):
             'url': url,
             'error': f"Processing failed: {str(e)}",
             'screenshot': None,
-            'extracted_text': ''
+            'extracted_text': '',
+            'javascript_enabled': javascript_enabled  # Include JavaScript setting in result
         }
 
-async def crawl_urls(urls):
+async def crawl_urls(urls, javascript_enabled=False):
     """Crawl each URL and take screenshots, returning results."""
     browser_control = BrowserControl()
     try:
-        logger.info("Starting browser for crawling multiple URLs")
-        await browser_control.start_browser()
+        logger.info(f"Starting browser for crawling URLs with JavaScript {'enabled' if javascript_enabled else 'disabled'}")
+        await browser_control.start_browser(javascript_enabled=javascript_enabled)
         
         results = []
         for url in urls:
             try:
                 logger.info(f"Processing URL: {url}")
-                result = await crawl_url(url, browser_control)
+                result = await crawl_url(url, browser_control, javascript_enabled=javascript_enabled)
                 results.append(result)
             except Exception as e:
                 logger.error(f"Error processing URL {url}: {str(e)}", exc_info=True)
                 results.append({
                     'url': url,
-                    'error': f"Processing error: {str(e)}"
+                    'error': f"Processing error: {str(e)}",
+                    'javascript_enabled': javascript_enabled  # Include JavaScript setting in result
                 })
     finally:
         # Ensure browser is always closed
@@ -436,6 +439,10 @@ def generate_markdown_report(title, crawl_results):
     for i, result in enumerate(crawl_results, 1):
         md += f"## {i}. {result.get('title', 'Untitled Page')}\n\n"
         md += f"**URL**: {result['url']}\n\n"
+        
+        # Add JavaScript setting information
+        js_enabled = result.get('javascript_enabled', False)
+        md += f"**JavaScript**: {'Enabled' if js_enabled else 'Disabled'}\n\n"
         
         if 'error' in result:
             md += f"**Error**: {result['error']}\n\n"
@@ -624,8 +631,15 @@ async def api_crawl():
     title = data.get('title', f"Web Crawl Report - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     output_format = data.get('output_format', 'markdown')
     
+    # Process JavaScript enabled setting from request
+    javascript_enabled = data.get('javascript_enabled', False)
+    if isinstance(javascript_enabled, str):
+        javascript_enabled = javascript_enabled.lower() == 'true'
+    
+    logger.info(f"API crawl request: {len(urls)} URLs, JavaScript {'enabled' if javascript_enabled else 'disabled'}")
+    
     try:
-        crawl_results = await crawl_urls(urls)
+        crawl_results = await crawl_urls(urls, javascript_enabled=javascript_enabled)
         
         results = {
             "success": True,
@@ -636,7 +650,8 @@ async def api_crawl():
         for result in crawl_results:
             result_item = {
                 "url": result['url'],
-                "title": result.get('title', 'Untitled Page')
+                "title": result.get('title', 'Untitled Page'),
+                "javascript_enabled": result.get('javascript_enabled', javascript_enabled)
             }
             
             if 'error' in result:

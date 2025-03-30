@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Fetch GitHub repository star count
+    fetchGitHubStars();
+    
     // Copy code button functionality
     const copyButtons = document.querySelectorAll('.copy-btn');
     copyButtons.forEach(button => {
@@ -63,6 +66,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const url = document.getElementById('url').value.trim();
             const reportTitle = document.getElementById('report-title').value.trim() || 'Web Crawl Report';
             const outputFormat = document.getElementById('output-format').value;
+            // Get JavaScript enabled/disabled option
+            const javascriptEnabled = document.getElementById('javascript-enabled-single') ? 
+                document.getElementById('javascript-enabled-single').value === 'true' : 
+                false;
 
             if (!url) {
                 alert('Please enter a URL');
@@ -83,7 +90,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const requestData = {
                     url: url,
                     title: reportTitle,
-                    output_format: outputFormat
+                    output_format: outputFormat,
+                    javascript_enabled: javascriptEnabled // Add JavaScript enabled option
                 };
 
                 // Make API request
@@ -128,6 +136,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const urlsText = document.getElementById('urls').value.trim();
             const reportTitle = document.getElementById('multi-report-title').value.trim() || 'Multi-URL Crawl Report';
             const outputFormat = document.getElementById('multi-output-format').value;
+            // Get JavaScript enabled/disabled option
+            const javascriptEnabled = document.getElementById('javascript-enabled-multi') ? 
+                document.getElementById('javascript-enabled-multi').value === 'true' : 
+                false;
 
             if (!urlsText) {
                 alert('Please enter at least one URL');
@@ -158,7 +170,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const requestData = {
                     urls: urls,
                     title: reportTitle,
-                    output_format: outputFormat
+                    output_format: outputFormat,
+                    javascript_enabled: javascriptEnabled // Add JavaScript enabled option
                 };
 
                 // Make API request
@@ -272,6 +285,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="result-url">${item.url}</div>
             `;
 
+            // Add JavaScript setting information
+            if (typeof item.javascript_enabled !== 'undefined') {
+                itemContent += `
+                    <div class="result-javascript">
+                        JavaScript: ${item.javascript_enabled ? 'Enabled' : 'Disabled'}
+                    </div>
+                `;
+            }
+
             if (item.error) {
                 itemContent += `<div class="result-error">Error: ${item.error}</div>`;
             } else {
@@ -314,5 +336,66 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Scroll to results
         resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Function to fetch GitHub repository star count
+    async function fetchGitHubStars() {
+        const repoOwner = 'kordless';
+        const repoName = 'webwraith';
+        const githubApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}`;
+        
+        try {
+            // Try to get cached star count first to avoid hitting API limits
+            const cachedData = localStorage.getItem('github_stars_data');
+            const now = new Date().getTime();
+            
+            // If we have cached data and it's less than 1 hour old, use it
+            if (cachedData) {
+                const data = JSON.parse(cachedData);
+                if (now - data.timestamp < 60 * 60 * 1000) { // 1 hour in milliseconds
+                    console.log('Using cached GitHub stars data');
+                    updateStarCount(data.stars);
+                    return data.stars;
+                }
+            }
+            
+            // If no cached data or it's old, fetch from API
+            console.log('Fetching fresh GitHub stars data');
+            const response = await fetch(githubApiUrl);
+            
+            if (!response.ok) {
+                throw new Error(`GitHub API responded with status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const starCount = data.stargazers_count;
+            
+            // Cache the result with timestamp
+            localStorage.setItem('github_stars_data', JSON.stringify({
+                stars: starCount,
+                timestamp: now
+            }));
+            
+            updateStarCount(starCount);
+            return starCount;
+        } catch (error) {
+            console.error('Failed to fetch GitHub stars:', error);
+            // Try to use cached data even if it's old
+            const cachedData = localStorage.getItem('github_stars_data');
+            if (cachedData) {
+                const data = JSON.parse(cachedData);
+                updateStarCount(data.stars);
+                return data.stars;
+            }
+            return null;
+        }
+    }
+    
+    // Helper function to update star count in the UI
+    function updateStarCount(count) {
+        const starsElement = document.getElementById('github-stars');
+        if (starsElement) {
+            starsElement.textContent = count;
+        }
     }
 });

@@ -1,21 +1,50 @@
-# WebWraith: Advanced Web Content Analysis
+# Gnosis Wraith (WebWraith): The AI Oracle's Eye
 
-A powerful web crawling and content analysis tool that outputs markdown and images, built with Python, Quart, and Playwright. WebWraith can be run both as a command-line tool and as a web service.
+A powerful web crawling and content analysis system that serves as the perception layer for the Gnosis ecosystem. Built with Python, Quart, and Playwright, Gnosis Wraith operates both as a standalone tool and as the "eye" for a broader AI oracle system.
 
-## Features
+## Vision
 
-- Crawl web pages and capture screenshots with advanced automation
-- Extract text from web pages using OCR and multiple parsing methods
-- Generate comprehensive markdown and HTML reports
-- Upload images and extract text from them
-- Smart content analysis with promotional content detection
-- Browser extension integration for pre-click analysis
-- Docker support for easy, isolated deployment
+Gnosis Wraith serves as the perception component of a multi-part AI oracle system:
+
+- **Gnosis Wraith** (this project): The "eye" that crawls, analyzes, and indexes web content
+- **Gnosis Wright**: The agent system that consumes and leverages the data gathered by Wraith
+- **Gnosis Pipelines** (upcoming): Integration system for data flows and specialized processing
+
+Together, these components form an AI oracle capable of gathering truths from the web and presenting them in a proxied, enhanced manner to users.
+
+## Operational Modes
+
+Gnosis Wraith operates in multiple modes with graceful fallbacks:
+
+1. **Basic Mode**: Web crawling, screenshot capture, and OCR text extraction without AI analysis
+2. **Simple AI**: Local lightweight AI models for basic content analysis (using Ollama/local foundation models)
+3. **Advanced AI**: Integration with more powerful remote AI services (Anthropic, OpenAI, Gemini)
+4. **Hybrid Mode**: Combines local and remote processing based on content complexity
+
+The system automatically selects the appropriate mode based on available resources and configuration.
+
+## Core Features
+
+- **Autonomous Web Crawling**: Extract content from websites with advanced automation
+- **Multi-Modal Extraction**: Combine OCR, HTML parsing, and AI to extract comprehensive information
+- **Search Indexing**: Index content in Solr and vector stores for semantic retrieval
+- **Visual Analysis**: Capture and analyze visual elements of web pages
+- **Modular Intelligence**: Process content with various AI models based on task requirements
+- **Browser Extension**: Pre-click analysis and enhanced browsing experience
+- **Standalone & Integration Modes**: Works independently or as part of the larger Gnosis ecosystem
+
+## Real-World Applications
+
+- **Truth Oracle**: Gather and present factual information from across the web
+- **Dynamic Content Integration**: Connect to real-world systems (e.g., NMEA 2000 marine data)
+- **Voice-Controlled Interfaces**: Graph and display information on demand via vocal commands
+- **Autonomous Research**: Standalone agent that crawls and contributes to knowledge repositories
+- **Content Proxying**: Create enhanced web experiences with AI-augmented content
 
 ## Directory Structure
 
 ```
-webwraith/
+gnosis-wraith/
 ├── app.py                 # Main application file
 ├── requirements.txt       # Python dependencies
 ├── Dockerfile             # Docker configuration
@@ -30,7 +59,16 @@ webwraith/
 │   └── templates/         # HTML templates
 │       ├── index.html     # Homepage template
 │       └── reports.html   # Reports page template
-└── extension/             # Browser extension (optional)
+├── ai/                    # AI integration modules
+│   ├── models.py          # Model management and selection
+│   ├── anthropic.py       # Anthropic Claude integration
+│   ├── openai.py          # OpenAI integration
+│   ├── gemini.py          # Google Gemini integration
+│   └── ollama.py          # Local Ollama model integration
+├── search/                # Search indexing components
+│   ├── solr.py            # Solr indexing and search
+│   └── vector.py          # Vector store operations
+└── extension/             # Browser extension
     ├── manifest.json      # Extension manifest
     ├── popup.html         # Extension popup
     ├── background.js      # Extension background script
@@ -42,38 +80,45 @@ webwraith/
 - Docker and Docker Compose (for containerized deployment)
 - Python 3.10 or higher (for local development)
 - Chrome/Chromium browser (for Playwright)
-
-## Purpose and Integration
-
-WebWraith is designed to work as a standalone tool and as an augmentation for other applications such as OpenWebUI and WebWright. Running within a Docker container, the server component stores analyzed web data and makes it accessible to these applications. The browser extension complements this system by handling scenarios where Playwright-based automation encounters obstacles, such as authentication barriers or dynamically loaded content.
+- Ollama (optional, for local AI models)
+- Solr (optional, for search indexing)
 
 ## System Components
 
-### 1. Server (Docker-Based API)
+### 1. Perception Engine
 
-The WebWraith server provides a backend API for content analysis, enabling integration with other tools. It includes:
+The core crawling and extraction system:
 
-- **Content Extraction**: Uses Playwright, Newspaper3k, and Readability-lxml to parse web pages.
-- **OCR Processing**: Extracts text from images using EasyOCR when standard methods fail.
-- **Analysis Tools**: Detects promotional content, extracts keywords, and generates summaries.
-- **Data Storage**: Maintains a repository of analyzed pages for future reference.
+- **Browser Automation**: Uses Playwright for high-fidelity web navigation
+- **Multi-Method Extraction**: Combines HTML parsing, OCR, and AI extraction
+- **Content Classification**: Categorizes and labels extracted content
+- **Visual Processing**: Analyzes layout, images, and visual elements
 
-### 2. Browser Extension
+### 2. AI Processing Layer
 
-A lightweight browser extension that enhances content analysis by:
+Flexible intelligence that adapts to available resources:
 
-- Allowing users to analyze links before clicking.
-- Capturing screenshots when needed.
-- Displaying visual indicators of analysis status.
-- Providing quick access to stored reports.
+- **Model Management**: Automatically selects optimal models based on tasks
+- **Local Processing**: Uses lightweight models via Ollama for privacy and speed
+- **Remote Integration**: Connects to cloud AI services for advanced analysis
+- **Content Enhancement**: Transforms raw extracted data into structured knowledge
 
-### 3. Core Library
+### 3. Search & Retrieval
 
-The foundational codebase that powers both the server and the extension, featuring:
+Indexes and makes content searchable:
 
-- **Automated Browser Control** for structured content retrieval.
-- **Text Processing** for summarization and classification.
-- **Image Handling** for webpage snapshots.
+- **Solr Integration**: Full-text search with faceting and filtering
+- **Vector Indexing**: Semantic similarity search for concept-based retrieval
+- **Hybrid Search**: Combines keyword and semantic search for optimal results
+
+### 4. Browser Extension
+
+Enhanced browsing experience:
+
+- **Pre-Click Analysis**: Evaluate links before visiting them
+- **Content Summary**: Quick overviews of page content
+- **Visual Indicators**: Mark pages based on content analysis
+- **Direct Crawling**: Add pages to the crawler from any browser
 
 ## Installation
 
@@ -81,8 +126,8 @@ The foundational codebase that powers both the server and the extension, featuri
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/kordless/webwraith.git
-   cd webwraith
+   git clone https://github.com/kordless/gnosis-wraith.git
+   cd gnosis-wraith
    ```
 
 2. Build and start the Docker container:
@@ -96,8 +141,8 @@ The foundational codebase that powers both the server and the extension, featuri
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/kordless/webwraith.git
-   cd webwraith
+   git clone https://github.com/kordless/gnosis-wraith.git
+   cd gnosis-wraith
    ```
 
 2. Create a virtual environment and install dependencies:
@@ -117,38 +162,18 @@ The foundational codebase that powers both the server and the extension, featuri
    python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords')"
    ```
 
-5. Run the application:
+5. (Optional) Install and run Ollama for local AI models:
+   ```bash
+   # Follow instructions at https://ollama.ai/ for your platform
+   ollama pull mistral:7b
+   ```
+
+6. Run the application:
    ```bash
    python app.py
    ```
 
-6. Access the web interface at http://localhost:5678
-
-## Usage
-
-### As a Web Service
-
-1. Start the server using Docker Compose or the manual method described above.
-2. Open your browser and navigate to http://localhost:5678
-3. Use the web interface to crawl URLs or upload images for text extraction.
-
-### As a Command-Line Tool
-
-Run the `app.py` script with appropriate command-line arguments:
-
-```bash
-# Crawl a single URL
-python app.py crawl -u https://example.com -o markdown -t "Example Report"
-
-# Crawl multiple URLs from a file
-python app.py crawl -f urls.txt -o both -t "Multiple URLs Report"
-```
-
-### Using the Browser Extension
-
-1. Install the extension from the `extension` directory.
-2. Configure the extension to connect to your WebWraith instance (default: http://localhost:5678).
-3. Right-click on a web page and select "Capture with WebWraith" to capture and analyze the page.
+7. Access the web interface at http://localhost:5678
 
 ## Usage
 
@@ -156,259 +181,125 @@ python app.py crawl -f urls.txt -o both -t "Multiple URLs Report"
 
 1. Visit http://localhost:5678
 2. Enter a URL or upload an image
-3. Select your desired output format (markdown, image, or both)
-4. Click "Start Crawling" or "Upload & Extract Text"
-5. View the generated report with screenshots and extracted text
+3. Select desired AI processing level (none, local, remote)
+4. Choose your output format
+5. View the generated analysis with extracted content and AI insights
 
 ### Browser Extension
 
-1. Right-click a link or page and select "Analyze with WebWraith"
-2. View the analysis in a new tab or in the extension popup
-3. Use visual indicators to identify potentially problematic sites
+1. Install the extension from the `extension` directory
+2. Configure connection to your Gnosis Wraith instance
+3. Right-click on links to analyze before visiting
+4. View AI-powered summaries and content analysis
 
 ### Command Line
 
-For advanced users, WebWraith can be used directly from the command line:
-
 ```bash
-# Analyze a single URL
-python app.py crawl -u https://example.com -o both -t "Example Report"
+# Crawl with basic mode (no AI)
+python app.py crawl -u https://example.com --ai-mode none
 
-# Crawl multiple URLs from a file
-python app.py crawl -f urls.txt -o markdown -t "Multiple URLs Report"
+# Crawl with local AI processing
+python app.py crawl -u https://example.com --ai-mode local --model mistral:7b
 
-# Convert a markdown report to HTML
-python app.py convert_markdown report.md -o report.html
+# Crawl with remote AI processing
+python app.py crawl -u https://example.com --ai-mode remote --provider anthropic
+
+# Index crawled content in search
+python app.py index --source-dir data/reports
 ```
 
-## API Endpoints
+## API Integration
 
-- `GET /` - Web interface homepage
-- `GET /reports` - List generated reports
-- `GET /reports/<filename>` - View a specific report
-- `GET /screenshots/<filename>` - View a specific screenshot
-- `POST /api/crawl` - Crawl URLs and generate reports
-- `POST /api/upload` - Upload and analyze images
-
-## Persistent Storage
-
-When running with Docker, WebWraith stores data in the following locations:
-
-- Reports: `/data/reports`
-- Screenshots: `/data/screenshots`
-- Logs: `/data/webwraith.log`
-
-These directories are persisted using Docker volumes.
-
-## Configuration
-
-WebWraith can be configured using environment variables:
-
-- `WEBWRAITH_STORAGE_PATH` - Path for storing data (default: ~/.webwraith)
-- `QUART_APP` - Quart application name (default: app:app)
-- `QUART_ENV` - Quart environment (default: production)
-
-
-## API Crawling Example
-
-Here's a basic example of how to use the WebWraith API for crawling:
+### Client Library Example
 
 ```python
-import requests
-import json
-import time
-from urllib.parse import urljoin
+from gnosis_wraith import GnosisWraithClient
 
-class WebWraithCrawler:
-    def __init__(self, api_base_url, api_key=None):
-        """
-        Initialize the WebWraith API crawler.
-        
-        Args:
-            api_base_url (str): Base URL of the WebWraith API
-            api_key (str, optional): API key for authentication
-        """
-        self.api_base_url = api_base_url
-        self.headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        }
-        
-        if api_key:
-            self.headers['Authorization'] = f'Bearer {api_key}'
-    
-    def start_crawl(self, start_urls, max_depth=3, follow_external=False, custom_settings=None):
-        """
-        Start a new crawling job.
-        
-        Args:
-            start_urls (list): List of URLs to start crawling from
-            max_depth (int): Maximum crawl depth
-            follow_external (bool): Whether to follow external links
-            custom_settings (dict): Additional crawler settings
-            
-        Returns:
-            str: Job ID for the crawling task
-        """
-        payload = {
-            'start_urls': start_urls,
-            'max_depth': max_depth,
-            'follow_external': follow_external
-        }
-        
-        if custom_settings:
-            payload.update(custom_settings)
-        
-        response = requests.post(
-            urljoin(self.api_base_url, '/api/v1/crawl/start'),
-            headers=self.headers,
-            data=json.dumps(payload)
-        )
-        
-        response.raise_for_status()
-        return response.json().get('job_id')
-    
-    def get_crawl_status(self, job_id):
-        """
-        Check the status of a crawling job.
-        
-        Args:
-            job_id (str): The job ID of the crawling task
-            
-        Returns:
-            dict: Status information about the crawling job
-        """
-        response = requests.get(
-            urljoin(self.api_base_url, f'/api/v1/crawl/status/{job_id}'),
-            headers=self.headers
-        )
-        
-        response.raise_for_status()
-        return response.json()
-    
-    def get_crawl_results(self, job_id, page=1, per_page=100):
-        """
-        Retrieve results from a completed crawling job.
-        
-        Args:
-            job_id (str): The job ID of the crawling task
-            page (int): Page number for paginated results
-            per_page (int): Number of results per page
-            
-        Returns:
-            dict: Crawled data results
-        """
-        response = requests.get(
-            urljoin(self.api_base_url, f'/api/v1/crawl/results/{job_id}'),
-            headers=self.headers,
-            params={'page': page, 'per_page': per_page}
-        )
-        
-        response.raise_for_status()
-        return response.json()
-    
-    def wait_for_completion(self, job_id, check_interval=10, timeout=3600):
-        """
-        Wait for a crawling job to complete.
-        
-        Args:
-            job_id (str): The job ID of the crawling task
-            check_interval (int): Time in seconds between status checks
-            timeout (int): Maximum time to wait in seconds
-            
-        Returns:
-            dict: Final job status
-        """
-        start_time = time.time()
-        
-        while time.time() - start_time < timeout:
-            status = self.get_crawl_status(job_id)
-            
-            if status['status'] in ['completed', 'failed']:
-                return status
-            
-            time.sleep(check_interval)
-        
-        raise TimeoutError(f"Crawling job did not complete within {timeout} seconds")
+# Initialize client
+client = GnosisWraithClient(
+    api_base_url="http://localhost:5678/api",
+    ai_mode="remote",
+    ai_provider="anthropic"
+)
 
+# Start a crawl job
+job_id = client.crawl(
+    urls=["https://example.com"],
+    depth=2,
+    follow_external=False,
+    index_content=True
+)
 
-# Usage example
-if __name__ == "__main__":
-    # Initialize the crawler with API base URL and optional API key
-    crawler = WebWraithCrawler(
-        api_base_url="https://api.webwraith.example.com",
-        api_key="your_api_key_here"
-    )
-    
-    # Start a new crawling job
-    job_id = crawler.start_crawl(
-        start_urls=["https://example.com"],
-        max_depth=2,
-        follow_external=False,
-        custom_settings={
-            'user_agent': 'WebWraith Bot/1.0',
-            'respect_robots_txt': True,
-            'crawl_delay': 1.0,
-            'extract_images': True,
-            'extract_links': True
-        }
-    )
-    
-    print(f"Crawling job started with ID: {job_id}")
-    
-    # Wait for the job to complete
-    try:
-        final_status = crawler.wait_for_completion(job_id)
-        print(f"Crawling job completed with status: {final_status['status']}")
-        
-        if final_status['status'] == 'completed':
-            # Retrieve and process results
-            results = crawler.get_crawl_results(job_id)
-            
-            print(f"Retrieved {results['total']} pages")
-            for page in results['items']:
-                print(f"URL: {page['url']}")
-                print(f"Title: {page['title']}")
-                print(f"Links found: {len(page['links'])}")
-                print("-" * 50)
-    
-    except TimeoutError as e:
-        print(f"Error: {e}")
+# Monitor progress
+status = client.get_status(job_id)
+print(f"Progress: {status['progress']}%")
+
+# Get results
+results = client.get_results(job_id)
+for page in results['pages']:
+    print(f"URL: {page['url']}")
+    print(f"Title: {page['title']}")
+    print(f"AI Summary: {page['ai_summary']}")
 ```
 
-## Advanced Features
+## AI Model Configuration
 
-- **Distributed Crawling**: Scale your crawling operations across multiple nodes
-- **Custom Extractors**: Define custom data extraction patterns
-- **Rate Limiting**: Respect website crawl policies
-- **Data Export**: Export crawled data in various formats (JSON, CSV, XML)
-- **Webhook Notifications**: Get notified when crawling jobs complete
+Gnosis Wraith supports multiple AI backends:
 
-## Configuration
+### Local Models (via Ollama)
 
-The API crawler supports the following configuration options:
+```yaml
+ai:
+  local:
+    enabled: true
+    models:
+      - name: mistral:7b
+        tasks: [summarization, classification]
+      - name: llava:13b
+        tasks: [image-analysis]
+    default_model: mistral:7b
+```
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| max_depth | Maximum depth to crawl | 3 |
-| follow_external | Follow links to external domains | False |
-| respect_robots_txt | Respect robots.txt directives | True |
-| crawl_delay | Delay between requests (seconds) | 0.5 |
-| user_agent | Custom User-Agent string | WebWraith/1.0 |
-| timeout | Request timeout (seconds) | 30 |
-| max_retries | Maximum number of retry attempts | 3 |
-| extract_images | Extract image URLs | False |
-| extract_links | Extract link URLs | True |
+### Remote Models
 
+```yaml
+ai:
+  remote:
+    anthropic:
+      enabled: true
+      models:
+        - name: claude-3-haiku-20240307
+          tasks: [basic-analysis]
+        - name: claude-3-opus-20240229
+          tasks: [detailed-analysis]
+    openai:
+      enabled: true
+      models:
+        - name: gpt-3.5-turbo
+          tasks: [summarization]
+        - name: gpt-4o
+          tasks: [complex-analysis]
+    gemini:
+      enabled: true
+      models:
+        - name: gemini-pro
+          tasks: [general]
+```
 
-## Security Considerations
+## Future Development
 
-WebWraith interacts with web pages on the user's behalf. Ensure ethical use and compliance with legal and security standards. The Docker container provides an additional layer of isolation for safer web content analysis.
+- **Gnosis Wright Integration**: Deeper connection with the agent system
+- **Custom Model Training**: Specialized models for content analysis
+- **Multi-Modal Processing**: Enhanced image, video, and audio analysis
+- **Collaborative Crawling**: Distributed crawling across multiple instances
+- **Knowledge Graph Construction**: Building semantic representations of content
 
-## About the Creator
+## About the Project
 
-WebWraith was created by Kord Campbell, founder of Loggly (cloud-based log management service) and creator of the Grub crawler. With extensive experience in web technologies and data analysis, Kord designed WebWraith to address the growing need for safer web browsing and content evaluation.
+Gnosis Wraith is part of the larger Gnosis ecosystem, designed to serve as an AI oracle that can gather, analyze, and present web content in enhanced ways. From powering autonomous agents to enabling voice-controlled data visualization in specialized environments (like marine applications with NMEA 2000 data), Gnosis aims to bridge the gap between the raw web and meaningful, actionable knowledge.
+
+Created by Kord Campbell, founder of Loggly and creator of the Grub crawler, with extensive experience in web technologies and data analysis.
 
 ## License
 
-This project is licensed under the The WebWraith AI-Sovereign License (v1.0)
+This project is licensed under the The Gnosis AI-Sovereign License (v1.0)

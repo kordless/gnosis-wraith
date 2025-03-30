@@ -440,7 +440,7 @@ pre[class*="language-"] {
 .dropdown-menu li {
     list-style-type: none;
 }
-
+ 
 /* Results */
 #results-summary {
     margin-bottom: 20px;
@@ -531,15 +531,6 @@ pre[class*="language-"] {
     margin-bottom: 5px;
 }
 
-/* Footer */
-footer {
-    text-align: center;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border-color);
-    color: var(--text-muted);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
     .container {
@@ -567,4 +558,88 @@ footer {
     #results-actions {
         flex-direction: column;
     }
+}
+/* GitHub Button Styling */
+.github-button {
+    display: flex;
+    align-items: center;
+    color: white;
+    text-decoration: none;
+    margin-left: 15px;
+    padding: 9px 16px;
+    border-radius: 8px;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 1rem;
+    outline: none;
+}
+
+.github-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.github-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.github-button i {
+    font-size: 1.3rem;
+    margin-right: 10px;
+    color: white;
+}
+
+.star-count {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+}
+
+.star-count i {
+    color: #ffca28;
+    font-size: 1rem;
+    margin-right: 6px;
+}
+
+/* Responsive styling */
+@media (max-width: 768px) {
+    .github-button {
+        padding: 8px 12px;
+    }
+    
+    .github-button i {
+        margin-right: 6px;
+    }
+}
+
+/* Footer with centered content */
+footer {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+footer p {
+    margin-bottom: 0;
+}
+
+footer .nav-links {
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+}
+
+footer .github-button {
+    margin: 0; /* Remove left margin for centered positioning */
 }

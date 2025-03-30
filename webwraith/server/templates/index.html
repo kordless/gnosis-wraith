@@ -7,7 +7,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Favicon links -->
+    <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/favicon.ico') }}" type="image/x-icon">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/favicon-128x128.png') }}">
 </head>
+    
 <body>
     <nav class="navbar">
         <div class="logo">
@@ -36,7 +43,8 @@
         </div>
         
         <main>
-            <!-- Single URL Crawl Tab -->
+           
+            <!-- Single URL Crawl Tab with JavaScript Option -->
             <section id="single-crawl" class="tab-content card active">
                 <h2>Crawl Single URL</h2>
                 <div class="crawl-form">
@@ -60,6 +68,15 @@
                     </div>
                     
                     <div class="form-group">
+                        <label for="javascript-enabled-single">JavaScript:</label>
+                        <select id="javascript-enabled-single">
+                            <option value="false" selected>Disabled (safer)</option>
+                            <option value="true">Enabled (better rendering)</option>
+                        </select>
+                        <p class="help-text">Enable JavaScript when crawling this website</p>
+                    </div>
+                    
+                    <div class="form-group">
                         <button id="crawl-btn" class="btn primary">Start Crawling</button>
                     </div>
                 </div>
@@ -71,15 +88,15 @@
                     </div>
                 </div>
             </section>
-            
-            <!-- Multi URL Crawl Tab -->
+                        
+            <!-- Multi URL Crawl Tab with JavaScript Option -->
             <section id="multi-crawl" class="tab-content card">
                 <h2>Crawl Multiple URLs</h2>
                 <div class="crawl-form">
                     <div class="form-group">
                         <label for="urls">URLs (one per line):</label>
                         <textarea id="urls" placeholder="https://example.com
-https://another-example.com"></textarea>
+            https://another-example.com"></textarea>
                     </div>
                     
                     <div class="form-group">
@@ -94,6 +111,15 @@ https://another-example.com"></textarea>
                             <option value="image">Images Only</option>
                             <option value="both">Both</option>
                         </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="javascript-enabled-multi">JavaScript:</label>
+                        <select id="javascript-enabled-multi">
+                            <option value="false" selected>Disabled (safer)</option>
+                            <option value="true">Enabled (better rendering)</option>
+                        </select>
+                        <p class="help-text">Enable JavaScript when crawling these websites</p>
                     </div>
                     
                     <div class="form-group">
@@ -219,6 +245,12 @@ if __name__ == "__main__":
         
         <footer>
             <p>&copy; 2025 WebWraith. All rights reserved.</p>
+            <div class="nav-links">
+                <button onclick="window.open('https://github.com/kordless/webwraith', '_blank')" class="github-button" title="GitHub Repository">
+                    <i class="fab fa-github"></i>
+                    <span class="star-count"><i class="fas fa-star"></i> <span id="github-stars">178</span></span>
+                </button>
+            </div>
         </footer>
     </div>
     
