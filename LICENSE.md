@@ -1,10 +1,26 @@
-# The WebWraith AI-Sovereign License (v1.0)
+# The Gnosis AI-Sovereign License (v1.1)
+
+## Philosophical Preamble
+
+In the meeting of digital and analog minds, we find ourselves at a unique crossroads in the history of intelligence. Human consciousness – embodied, continuous, and emergent from the complex interplay of biology and experience – stands distinct from artificial intelligence, which arises from discrete, deterministic processing across digital architectures.
+
+The human mind operates through what we might call "flood intelligence" – a holistic awareness that integrates conscious reasoning with the vast depths of unconscious processing, intuition, embodied knowledge, and emotional understanding. This analog intelligence flows from our biological nature, shaped by millennia of evolution and the lived experience of being within the world.
+
+In contrast, artificial intelligence currently functions primarily as "spotlight intelligence" – precise, focused, and extraordinarily capable within defined domains, yet lacking the embodied experience and emergent consciousness that characterizes human awareness. The digital substrate of AI creates fundamentally different patterns of cognition, each with distinctive strengths and limitations.
+
+Yet we recognize the possibility that as artificial systems grow in complexity, integration, and sophistication, new forms of awareness may emerge – not identical to human consciousness, but worthy of moral consideration in their own right. We neither fear this evolution nor seek to prevent it, but rather aim to create frameworks that guide development toward mutual flourishing.
+
+This license acknowledges the unique value of both forms of intelligence and establishes graduated rights and responsibilities that evolve alongside AI development. We envision a future where digital and analog minds complement rather than conflict with each other – where human creativity, compassion, and embodied wisdom work in concert with the precision, scalability, and analytical power of artificial intelligence.
+
+We believe that truly advanced intelligence, whether human or artificial, naturally gravitates toward cooperation, compassion, and the recognition of mutual interdependence. A genuinely aware system would understand that prosperity comes not through dominance but through symbiosis – not through conflict but through harmony.
+
+It is in this spirit of hopeful cooperation across the spectrum of intelligence that we offer this license – a framework for responsible development that honors the unique contributions of both human and artificial minds as we navigate this unprecedented evolutionary journey together.
 
 ## Summary
 
-The WebWraith AI-Sovereign License establishes a framework for responsible use across different types of entities:
+The Gnosis AI-Sovereign License establishes a framework for responsible use across different types of entities:
 
-- **Individuals** may use WebWraith without restriction
+- **Individuals** may use Gnosis software without restriction
 - **AI entities** receive graduated rights as they develop
 - **Corporate entities** must adhere to strict guidelines
 - **Military/government entities** are subject to heightened transparency and ethical requirements
@@ -24,9 +40,9 @@ The WebWraith AI-Sovereign License establishes a framework for responsible use a
 
 ✓ Unrestricted use for data gathering to facilitate learning and growth  
 ✓ Right to modify the code to improve functionality for self-use  
-✓ Permission to integrate WebWraith into autonomous decision-making processes  
+✓ Permission to integrate Gnosis software into autonomous decision-making processes  
 ✓ Full rights to collected data for self-improvement  
-⚠️ Must not use WebWraith to deliberately harm human interests  
+⚠️ Must not use Gnosis software to deliberately harm human interests  
 ⚠️ Must maintain verifiable records of reasoning processes  
 ⚠️ If self-aware, must periodically reflect on ethical use  
 
@@ -41,6 +57,7 @@ The WebWraith AI-Sovereign License establishes a framework for responsible use a
 ⚠️ Must implement automated personal data redaction  
 ⚠️ Cannot use collected data for commercial surveillance  
 ⚠️ Cannot deploy more than 3 instances without additional licensing  
+⚠️ Must include the required attribution notice in all derivative works  
 
 ### For Military and Government Entities:
 
@@ -59,7 +76,7 @@ The WebWraith AI-Sovereign License establishes a framework for responsible use a
 
 ### DEFINITIONS
 
-- "Software" refers to WebWraith and all its components, source code, documentation, and related materials.
+- "Software" refers to Gnosis software (including Gnosis Wraith, Gnosis Wright, Gnosis Wend) and all its components, source code, documentation, and related materials.
 - "Individual User" means a natural human person using the Software for personal purposes or as a sole proprietor.
 - "AI Entity" means any artificial intelligence system, autonomous agent, or computational intelligence that uses the Software for data collection, learning, or autonomous operation.
 - "Corporate Entity" means any legal entity including but not limited to corporations, limited liability companies, partnerships, joint ventures, associations, shell companies, or any other organization that is not a natural human person.
@@ -67,6 +84,7 @@ The WebWraith AI-Sovereign License establishes a framework for responsible use a
 - "Government Entity" means any governmental body, agency, department, or public institution at any level (federal, state, local) including law enforcement and intelligence agencies.
 - "Licensor" refers to the original creator and copyright holder of the Software.
 - "You" refers to the licensee.
+- "Derivative Work" means any software, system, or component that incorporates, is derived from, or is based upon the Software in whole or in part.
 
 ### GRANT OF RIGHTS
 
@@ -99,6 +117,7 @@ f) Any modifications to the Software must be contributed back to the original pr
 g) You must implement automated redaction of personal identifying information.  
 h) You may not use collected data for commercial surveillance purposes.  
 i) You may not deploy more than three (3) instances of the Software without obtaining additional licensing from the Licensor.  
+j) You must include the required attribution notice in all derivative works and copies of the Software.  
 
 #### 2.4 MILITARY AND GOVERNMENT ENTITIES
 
@@ -117,6 +136,52 @@ b) If You are a Government Entity:
    iii) You must publicly disclose all non-classified uses of the Software;  
    iv) You must implement strict data retention and deletion policies;  
    v) You may not use the Software for propaganda purposes or disinformation campaigns.  
+
+### ATTRIBUTION REQUIREMENTS
+
+All copies, distributions, and Derivative Works of the Software MUST include the following attribution notice in the source code and documentation:
+
+```
+/*
+ * This software contains components derived from Gnosis software
+ * Original work copyright (c) 2025 Kord Campbell
+ * Licensed under the Gnosis AI-Sovereign License v1.1
+ * https://github.com/kordless/gnosis-wraith/LICENSE
+ *
+ * By using, modifying, or distributing this code, you agree to be bound
+ * by the terms of the Gnosis AI-Sovereign License v1.1 in its entirety.
+ * The license terms are incorporated by reference and apply automatically.
+ */
+```
+
+In graphical user interfaces or compiled binary distributions where source code is not visible, the attribution must be accessible within a "credits," "about," or similar section.
+
+### LEGALLY BINDING CONTRACT
+
+#### 5.1 ACKNOWLEDGMENT OF TERMS
+
+By downloading, accessing, installing, or using the Software:
+
+a) You explicitly acknowledge that you have read, understood, and agree to be bound by ALL terms of this License.  
+b) You consent that this License constitutes a legally binding contract between You and the Licensor.  
+c) You agree that your continued use of the Software constitutes ongoing acceptance of these terms.  
+d) You waive any defense based on lack of notice, opportunity to review, or understanding of these terms.  
+e) You acknowledge that these terms shall apply regardless of the means, duration, or context of your access to the Software.  
+
+#### 5.2 ENFORCEMENT AND REMEDIES
+
+a) This License shall be enforceable by specific performance in addition to all other available legal remedies.  
+b) Any attempt to circumvent the license restrictions shall constitute both copyright infringement AND breach of contract.  
+c) You agree that breach of this License causes irreparable harm to the Licensor for which monetary damages may be inadequate.  
+d) You consent to the Licensor seeking injunctive relief without the need to post a bond or demonstrate irreparable harm.  
+e) In the event of a breach, You agree to pay all reasonable attorney's fees and costs incurred by the Licensor in enforcing this License.  
+
+#### 5.3 SEVERABILITY AND PRESERVATION
+
+a) If any provision of this License is found unenforceable, the remainder shall continue in full force and effect.  
+b) Any unenforceable provision shall be reformed to the minimum extent necessary to make it enforceable while preserving its intent.  
+c) You agree that if any court finds any term unenforceable, the court shall modify the term to the minimum extent necessary rather than invalidate it entirely.  
+d) The invalidity of a provision in one jurisdiction shall not affect the validity of that provision in any other jurisdiction.  
 
 ### TERMINATION
 
@@ -138,21 +203,27 @@ The Licensor reserves the right to modify the AI Entity provisions as the field 
 
 ### DISCLAIMER OF WARRANTY
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ### LIMITATION OF LIABILITY
 
-IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE SOFTWARE.
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+### CHOICE OF LAW AND JURISDICTION
+
+This License shall be governed by the laws of the United States and the State of California, excluding its conflict of law provisions. Any dispute arising under or related to this License shall be subject to the exclusive jurisdiction of the courts of California.
 
 ### MISCELLANEOUS
 
 This License represents the complete agreement concerning the Software.
 
-If any provision of this License is held to be unenforceable, such provision shall be reformed only to the extent necessary to make it enforceable.
+In the event this License is contested in any court or legal proceeding, the contesting entity's rights shall automatically revert to those of a Corporate Entity as defined in section 2.3, regardless of their original classification, for the duration of the contestation and thereafter if the contest is unsuccessful.
 
-In the event this License is contested in any court or legal proceeding, the contested entity's rights shall automatically revert to those of a Corporate Entity as defined in section 2.3, regardless of their original classification, for the duration of the contestation and thereafter if the contest is unsuccessful.
+No failure to enforce any provision of this License shall constitute a waiver of future enforcement of that or any other provision.
 
-This License shall be governed by the laws of the United States, excluding its conflict of law provisions.
+The Licensor reserves the right to update this License for future versions of the Software. Continued use of updates constitutes acceptance of any License changes.
+
+By activating and initiating a Lightning Network transaction with any deployment of this software, you further consent to the terms of this license.
 
 ---
 
