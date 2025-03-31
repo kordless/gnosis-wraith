@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   webwraith:
@@ -13,6 +13,28 @@ services:
       - WEBWRAITH_STORAGE_PATH=/data
       - QUART_APP=webwraith.app:app
       - QUART_ENV=production
+    profiles: [cpu]
+
+  webwraith-gpu:
+    build: .
+    container_name: webwraith-service-gpu  # Changed this to avoid conflict
+    ports:
+      - "5678:5678"
+    volumes:
+      - webwraith-data:/data
+    restart: unless-stopped
+    environment:
+      - WEBWRAITH_STORAGE_PATH=/data
+      - QUART_APP=webwraith.app:app
+      - QUART_ENV=production
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    profiles: [gpu]
 
 volumes:
   webwraith-data:

@@ -8,6 +8,9 @@ WORKDIR /app
 RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install openai openai[datalib] tenacity playwright
 
+# Install PyTorch with CUDA support
+RUN pip install torch==2.0.0+cu118 torchvision==0.15.0+cu118 torchaudio==2.0.0+cu118 -f https://download.pytorch.org/whl/cu118/torch_stable.html
+
 # Install Quart and Hypercorn
 RUN pip install --no-cache-dir quart httpx werkzeug hypercorn quart_cors
 

@@ -5,6 +5,7 @@ import json
 import asyncio
 import logging
 import datetime
+
 import uuid
 from typing import Dict, Any, List, Optional, Union
 from pathlib import Path
@@ -51,6 +52,7 @@ app = Quart(__name__, static_folder='static', template_folder='templates')
 # Ensure the downloads directory exists
 os.makedirs(os.path.join(os.path.dirname(__file__), 'server/static/downloads'), exist_ok=True)
 
+# Update your BrowserControl class to use GPU for OCR
 class BrowserControl:
     def __init__(self):
         self.browser = None
@@ -60,12 +62,21 @@ class BrowserControl:
         self._initialize_ocr()
 
     def _initialize_ocr(self):
-        """Initialize EasyOCR for text extraction."""
+        """Initialize EasyOCR for text extraction with GPU if available."""
         try:
-            self.ocr_reader = easyocr.Reader(['en'])
-            logger.info("EasyOCR initialized successfully")
+            import torch
+            use_gpu = torch.cuda.is_available()
+            
+            # Initialize OCR with GPU if available
+            self.ocr_reader = easyocr.Reader(['en'], gpu=use_gpu)
+            
+            if use_gpu:
+                logger.info("✅ EasyOCR initialized with GPU acceleration")
+            else:
+                logger.info("⚠️ EasyOCR initialized without GPU acceleration")
+                
         except Exception as e:
-            logger.error(f"Failed to initialize EasyOCR: {str(e)}")
+            logger.error(f"❌ Failed to initialize EasyOCR: {str(e)}")
             self.ocr_reader = None
 
     async def extract_text_from_screenshot(self, screenshot_path):
@@ -76,15 +87,35 @@ class BrowserControl:
                 raise Exception("OCR reader not available")
                 
         try:
+            import time
+            # Use a timer to measure OCR performance
+            start_time = time.time()
+            
             image = Image.open(screenshot_path)
             image_np = np.array(image)
             results = self.ocr_reader.readtext(image_np)
             extracted_text = ' '.join([result[1] for result in results])
-            logger.info(f"Extracted {len(results)} text regions from {screenshot_path}")
+            
+            end_time = time.time()
+            processing_time = end_time - start_time
+            
+            logger.info(f"Extracted {len(results)} text regions from {screenshot_path} in {processing_time:.2f} seconds")
+            
             return extracted_text
         except Exception as e:
             logger.error(f"Error extracting text from screenshot: {str(e)}")
             return f"Text extraction failed: {str(e)}"
+        
+    # For local Ollama model (if using)
+    def set_ollama_gpu():
+        """Configure Ollama to use GPU if available."""
+        import os
+        import torch
+        
+        if torch.cuda.is_available():
+            os.environ["OLLAMA_HOST"] = "localhost:11434"
+            os.environ["OLLAMA_USE_GPU"] = "1"
+            logger.info("Configured Ollama to use GPU")
 
     async def screenshot(self, path):
         """Take a screenshot and save it to the specified path."""
@@ -330,7 +361,44 @@ class BrowserControl:
                 logger.info("Browser closed successfully")
         except Exception as e:
             logger.error(f"Error closing browser: {str(e)}")
+
+# For local LLM processing, update to use GPU
+async def process_with_local_model(text):
+    """Process text with a local Ollama model using GPU if available."""
+    try:
+        import torch
+        import requests
         
+        # Configure model based on GPU availability
+        use_gpu = torch.cuda.is_available()
+        model_name = "mistral"  # Default model
+        
+        url = "http://localhost:11434/api/generate"
+        
+        # Add GPU configuration if available
+        payload = {
+            "model": model_name,
+            "prompt": f"Analyze and summarize the following web content. Focus on key information and main points:\n\n{text}",
+            "stream": False,
+            "options": {
+                "num_gpu": 1 if use_gpu else 0,
+                "num_thread": 8 if not use_gpu else 4  # Use more CPU threads if no GPU
+            }
+        }
+        
+        logger.info(f"Processing text with local {model_name} model (GPU: {use_gpu})")
+        
+        response = requests.post(url, json=payload)
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result.get('response', "No response from local model")
+        else:
+            return f"Error from Ollama API: {response.status_code}"
+    except Exception as e:
+        logger.error(f"Error with local Ollama model: {str(e)}")
+        raise
+
 # URL extraction function
 def extract_urls(content):
     """Extract URLs from the given content."""
@@ -431,10 +499,31 @@ async def crawl_urls(urls, javascript_enabled=False):
     
     return results
 
+# Add these functions to app.py for LLM text processing
+
 def generate_markdown_report(title, crawl_results):
-    """Generate a markdown report from crawl results."""
+    """Generate a markdown report from crawl results, including LLM summaries if available."""
     md = f"# {title}\n\n"
     md += f"*Generated on {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n"
+    
+    # Add executive summary if available in results
+    if any('llm_summary' in result for result in crawl_results):
+        md += f"## Executive Summary\n\n"
+        md += f"*This summary was generated by AI based on the collected content*\n\n"
+        
+        # Try to find an overall summary if one was generated
+        overall_summary = next((result.get('overall_summary') for result in crawl_results if 'overall_summary' in result), None)
+        if overall_summary:
+            md += f"{overall_summary}\n\n"
+        else:
+            # Create a simple summary listing the pages analyzed
+            md += f"This report contains analysis of {len(crawl_results)} URLs:\n\n"
+            for result in crawl_results:
+                if 'error' not in result:
+                    md += f"- {result.get('title', 'Untitled Page')}: {result['url']}\n"
+            md += "\n"
+        
+        md += "---\n\n"
     
     for i, result in enumerate(crawl_results, 1):
         md += f"## {i}. {result.get('title', 'Untitled Page')}\n\n"
@@ -448,15 +537,38 @@ def generate_markdown_report(title, crawl_results):
             md += f"**Error**: {result['error']}\n\n"
         else:
             # Add screenshot as image - use relative path
-            relative_path = os.path.relpath(result['screenshot'], REPORTS_DIR)
-            md += f"**Screenshot**:\n\n"
-            md += f"![Screenshot of {result['url']}]({relative_path})\n\n"
+            if 'screenshot' in result:
+                relative_path = os.path.relpath(result['screenshot'], REPORTS_DIR)
+                md += f"**Screenshot**:\n\n"
+                md += f"![Screenshot of {result['url']}]({relative_path})\n\n"
+            
+            # Add LLM summary if available
+            if 'llm_summary' in result:
+                md += f"**AI Summary**:\n\n"
+                md += f"{result['llm_summary']}\n\n"
+            
+            # Add LLM error if there was an issue with AI processing
+            if 'llm_error' in result:
+                md += f"**AI Processing Error**:\n\n"
+                md += f"```\n{result['llm_error']}\n```\n\n"
             
             # Add extracted text
-            md += f"**Extracted Text**:\n\n"
-            md += f"```\n{result['extracted_text']}\n```\n\n"
+            if 'extracted_text' in result:
+                md += f"**Extracted Text**:\n\n"
+                md += f"```\n{result['extracted_text']}\n```\n\n"
         
         md += "---\n\n"
+    
+    # Add metadata section with information about the processing
+    md += f"## Metadata\n\n"
+    md += f"- **Total URLs Processed**: {len(crawl_results)}\n"
+    
+    # Include information about the LLM provider used if available
+    llm_provider = next((result.get('llm_provider') for result in crawl_results if 'llm_provider' in result), None)
+    if llm_provider:
+        md += f"- **AI Provider**: {llm_provider}\n"
+    
+    md += f"- **Generated By**: Gnosis Wraith\n"
     
     return md
 
@@ -477,13 +589,14 @@ async def save_markdown_report(title, crawl_results):
     return report_path
 
 async def convert_markdown_to_html(markdown_file):
-    """Convert a markdown file to HTML."""
+    """Convert a markdown file to HTML with enhanced styling for AI summaries."""
     html_file = f"{os.path.splitext(markdown_file)[0]}.html"
     
     async with aiofiles.open(markdown_file, 'r') as f:
         md_content = await f.read()
     
-    html = markdown.markdown(md_content, extensions=['tables', 'fenced_code'])
+    # Add extensions for better markdown rendering
+    html = markdown.markdown(md_content, extensions=['tables', 'fenced_code', 'codehilite'])
     
     styled_html = f"""<!DOCTYPE html>
 <html>
@@ -492,11 +605,63 @@ async def convert_markdown_to_html(markdown_file):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{os.path.basename(markdown_file)}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 20px; }}
-        img {{ max-width: 100%; }}
-        code {{ background-color: #f5f5f5; padding: 2px 5px; }}
-        pre {{ background-color: #f5f5f5; padding: 15px; overflow-x: auto; }}
-        h1, h2, h3 {{ color: #333; }}
+        :root {{
+            --primary-color: #4e9eff;
+            --bg-color: #1e2129;
+            --card-bg: #282c34;
+            --text-color: #e2e2e2;
+            --border-color: #3a3f4b;
+            --ai-summary-bg: rgba(78, 158, 255, 0.1);
+            --ai-summary-border: rgba(78, 158, 255, 0.3);
+        }}
+        
+        body {{ 
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            line-height: 1.6; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }}
+        
+        img {{ max-width: 100%; border-radius: 4px; }}
+        
+        code {{ 
+            background-color: rgba(0,0,0,0.2); 
+            padding: 2px 5px; 
+            border-radius: 3px;
+        }}
+        
+        pre {{ 
+            background-color: var(--card-bg); 
+            padding: 15px; 
+            border-radius: 4px;
+            overflow-x: auto; 
+            border: 1px solid var(--border-color);
+        }}
+        
+        h1, h2, h3 {{ color: var(--primary-color); }}
+        
+        h2 {{ 
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }}
+        
+        /* Style AI summary sections */
+        h3:contains('AI Summary') + p {{
+            background-color: var(--ai-summary-bg);
+            border: 1px solid var(--ai-summary-border);
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 5px;
+        }}
+        
+        hr {{
+            border: none;
+            border-top: 1px solid var(--border-color);
+            margin: 30px 0;
+        }}
     </style>
 </head>
 <body>
@@ -508,6 +673,177 @@ async def convert_markdown_to_html(markdown_file):
         await f.write(styled_html)
     
     return html_file
+
+# Add the LLM processing functions to support the markdown generation
+
+async def process_with_llm(text, provider, token):
+    """Process text with the specified LLM provider."""
+    if not token:
+        logger.warning(f"No token provided for {provider}")
+        return None
+    
+    # Truncate text if too long (APIs typically have context limits)
+    max_length = 8000  # Conservative limit that works for most APIs
+    if len(text) > max_length:
+        text = text[:max_length] + "..."
+    
+    logger.info(f"Processing text with {provider} LLM")
+    
+    try:
+        if provider == 'anthropic':
+            return await process_with_anthropic(text, token)
+        elif provider == 'openai':
+            return await process_with_openai(text, token)
+        elif provider == 'gemini':
+            return await process_with_gemini(text, token)
+        elif provider == 'local':
+            return await process_with_local_model(text)
+        else:
+            raise ValueError(f"Unsupported LLM provider: {provider}")
+    except Exception as e:
+        logger.error(f"Error in LLM processing with {provider}: {str(e)}")
+        raise
+
+async def process_with_anthropic(text, token):
+    """Process text with Anthropic's Claude API."""
+    import aiohttp
+    
+    url = "https://api.anthropic.com/v1/messages"
+    headers = {
+        "x-api-key": token,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json"
+    }
+    
+    payload = {
+        "model": "claude-3-haiku-20240307",
+        "max_tokens": 1000,
+        "messages": [
+            {
+                "role": "user",
+                "content": f"I've extracted text from a website. Please analyze it and provide a concise summary highlighting key information and main points:\n\n{text}"
+            }
+        ]
+    }
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=payload) as response:
+            if response.status == 200:
+                data = await response.json()
+                
+                # Extract content from the response
+                if 'content' in data and len(data['content']) > 0:
+                    return data['content'][0]['text']
+                else:
+                    return "No content returned from Anthropic API"
+            else:
+                error_content = await response.text()
+                logger.error(f"Anthropic API error ({response.status}): {error_content}")
+                raise Exception(f"Anthropic API returned status {response.status}")
+
+async def process_with_openai(text, token):
+    """Process text with OpenAI's API."""
+    import aiohttp
+    
+    url = "https://api.openai.com/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "model": "gpt-3.5-turbo",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant that analyzes and summarizes web content."
+            },
+            {
+                "role": "user",
+                "content": f"I've extracted text from a website. Please analyze it and provide a concise summary highlighting key information and main points:\n\n{text}"
+            }
+        ],
+        "max_tokens": 1000
+    }
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=payload) as response:
+            if response.status == 200:
+                data = await response.json()
+                if 'choices' in data and len(data['choices']) > 0:
+                    return data['choices'][0]['message']['content']
+                else:
+                    return "No content returned from OpenAI API"
+            else:
+                error_content = await response.text()
+                logger.error(f"OpenAI API error ({response.status}): {error_content}")
+                raise Exception(f"OpenAI API returned status {response.status}")
+
+async def process_with_gemini(text, token):
+    """Process text with Google's Gemini API."""
+    import aiohttp
+    
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={token}"
+    headers = {
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": f"I've extracted text from a website. Please analyze it and provide a concise summary highlighting key information and main points:\n\n{text}"
+                    }
+                ]
+            }
+        ],
+        "generationConfig": {
+            "maxOutputTokens": 1000,
+            "temperature": 0.2
+        }
+    }
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, headers=headers, json=payload) as response:
+            if response.status == 200:
+                data = await response.json()
+                
+                if 'candidates' in data and len(data['candidates']) > 0:
+                    parts = data['candidates'][0].get('content', {}).get('parts', [])
+                    if parts and 'text' in parts[0]:
+                        return parts[0]['text']
+                    else:
+                        return "No text content returned from Gemini API"
+                else:
+                    return "No candidates returned from Gemini API"
+            else:
+                error_content = await response.text()
+                logger.error(f"Gemini API error ({response.status}): {error_content}")
+                raise Exception(f"Gemini API returned status {response.status}")
+
+async def process_with_local_model(text):
+    """Process text with a local Ollama model."""
+    try:
+        import requests
+        
+        url = "http://localhost:11434/api/generate"
+        payload = {
+            "model": "mistral",
+            "prompt": f"Analyze and summarize the following web content. Focus on key information and main points:\n\n{text}",
+            "stream": False
+        }
+        
+        response = requests.post(url, json=payload)
+        
+        if response.status_code == 200:
+            result = response.json()
+            return result.get('response', "No response from local model")
+        else:
+            return f"Error from Ollama API: {response.status_code}"
+    except Exception as e:
+        logger.error(f"Error with local Ollama model: {str(e)}")
+        raise
 
 # CLI part using Click
 @click.group()
@@ -615,7 +951,7 @@ async def index():
 
 @app.route('/api/crawl', methods=['POST'])
 async def api_crawl():
-    """API endpoint to crawl URLs."""
+    """API endpoint to crawl URLs with LLM processing."""
     data = await request.get_json()
     
     urls = data.get('urls', [])
@@ -636,10 +972,105 @@ async def api_crawl():
     if isinstance(javascript_enabled, str):
         javascript_enabled = javascript_enabled.lower() == 'true'
     
-    logger.info(f"API crawl request: {len(urls)} URLs, JavaScript {'enabled' if javascript_enabled else 'disabled'}")
+    # Get LLM configuration from request
+    llm_provider = data.get('llm_provider', '')
+    llm_token = data.get('llm_token', '')
+    
+    # Check if we should use Lightning Network for payment
+    use_lightning = data.get('use_lightning', False)
+    lightning_budget = data.get('lightning_budget', 0)
+    
+    # If Lightning is enabled but no provider specified, use local model as fallback
+    if use_lightning and not llm_provider:
+        llm_provider = 'local'
+    
+    logger.info(f"API crawl request: {len(urls)} URLs, JavaScript {'enabled' if javascript_enabled else 'disabled'}, LLM: {llm_provider or 'None'}")
     
     try:
+        # Crawl the URLs
         crawl_results = await crawl_urls(urls, javascript_enabled=javascript_enabled)
+        
+        # Process extracted text with LLM if provider and token are specified
+        if llm_provider:
+            overall_text = ""
+            
+            # Process each result with LLM
+            for result in crawl_results:
+                if 'extracted_text' in result and result['extracted_text']:
+                    try:
+                        # Check if we need to pay for this processing via Lightning
+                        if use_lightning:
+                            # Make Lightning Network payment (this is a placeholder for your actual payment code)
+                            payment_successful = await make_lightning_payment(
+                                service_type="text-analysis", 
+                                amount=min(100, lightning_budget),  # Use 100 sats or budget, whichever is lower
+                                provider=llm_provider
+                            )
+                            
+                            # If payment failed, skip LLM processing
+                            if not payment_successful:
+                                result['llm_error'] = "Lightning payment failed"
+                                continue
+                            
+                            # Reduce available budget
+                            lightning_budget -= 100
+                            
+                            # If budget exhausted, skip future processing
+                            if lightning_budget <= 0:
+                                break
+                        
+                        # Process the extracted text with the specified LLM
+                        llm_summary = await process_with_llm(
+                            result['extracted_text'], 
+                            llm_provider, 
+                            llm_token
+                        )
+                        
+                        result['llm_summary'] = llm_summary
+                        result['llm_provider'] = llm_provider
+                        
+                        # Collect text for overall summary
+                        if len(overall_text) < 10000:  # Keep overall text within reasonable limits
+                            overall_text += f"\n\n--- {result.get('title', 'Untitled Page')} ---\n\n"
+                            overall_text += result['extracted_text'][:1000]  # Take first 1000 chars from each result
+                        
+                        logger.info(f"LLM processing completed for {result.get('url', 'unknown URL')}")
+                    except Exception as llm_error:
+                        logger.error(f"LLM processing error: {str(llm_error)}")
+                        result['llm_error'] = str(llm_error)
+            
+            # Generate an overall summary if we have enough text
+            if overall_text and len(crawl_results) > 1:
+                try:
+                    # Check if we need to pay for this processing via Lightning
+                    if use_lightning and lightning_budget >= 200:
+                        # Make Lightning Network payment for overall summary (more expensive than individual summaries)
+                        payment_successful = await make_lightning_payment(
+                            service_type="overall-analysis", 
+                            amount=200,  # Higher cost for overall analysis
+                            provider=llm_provider
+                        )
+                        
+                        if payment_successful:
+                            lightning_budget -= 200
+                            
+                            # Process for overall summary
+                            overall_prompt = f"You've analyzed content from {len(crawl_results)} webpages. Please provide a brief executive summary that synthesizes the key information across all pages:\n\n{overall_text}"
+                            overall_summary = await process_with_llm(overall_prompt, llm_provider, llm_token)
+                            
+                            # Add to first result for inclusion in the report
+                            if overall_summary:
+                                crawl_results[0]['overall_summary'] = overall_summary
+                    elif not use_lightning:
+                        # Process for overall summary without Lightning payment
+                        overall_prompt = f"You've analyzed content from {len(crawl_results)} webpages. Please provide a brief executive summary that synthesizes the key information across all pages:\n\n{overall_text}"
+                        overall_summary = await process_with_llm(overall_prompt, llm_provider, llm_token)
+                        
+                        # Add to first result for inclusion in the report
+                        if overall_summary:
+                            crawl_results[0]['overall_summary'] = overall_summary
+                except Exception as overall_error:
+                    logger.error(f"Overall summary error: {str(overall_error)}")
         
         results = {
             "success": True,
@@ -658,9 +1089,24 @@ async def api_crawl():
                 result_item['error'] = result['error']
             else:
                 # Get relative paths for the web app
-                result_item['screenshot'] = os.path.basename(result['screenshot'])
+                if 'screenshot' in result:
+                    result_item['screenshot'] = os.path.basename(result['screenshot'])
+                
                 # Truncate extracted text if too long
-                result_item['extracted_text'] = result['extracted_text'][:1000] + '...' if len(result['extracted_text']) > 1000 else result['extracted_text']
+                if 'extracted_text' in result:
+                    result_item['extracted_text'] = result['extracted_text'][:1000] + '...' if len(result['extracted_text']) > 1000 else result['extracted_text']
+                
+                # Include LLM summary if available
+                if 'llm_summary' in result:
+                    result_item['llm_summary'] = result['llm_summary']
+                
+                # Include overall summary if available
+                if 'overall_summary' in result:
+                    result_item['overall_summary'] = result['overall_summary']
+                
+                # Include any LLM errors
+                if 'llm_error' in result:
+                    result_item['llm_error'] = result['llm_error']
             
             results['results'].append(result_item)
         
@@ -681,6 +1127,26 @@ async def api_crawl():
             "success": False,
             "error": str(e)
         }), 500
+
+# Placeholder for Lightning Network payment function
+async def make_lightning_payment(service_type, amount, provider):
+    """Make a Lightning Network payment for a specific service."""
+    try:
+        logger.info(f"Making Lightning payment of {amount} sats for {service_type} from {provider}")
+        
+        # This would be replaced with actual Lightning Network payment code
+        # For now it's just a placeholder that always succeeds
+        
+        # Simulate payment processing time
+        await asyncio.sleep(0.5)
+        
+        # Log the payment
+        logger.info(f"Payment successful: {amount} sats for {service_type}")
+        
+        return True
+    except Exception as e:
+        logger.error(f"Lightning payment error: {str(e)}")
+        return False
 
 @app.route('/api/upload', methods=['POST'])
 async def api_upload():
@@ -815,9 +1281,69 @@ async def delete_report(filename):
             "success": False,
             "error": str(e)
         }), 500
+
+@app.route('/api/settings', methods=['POST'])
+async def update_settings():
+    """Update application settings."""
+    try:
+        data = await request.get_json()
+        
+        # Update environment variables for server-side settings
+        if 'server_url' in data:
+            os.environ['WEBWRAITH_SERVER_URL'] = data['server_url']
+            
+        if 'screenshot_quality' in data:
+            os.environ['WEBWRAITH_SCREENSHOT_QUALITY'] = data['screenshot_quality']
+            
+        if 'javascript_enabled' in data:
+            os.environ['WEBWRAITH_JAVASCRIPT_ENABLED'] = str(data['javascript_enabled']).lower()
+            
+        if 'storage_path' in data and data['storage_path']:
+            new_path = data['storage_path']
+            # Validate the path exists or create it
+            try:
+                os.makedirs(new_path, exist_ok=True)
+                os.environ['WEBWRAITH_STORAGE_PATH'] = new_path
+                
+                # Update global variables if storage path changed
+                global STORAGE_PATH, SCREENSHOTS_DIR, REPORTS_DIR
+                STORAGE_PATH = new_path
+                SCREENSHOTS_DIR = os.path.join(STORAGE_PATH, "screenshots")
+                REPORTS_DIR = os.path.join(STORAGE_PATH, "reports")
+                
+                # Ensure the new directories exist
+                os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+                os.makedirs(REPORTS_DIR, exist_ok=True)
+                
+                logger.info(f"Storage path updated to {new_path}")
+            except Exception as e:
+                logger.error(f"Error setting storage path: {str(e)}")
+                return jsonify({
+                    "success": False,
+                    "error": f"Invalid storage path: {str(e)}"
+                }), 400
+        
+        # Note: We don't store LLM tokens on the server for security reasons
+        # The client will send the appropriate token with each API request
+        
+        logger.info("Settings updated successfully")
+        return jsonify({
+            "success": True,
+            "message": "Settings updated successfully"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating settings: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
     
 # Main entry point
 if __name__ == '__main__':
+    # Call GPU check during application startup
+    gpu_available = check_gpu_availability()
+
     # Check if running as CLI or as a web service
     if len(sys.argv) > 1:
         cli()

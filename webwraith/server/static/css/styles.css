@@ -643,3 +643,52 @@ footer .nav-links {
 footer .github-button {
     margin: 0; /* Remove left margin for centered positioning */
 }
+
+/* Message styles - add to styles.css */
+
+.message-container {
+    margin-bottom: 20px;
+}
+
+.message {
+    padding: 12px 15px;
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.message.success {
+    background-color: rgba(66, 211, 146, 0.15);
+    border-left: 4px solid var(--success-color);
+    color: var(--success-color);
+}
+
+.message.error {
+    background-color: rgba(255, 97, 97, 0.15);
+    border-left: 4px solid var(--danger-color);
+    color: var(--danger-color);
+}
+
+.message.info {
+    background-color: rgba(78, 158, 255, 0.15);
+    border-left: 4px solid var(--primary-color);
+    color: var(--primary-color);
+}
+
+.message.warning {
+    background-color: rgba(255, 192, 98, 0.15);
+    border-left: 4px solid var(--warning-color);
+    color: var(--warning-color);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
