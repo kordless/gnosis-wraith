@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebWraith - Reports</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-ghost"></i>
+            <span>webwraith</span>
+        </div>
+        <ul class="nav-menu">
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle">
+                    <i class="fas fa-bars"></i>
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a href="{{ url_for('index') }}">Home</a></li>
+                    <li><a href="{{ url_for('settings') }}">Settings</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+    
+    <div class="container">
+        <div class="card">
+            <h2>Reports</h2>
+            
+            <div class="search-bar">
+                <input type="text" id="search-reports" placeholder="Search reports...">
+                <button id="refresh-btn" class="btn secondary"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+            
+            {% if reports %}
+            <div class="reports-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Report Name</th>
+                            <th>Created</th>
+                            <th>Size</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>{{ report.filename }}</td>
+                            <td>{{ report.created }}</td>
+                            <td>{{ (report.size / 1024)|round(1) }} KB</td>
+                            <td>
+                                <a href="{{ url_for('serve_report', filename=report.filename) }}" class="btn primary small" target="_blank">
+                                    <i class="fas fa-file-alt"></i> View
+                                </a>
+                                {% if report.filename.endswith('.md') %}
+                                    {% set html_filename = report.filename.replace('.md', '.html') %}
+                                    <a href="{{ url_for('serve_report', filename=html_filename) }}" class="btn secondary small" target="_blank">
+                                        <i class="fas fa-code"></i> HTML
+                                    </a>
+                                {% endif %}
+                                <button class="btn danger small delete-report" data-filename="{{ report.filename }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-file-alt fa-3x"></i>
+                <p>No reports found</p>
+                <p>Start crawling to generate reports</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2025 WebWraith. All rights reserved.</p>
+    </footer>
+    
+    <script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+</body>
+</html>  

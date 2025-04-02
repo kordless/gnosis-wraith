@@ -6,8 +6,8 @@ import markdown
 from typing import List, Dict, Any
 
 # Get logger from config
-logger = logging.getLogger("webwraith")
-REPORTS_DIR = os.environ.get('WEBWRAITH_REPORTS_DIR', os.path.join(os.path.expanduser("~"), ".webwraith/reports"))
+logger = logging.getLogger("gnosis_wraith")
+REPORTS_DIR = os.environ.get('GNOSIS_WRAITH_REPORTS_DIR', os.path.join(os.path.expanduser("~"), ".gnosis-wraith/reports"))
 
 def generate_markdown_report(title: str, crawl_results: List[Dict[str, Any]]) -> str:
     """Generate a markdown report from crawl results, including LLM summaries if available."""

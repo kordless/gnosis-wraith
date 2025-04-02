@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-logger = logging.getLogger("webwraith")
+logger = logging.getLogger("gnosis_wraith")
 
 async def make_lightning_payment(service_type, amount, provider):
     """Make a Lightning Network payment for a specific service."""

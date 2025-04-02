@@ -2,7 +2,7 @@ import logging
 import aiohttp
 
 # Get logger from config
-logger = logging.getLogger("webwraith")
+logger = logging.getLogger("gnosis_wraith")
 
 async def process_with_openai(text, token):
     """Process text with OpenAI's API."""

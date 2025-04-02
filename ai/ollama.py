@@ -3,7 +3,7 @@ import requests
 import torch
 
 # Get logger from config
-logger = logging.getLogger("webwraith")
+logger = logging.getLogger("gnosis_wraith")
 
 async def process_with_ollama(text, model_name="mistral"):
     """Process text with a local Ollama model using GPU if available."""

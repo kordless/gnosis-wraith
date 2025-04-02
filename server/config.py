@@ -4,10 +4,10 @@ import sys
 from pathlib import Path
 
 # Configuration
-STORAGE_PATH = os.environ.get('WEBWRAITH_STORAGE_PATH', os.path.join(os.path.expanduser("~"), ".webwraith"))
+STORAGE_PATH = os.environ.get('GNOSIS_WRAITH_STORAGE_PATH', os.path.join(os.path.expanduser("~"), ".gnosis-wraith"))
 SCREENSHOTS_DIR = os.path.join(STORAGE_PATH, "screenshots")
 REPORTS_DIR = os.path.join(STORAGE_PATH, "reports")
-LOG_FILE = os.path.join(STORAGE_PATH, "webwraith.log")
+LOG_FILE = os.path.join(STORAGE_PATH, "gnosis-wraith.log")
 
 # Ensure directories exist
 os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
@@ -15,11 +15,11 @@ os.makedirs(REPORTS_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
 # Update environment variables for access in other modules
-os.environ['WEBWRAITH_SCREENSHOTS_DIR'] = SCREENSHOTS_DIR
-os.environ['WEBWRAITH_REPORTS_DIR'] = REPORTS_DIR
+os.environ['GNOSIS_WRAITH_SCREENSHOTS_DIR'] = SCREENSHOTS_DIR
+os.environ['GNOSIS_WRAITH_REPORTS_DIR'] = REPORTS_DIR
 
 # Setup logging
-logger = logging.getLogger("webwraith")
+logger = logging.getLogger("gnosis_wraith")
 logger.setLevel(logging.INFO)
 
 c_handler = logging.StreamHandler()
@@ -35,11 +35,11 @@ logger.addHandler(c_handler)
 logger.addHandler(f_handler)
 
 # Lightning Network configuration
-LIGHTNING_ENABLED = os.environ.get('WEBWRAITH_LIGHTNING_ENABLED', 'false').lower() == 'true'
-LIGHTNING_NODE_URL = os.environ.get('WEBWRAITH_LIGHTNING_NODE_URL', 'localhost:10009')
+LIGHTNING_ENABLED = os.environ.get('GNOSIS_WRAITH_LIGHTNING_ENABLED', 'false').lower() == 'true'
+LIGHTNING_NODE_URL = os.environ.get('GNOSIS_WRAITH_LIGHTNING_NODE_URL', 'localhost:10009')
 
 # AI configuration
-DEFAULT_AI_PROVIDER = os.environ.get('WEBWRAITH_DEFAULT_AI', 'local')
+DEFAULT_AI_PROVIDER = os.environ.get('GNOSIS_WRAITH_DEFAULT_AI', 'local')
 
 def check_gpu_availability():
     """Check if GPU is available for acceleration."""

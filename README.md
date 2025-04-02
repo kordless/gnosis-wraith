@@ -1,4 +1,4 @@
-# 🔮 Gnosis Wraith (WebWraith): The AI Oracle's Eye
+# 🔮 Gnosis Wraith: The AI Oracle's Eye
 
 A powerful web crawling and content analysis system that serves as the perception layer for the Gnosis ecosystem. Built with Python, Quart, and Playwright, Gnosis Wraith operates both as a standalone tool and as the "eye" for a broader AI oracle system.
 
@@ -47,7 +47,7 @@ The system automatically selects the appropriate mode based on available resourc
 ## Directory Structure
 
 ```
-webwraith/
+gnosis-wraith/
 ├── app.py                 # Main application file
 ├── requirements.txt       # Python dependencies
 ├── Dockerfile             # Docker configuration
@@ -58,7 +58,7 @@ webwraith/
 │   ├── config.py          # Configuration management
 │   ├── crawler.py         # Web crawling functionality
 │   └── reports.py         # Report generation
-├── webwraith/             # Main package
+├── gnosis_wraith/         # Main package
 │   ├── __init__.py        # Package initialization
 │   ├── extension/         # Browser extension
 │   │   ├── background.js  # Extension background script

@@ -7,7 +7,7 @@ from .gemini import process_with_gemini
 from .ollama import process_with_ollama
 
 # Get logger from config
-logger = logging.getLogger("webwraith")
+logger = logging.getLogger("gnosis_wraith")
 
 async def process_with_llm(text: str, provider: str, token: Optional[str] = None):
     """Process text with the specified LLM provider."""

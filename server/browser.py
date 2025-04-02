@@ -6,7 +6,7 @@ from playwright.async_api import async_playwright
 from PIL import Image
 
 # Get logger from config
-logger = logging.getLogger("webwraith")
+logger = logging.getLogger("gnosis_wraith")
 
 class BrowserControl:
     def __init__(self):

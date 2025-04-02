@@ -9,8 +9,8 @@ from server.browser import BrowserControl
 from ai.processing import process_with_llm
 
 # Get logger and config path
-logger = logging.getLogger("webwraith")
-SCREENSHOTS_DIR = os.environ.get('WEBWRAITH_SCREENSHOTS_DIR', os.path.join(os.path.expanduser("~"), ".webwraith/screenshots"))
+logger = logging.getLogger("gnosis_wraith")
+SCREENSHOTS_DIR = os.environ.get('GNOSIS_WRAITH_SCREENSHOTS_DIR', os.path.join(os.path.expanduser("~"), ".gnosis-wraith/screenshots"))
 
 # URL extraction function
 def extract_urls(content: str) -> List[str]:

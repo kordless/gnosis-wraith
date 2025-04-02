@@ -4,7 +4,7 @@ import torch
 from PIL import Image
 
 # Get logger from config
-logger = logging.getLogger("webwraith")
+logger = logging.getLogger("gnosis_wraith")
 
 class ModelManager:
     """Manages and selects AI models for different tasks."""
