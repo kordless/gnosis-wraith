@@ -47,39 +47,61 @@ The system automatically selects the appropriate mode based on available resourc
 ## Directory Structure
 
 ```
-gnosis-wraith/
+webwraith/
 ├── app.py                 # Main application file
 ├── requirements.txt       # Python dependencies
 ├── Dockerfile             # Docker configuration
 ├── docker-compose.yml     # Docker Compose configuration
-├── .dockerignore          # Docker ignore file
-├── server/                # Web server assets
-│   ├── static/            # Static files (CSS, JS)
-│   │   ├── css/           # CSS styles
-│   │   │   └── styles.css # Main stylesheet
-│   │   └── js/            # JavaScript files
-│   │       └── script.js  # Main script file
-│   └── templates/         # HTML templates
-│       ├── index.html     # Homepage template
-│       └── reports.html   # Reports page template
+├── environment.yml        # Conda environment configuration
+├── server/                # Core server components
+│   ├── browser.py         # Browser automation
+│   ├── config.py          # Configuration management
+│   ├── crawler.py         # Web crawling functionality
+│   └── reports.py         # Report generation
+├── webwraith/             # Main package
+│   ├── __init__.py        # Package initialization
+│   ├── extension/         # Browser extension
+│   │   ├── background.js  # Extension background script
+│   │   ├── content.js     # Extension content script
+│   │   ├── manifest.json  # Extension manifest
+│   │   ├── popup.html     # Extension popup interface
+│   │   ├── popup.js       # Extension popup logic
+│   │   └── images/        # Extension icons and graphics
+│   └── server/            # Web server components
+│       ├── __init__.py    # Server initialization
+│       ├── app.py         # Server application
+│       ├── routes/        # API and page routes
+│       │   ├── __init__.py  # Routes initialization
+│       │   ├── api.py     # API route handlers
+│       │   └── pages.py   # Page route handlers
+│       ├── static/        # Static files (CSS, JS)
+│       │   ├── css/       # CSS styles
+│       │   │   ├── styles.css  # Main stylesheet
+│       │   │   └── report.css  # Report styling
+│       │   └── js/        # JavaScript files
+│       │       ├── script.js     # Main script file
+│       │       ├── reports.js    # Reports functionality
+│       │       └── settings.js   # Settings functionality
+│       └── templates/     # HTML templates
+│           ├── index.html      # Homepage template
+│           ├── reports.html    # Reports page template
+│           ├── settings.html   # Settings page template
+│           └── error.html      # Error page template
 ├── ai/                    # AI integration modules
+│   ├── __init__.py        # AI module initialization
 │   ├── models.py          # Model management and selection
 │   ├── anthropic.py       # Anthropic Claude integration
 │   ├── openai.py          # OpenAI integration
 │   ├── gemini.py          # Google Gemini integration
-│   └── ollama.py          # Local Ollama model integration
+│   ├── ollama.py          # Local Ollama model integration
+│   └── processing.py      # Content processing utilities
 ├── search/                # Search indexing components
-│   ├── solr.py            # Solr indexing and search
-│   └── vector.py          # Vector store operations
-├── lightning/             # Lightning Network integration
-│   ├── client.py          # Lightning payment client
-│   ├── services.py        # Service discovery and negotiation
-│   └── wallet.py          # Wallet management
-└── extension/             # Browser extension
-    ├── manifest.json      # Extension manifest
-    ├── popup.html         # Extension popup
-    ├── background.js      # Extension background script
-    └── content.js         # Extension content script
+│   └── __init__.py        # Search module initialization
+└── lightning/             # Lightning Network integration
+    ├── __init__.py        # Lightning module initialization
+    ├── client.py          # Lightning payment client
+    ├── services.py        # Service discovery and negotiation
+    └── wallet.py          # Wallet management
 ```
 
 ## 📋 Prerequisites
