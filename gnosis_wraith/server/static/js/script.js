@@ -53,6 +53,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Hide results when switching tabs
             document.getElementById('crawl-results').style.display = 'none';
+            
+            // Initialize upload functionality if this is the image-upload tab
+            if (tabId === 'image-upload') {
+                console.log('Image upload tab activated, reinitializing elements');
+                // We'll setup any necessary elements for the image upload tab
+            }
         });
     });
 
@@ -217,7 +223,13 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Upload button clicked'); // Debug log
             const fileInput = document.getElementById('image-upload');
             console.log('File input element:', fileInput); // Debug log
-            const file = fileInput.files[0];
+            
+            if (!fileInput) {
+                alert('Error: File input element not found');
+                return;
+            }
+            
+            const file = fileInput && fileInput.files ? fileInput.files[0] : null;
             console.log('Selected file:', file); // Debug log
 
             if (!file) {
