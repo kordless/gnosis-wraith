@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Upgrade pip, setuptools, and wheel, and install required Python packages
 RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install openai openai[datalib] tenacity playwright
+    pip install openai openai[datalib] tenacity playwright aiohttp
 
 # Install PyTorch with CUDA support
 RUN pip install torch==2.0.0+cu118 torchvision==0.15.0+cu118 torchaudio==2.0.0+cu118 -f https://download.pytorch.org/whl/cu118/torch_stable.html
