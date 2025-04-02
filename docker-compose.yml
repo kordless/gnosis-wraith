@@ -1,30 +1,30 @@
 version: "3.8"
 
 services:
-  webwraith:
+  wraith:
     build: .
-    container_name: webwraith-service
+    container_name: wraith-service
     ports:
       - "5678:5678"
     volumes:
-      - webwraith-data:/data
+      - wraith-data:/data
     restart: unless-stopped
     environment:
-      - WEBWRAITH_STORAGE_PATH=/data
+      - WRAITH_STORAGE_PATH=/data
       - QUART_APP=webwraith.app:app
       - QUART_ENV=production
     profiles: [cpu]
 
-  webwraith-gpu:
+  wraith-gpu:
     build: .
-    container_name: webwraith-service-gpu  # Changed this to avoid conflict
+    container_name: wraith-service-gpu
     ports:
       - "5678:5678"
     volumes:
-      - webwraith-data:/data
+      - wraith-data:/data
     restart: unless-stopped
     environment:
-      - WEBWRAITH_STORAGE_PATH=/data
+      - WRAITH_STORAGE_PATH=/data
       - QUART_APP=webwraith.app:app
       - QUART_ENV=production
     deploy:
@@ -37,5 +37,5 @@ services:
     profiles: [gpu]
 
 volumes:
-  webwraith-data:
+  wraith-data:
     driver: local

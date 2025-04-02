@@ -36,14 +36,14 @@ COPY . .
 RUN mkdir -p /app/webwraith/server/static/downloads && \
     if [ -d "/app/webwraith/extension" ]; then \
       cd /app/webwraith && \
-      zip -r /app/webwraith/server/static/downloads/webwraith-extension.zip extension; \
+      zip -r /app/webwraith/server/static/downloads/wraith-extension.zip extension; \
     fi
 
 # Volume for persistent storage
 VOLUME /data
 
 # Define environment variables
-ENV WEBWRAITH_STORAGE_PATH=/data
+ENV WRAITH_STORAGE_PATH=/data
 ENV QUART_APP=webwraith.app:app
 ENV QUART_ENV=production
 
