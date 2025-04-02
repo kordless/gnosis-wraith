@@ -184,8 +184,8 @@
           <h2>Upload Image</h2>
           <div class="upload-form">
             <div class="form-group">
-              <label for="image-upload">Select Image:</label>
-              <input type="file" id="image-upload" accept="image/*" />
+              <label for="image-file-input">Select Image:</label>
+              <input type="file" id="image-file-input" accept="image/*" />
             </div>
 
             <div class="form-group">
@@ -216,9 +216,9 @@
               <pre class="language-python"><code>import requests
 import os
 
-def upload_image_to_webwraith(image_path):
+def upload_image_to_gnosis_wraith(image_path):
     """
-    Upload an image to the WebWraith API and extract text.
+    Upload an image to the Gnosis Wraith API and extract text.
     
     Args:
         image_path (str): Path to the image file
@@ -247,7 +247,7 @@ def upload_image_to_webwraith(image_path):
 
 # Example usage
 if __name__ == "__main__":
-    result = upload_image_to_webwraith("path/to/your/image.png")
+    result = upload_image_to_gnosis_wraith("path/to/your/image.png")
     if result and result.get("success"):
         print(f"Extracted text: {result['extracted_text']}")
     else:

@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchGitHubStars();
     
     // Initialize image upload functionality if we're on a page with that tab
-    if (document.getElementById('image-upload')) {
+    if (document.getElementById('upload-btn')) {
         setTimeout(initializeImageUpload, 300); // Small delay to ensure DOM is ready
     }
     
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Upload button clicked');
             
             try {
-                const fileInput = document.getElementById('image-upload');
+                const fileInput = document.getElementById('image-file-input');
                 console.log('File input element:', fileInput);
                 
                 if (!fileInput) {
