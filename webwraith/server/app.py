@@ -12,7 +12,7 @@ if project_root not in sys.path:
 # Import the app from the root app.py
 try:
     from app import app
-except ImportError as e:
+except ImportError as import_error:
     from quart import Quart
     
     app = Quart(__name__)
@@ -24,7 +24,7 @@ except ImportError as e:
             <head><title>WebWraith - Import Error</title></head>
             <body>
                 <h1>WebWraith - Import Error</h1>
-                <p>There was an error importing the application: {str(e)}</p>
+                <p>There was an error importing the application: {str(import_error)}</p>
                 <p>Please check that all dependencies are installed and the application is properly configured.</p>
             </body>
         </html>
