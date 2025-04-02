@@ -27,6 +27,8 @@ services:
       - WRAITH_STORAGE_PATH=/data
       - QUART_APP=webwraith.app:app
       - QUART_ENV=production
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     deploy:
       resources:
         reservations:
@@ -34,6 +36,7 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    runtime: nvidia
     profiles: [gpu]
 
 volumes:

@@ -25,7 +25,7 @@ RUN playwright install
 
 # Update the package list and install required packages
 RUN apt-get update && \
-    apt-get install -y zip nvidia-cuda-toolkit nvidia-cuda-dev && \
+    apt-get install -y zip && \
     # Clean up apt cache to reduce image size
     rm -rf /var/lib/apt/lists/*
 
