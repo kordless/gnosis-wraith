@@ -211,10 +211,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Image Upload
     const uploadButton = document.getElementById('upload-btn');
+    console.log('Upload button found:', uploadButton); // Debug log
     if (uploadButton) {
         uploadButton.addEventListener('click', async () => {
+            console.log('Upload button clicked'); // Debug log
             const fileInput = document.getElementById('image-upload');
+            console.log('File input element:', fileInput); // Debug log
             const file = fileInput.files[0];
+            console.log('Selected file:', file); // Debug log
 
             if (!file) {
                 alert('Please select an image to upload');
@@ -225,18 +229,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Prepare form data
                 const formData = new FormData();
                 formData.append('image', file);
+                console.log('FormData created:', formData); // Debug log
 
                 // Make API request
+                console.log('Sending to URL:', `${serverUrl}/api/upload`); // Debug log
                 const response = await fetch(`${serverUrl}/api/upload`, {
                     method: 'POST',
                     body: formData
                 });
+                console.log('Response received:', response); // Debug log
 
                 if (!response.ok) {
                     throw new Error(`Server responded with status: ${response.status}`);
                 }
 
                 const result = await response.json();
+                console.log('Result JSON:', result); // Debug log
                 
                 // Display upload result
                 const uploadResult = document.getElementById('upload-result');
