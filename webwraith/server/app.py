@@ -16,6 +16,7 @@ except ImportError as import_error:
     from quart import Quart
     
     app = Quart(__name__)
+    error_message = str(import_error)
     
     @app.route('/')
     async def error_page():
@@ -24,7 +25,7 @@ except ImportError as import_error:
             <head><title>WebWraith - Import Error</title></head>
             <body>
                 <h1>WebWraith - Import Error</h1>
-                <p>There was an error importing the application: {str(import_error)}</p>
+                <p>There was an error importing the application: {error_message}</p>
                 <p>Please check that all dependencies are installed and the application is properly configured.</p>
             </body>
         </html>
