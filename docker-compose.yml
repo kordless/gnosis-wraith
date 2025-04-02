@@ -10,8 +10,8 @@ services:
       - wraith-data:/data
     restart: unless-stopped
     environment:
-      - WRAITH_STORAGE_PATH=/data
-      - QUART_APP=webwraith.app:app
+      - GNOSIS_WRAITH_STORAGE_PATH=/data
+      - QUART_APP=gnosis_wraith.server.app:app
       - QUART_ENV=production
     profiles: [cpu]
 
@@ -24,8 +24,8 @@ services:
       - wraith-data:/data
     restart: unless-stopped
     environment:
-      - WRAITH_STORAGE_PATH=/data
-      - QUART_APP=webwraith.app:app
+      - GNOSIS_WRAITH_STORAGE_PATH=/data
+      - QUART_APP=gnosis_wraith.server.app:app
       - QUART_ENV=production
     profiles: [gpu]
 
