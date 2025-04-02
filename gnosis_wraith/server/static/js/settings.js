@@ -37,10 +37,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load saved settings from cookies
     function loadSettings() {
         // Load general settings
-        const serverUrl = Cookies.get('webwraith_server_url');
-        const screenshotQuality = Cookies.get('webwraith_screenshot_quality');
-        const javascriptEnabled = Cookies.get('webwraith_javascript_enabled');
-        const storagePath = Cookies.get('webwraith_storage_path');
+        const serverUrl = Cookies.get('gnosis_wraith_server_url');
+        const screenshotQuality = Cookies.get('gnosis_wraith_screenshot_quality');
+        const javascriptEnabled = Cookies.get('gnosis_wraith_javascript_enabled');
+        const storagePath = Cookies.get('gnosis_wraith_storage_path');
         
         if (serverUrl) serverUrlInput.value = serverUrl;
         if (screenshotQuality) screenshotQualitySelect.value = screenshotQuality;
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (storagePath) storagePathInput.value = storagePath;
         
         // Load LLM provider and corresponding token
-        const provider = Cookies.get('webwraith_llm_provider') || 'anthropic';
+        const provider = Cookies.get('gnosis_wraith_llm_provider') || 'anthropic';
         llmProviderSelect.value = provider;
         
         // Load the token for the current provider
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load the token for the currently selected provider
     function loadTokenForCurrentProvider() {
         const provider = llmProviderSelect.value;
-        const tokenCookieName = `webwraith_llm_token_${provider}`;
+        const tokenCookieName = `gnosis_wraith_llm_token_${provider}`;
         const token = Cookies.get(tokenCookieName);
         
         if (token) {
@@ -71,17 +71,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Save settings to cookies and optionally to server
     async function saveSettings() {
         // Save general settings
-        Cookies.set('webwraith_server_url', serverUrlInput.value);
-        Cookies.set('webwraith_screenshot_quality', screenshotQualitySelect.value);
-        Cookies.set('webwraith_javascript_enabled', javascriptEnabledSelect.value);
-        Cookies.set('webwraith_storage_path', storagePathInput.value);
+        Cookies.set('gnosis_wraith_server_url', serverUrlInput.value);
+        Cookies.set('gnosis_wraith_screenshot_quality', screenshotQualitySelect.value);
+        Cookies.set('gnosis_wraith_javascript_enabled', javascriptEnabledSelect.value);
+        Cookies.set('gnosis_wraith_storage_path', storagePathInput.value);
         
         // Save the currently selected provider
-        Cookies.set('webwraith_llm_provider', llmProviderSelect.value);
+        Cookies.set('gnosis_wraith_llm_provider', llmProviderSelect.value);
         
         // Save the token for the current provider
         const provider = llmProviderSelect.value;
-        const tokenCookieName = `webwraith_llm_token_${provider}`;
+        const tokenCookieName = `gnosis_wraith_llm_token_${provider}`;
         
         if (llmApiTokenInput.value) {
             Cookies.set(tokenCookieName, llmApiTokenInput.value);
@@ -126,16 +126,16 @@ document.addEventListener('DOMContentLoaded', function() {
     function resetSettings() {
         if (confirm('Are you sure you want to reset all settings to default values?')) {
             // Clear all cookies
-            Cookies.delete('webwraith_server_url');
-            Cookies.delete('webwraith_screenshot_quality');
-            Cookies.delete('webwraith_javascript_enabled');
-            Cookies.delete('webwraith_storage_path');
-            Cookies.delete('webwraith_llm_provider');
+            Cookies.delete('gnosis_wraith_server_url');
+            Cookies.delete('gnosis_wraith_screenshot_quality');
+            Cookies.delete('gnosis_wraith_javascript_enabled');
+            Cookies.delete('gnosis_wraith_storage_path');
+            Cookies.delete('gnosis_wraith_llm_provider');
             
             // Clear all provider tokens
-            Cookies.delete('webwraith_llm_token_anthropic');
-            Cookies.delete('webwraith_llm_token_openai');
-            Cookies.delete('webwraith_llm_token_gemini');
+            Cookies.delete('gnosis_wraith_llm_token_anthropic');
+            Cookies.delete('gnosis_wraith_llm_token_openai');
+            Cookies.delete('gnosis_wraith_llm_token_gemini');
             
             // Reset form to default values
             serverUrlInput.value = 'http://localhost:5678';

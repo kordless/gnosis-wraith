@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Server URL from localStorage or default
-    const serverUrl = localStorage.getItem('webwraith-server-url') || 'http://localhost:5678';
+    const serverUrl = localStorage.getItem('gnosis-wraith-server-url') || 'http://localhost:5678';
 
     // Search functionality
     const searchInput = document.getElementById('search-reports');

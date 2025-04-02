@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Server URL from localStorage or default
-    const serverUrl = localStorage.getItem('webwraith-server-url') || 'http://localhost:5678';
+    const serverUrl = localStorage.getItem('gnosis-wraith-server-url') || 'http://localhost:5678';
 
     // Single URL Crawl
     const crawlButton = document.getElementById('crawl-btn');
@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to fetch GitHub repository star count
     async function fetchGitHubStars() {
         const repoOwner = 'kordless';
-        const repoName = 'webwraith';
+        const repoName = 'gnosis-wraith';
         const githubApiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}`;
         
         try {
