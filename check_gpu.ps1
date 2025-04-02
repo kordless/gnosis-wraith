@@ -36,5 +36,5 @@ try {
 }
 
 Write-Host "`nAll checks passed! Your system is ready to use GPU acceleration with Docker." -ForegroundColor Green
-Write-Host "You can now build and run your WebWraith container with:" -ForegroundColor Cyan
+Write-Host "You can now build and run your Gnosis Wraith container with:" -ForegroundColor Cyan
 Write-Host "docker-compose up -d --build" -ForegroundColor White

@@ -33,22 +33,22 @@ RUN apt-get update && \
 COPY . .
 
 # Create extension zip file
-RUN mkdir -p /app/webwraith/server/static/downloads && \
-    if [ -d "/app/webwraith/extension" ]; then \
-      cd /app/webwraith && \
-      zip -r /app/webwraith/server/static/downloads/wraith-extension.zip extension; \
+RUN mkdir -p /app/gnosis_wraith/server/static/downloads && \
+    if [ -d "/app/gnosis_wraith/extension" ]; then \
+      cd /app/gnosis_wraith && \
+      zip -r /app/gnosis_wraith/server/static/downloads/gnosis-wraith-extension.zip extension; \
     fi
 
 # Volume for persistent storage
 VOLUME /data
 
 # Define environment variables
-ENV WRAITH_STORAGE_PATH=/data
-ENV QUART_APP=webwraith.app:app
+ENV GNOSIS_WRAITH_STORAGE_PATH=/data
+ENV QUART_APP=gnosis_wraith.server.app:app
 ENV QUART_ENV=production
 
 # Expose the port
 EXPOSE 5678
 
 # Command to run using Hypercorn
-CMD ["hypercorn", "--bind", "0.0.0.0:5678", "webwraith.server.app:app"]
+CMD ["hypercorn", "--bind", "0.0.0.0:5678", "gnosis_wraith.server.app:app"]

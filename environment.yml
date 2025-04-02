@@ -1,4 +1,4 @@
-name: webwraith
+name: gnosis_wraith
 channels:
   - conda-forge
   - defaults
