@@ -23,9 +23,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Install all browsers supported by this version of Playwright
 RUN playwright install
 
-# Update the package list and install zip
+# Update the package list and install required packages
 RUN apt-get update && \
-    apt-get install -y zip && \
+    apt-get install -y zip nvidia-cuda-toolkit nvidia-cuda-dev && \
     # Clean up apt cache to reduce image size
     rm -rf /var/lib/apt/lists/*
 

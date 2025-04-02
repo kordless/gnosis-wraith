@@ -23,15 +23,24 @@ class ModelManager:
             import numpy as np
             import easyocr
             
+            # First check if CUDA is available
             use_gpu = torch.cuda.is_available()
             
-            # Initialize OCR with GPU if available
-            self.ocr_reader = easyocr.Reader(['en'], gpu=use_gpu)
-            
             if use_gpu:
-                logger.info("✅ EasyOCR initialized with GPU acceleration")
+                try:
+                    # Try initializing with GPU first
+                    self.ocr_reader = easyocr.Reader(['en'], gpu=True)
+                    logger.info("✅ EasyOCR initialized with GPU acceleration")
+                except Exception as gpu_error:
+                    # If GPU initialization fails, fall back to CPU
+                    logger.warning(f"⚠️ GPU initialization failed: {str(gpu_error)}")
+                    logger.warning("⚠️ Falling back to CPU mode for EasyOCR")
+                    self.ocr_reader = easyocr.Reader(['en'], gpu=False)
+                    logger.info("✅ EasyOCR initialized in CPU mode")
             else:
-                logger.info("⚠️ EasyOCR initialized without GPU acceleration")
+                # CPU mode
+                self.ocr_reader = easyocr.Reader(['en'], gpu=False)
+                logger.info("⚠️ EasyOCR initialized without GPU acceleration (CPU only)")
                 
         except ImportError as e:
             logger.error(f"❌ Failed to initialize EasyOCR: Missing dependency: {str(e)}")
