@@ -173,7 +173,11 @@ Integration with value exchange systems:
 
 2. Build and start the Docker container:
    ```bash
-   docker-compose up -d
+   # For CPU-only version
+   docker-compose --profile cpu up -d
+   
+   # OR for GPU-accelerated version (requires NVIDIA Docker)
+   docker-compose --profile gpu up -d
    ```
 
 3. Access the web interface at http://localhost:5678
