@@ -2,6 +2,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fetch GitHub repository star count
     fetchGitHubStars();
     
+    // Initialize image upload functionality if we're on a page with that tab
+    if (document.getElementById('image-upload')) {
+        setTimeout(initializeImageUpload, 300); // Small delay to ensure DOM is ready
+    }
+    
     // Copy code button functionality
     const copyButtons = document.querySelectorAll('.copy-btn');
     copyButtons.forEach(button => {
@@ -57,7 +62,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Initialize upload functionality if this is the image-upload tab
             if (tabId === 'image-upload') {
                 console.log('Image upload tab activated, reinitializing elements');
-                // We'll setup any necessary elements for the image upload tab
+                // Initialize the image upload functionality when tab is clicked
+                setTimeout(initializeImageUpload, 100); // Small delay to ensure DOM is ready
             }
         });
     });
@@ -215,29 +221,44 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Image Upload
-    const uploadButton = document.getElementById('upload-btn');
-    console.log('Upload button found:', uploadButton); // Debug log
-    if (uploadButton) {
-        uploadButton.addEventListener('click', async () => {
-            console.log('Upload button clicked'); // Debug log
-            const fileInput = document.getElementById('image-upload');
-            console.log('File input element:', fileInput); // Debug log
+    // Image Upload - Using a function to ensure proper initialization
+    function initializeImageUpload() {
+        console.log('Initializing image upload functionality');
+        const uploadButton = document.getElementById('upload-btn');
+        console.log('Upload button found:', uploadButton);
+        
+        if (!uploadButton) {
+            console.error('Upload button not found!');
+            return; // Exit if button not found
+        }
+        
+        // Remove any existing event listeners by cloning and replacing
+        const newUploadButton = uploadButton.cloneNode(true);
+        uploadButton.parentNode.replaceChild(newUploadButton, uploadButton);
+        
+        // Add the event listener to the new button
+        newUploadButton.addEventListener('click', async () => {
+            console.log('Upload button clicked');
             
-            if (!fileInput) {
-                alert('Error: File input element not found');
-                return;
-            }
-            
-            const file = fileInput && fileInput.files ? fileInput.files[0] : null;
-            console.log('Selected file:', file); // Debug log
-
-            if (!file) {
-                alert('Please select an image to upload');
-                return;
-            }
-
             try {
+                const fileInput = document.getElementById('image-upload');
+                console.log('File input element:', fileInput);
+                
+                if (!fileInput) {
+                    console.error('File input element not found');
+                    alert('Error: File input element not found');
+                    return;
+                }
+                
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    console.log('No file selected');
+                    alert('Please select an image to upload');
+                    return;
+                }
+                
+                const file = fileInput.files[0];
+                console.log('Selected file:', file);
+                
                 // Prepare form data
                 const formData = new FormData();
                 formData.append('image', file);
