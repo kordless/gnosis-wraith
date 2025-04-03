@@ -313,18 +313,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 previewImage.src = `${serverUrl}/screenshots/${result.file_path}`;
                 extractedTextContent.textContent = result.extracted_text || 'No text extracted';
                 
-                // Add report link if available
+                // Add report links if available
                 if (result.report_path) {
                     const reportLinkContainer = document.createElement('div');
                     reportLinkContainer.className = 'report-link-container';
-                    reportLinkContainer.innerHTML = `
-                        <h3>Generated Report</h3>
-                        <p>
-                            <a href="${serverUrl}/reports/${result.report_path}" target="_blank" class="btn secondary">
-                                <i class="fas fa-file-alt"></i> View Report
-                            </a>
-                        </p>
+                    
+                    let linksHtml = `<h3>Generated Reports</h3><p>`;
+                    
+                    // Add Markdown link
+                    linksHtml += `
+                        <a href="${serverUrl}/reports/${result.report_path}" target="_blank" class="btn secondary small">
+                            <i class="fas fa-file-alt"></i> Markdown
+                        </a>
                     `;
+                    
+                    // Add HTML link if available
+                    if (result.html_path) {
+                        linksHtml += `
+                            <a href="${serverUrl}/reports/${result.html_path}" target="_blank" class="btn primary small">
+                                <i class="fas fa-code"></i> HTML
+                            </a>
+                        `;
+                    }
+                    
+                    linksHtml += `</p>`;
+                    reportLinkContainer.innerHTML = linksHtml;
                     uploadResult.appendChild(reportLinkContainer);
                 }
                 

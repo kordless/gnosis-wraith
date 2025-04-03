@@ -217,14 +217,13 @@ async def api_crawl():
             
             results['results'].append(result_item)
         
-        if output_format in ['markdown', 'both']:
-            markdown_path = await save_markdown_report(title, crawl_results)
-            results['report_path'] = os.path.basename(markdown_path)
-            
-            # Convert to HTML if both formats requested
-            if output_format == 'both':
-                html_path = await convert_markdown_to_html(markdown_path)
-                results['html_path'] = os.path.basename(html_path)
+        # Always generate markdown report
+        markdown_path = await save_markdown_report(title, crawl_results)
+        results['report_path'] = os.path.basename(markdown_path)
+        
+        # Always convert to HTML as well
+        html_path = await convert_markdown_to_html(markdown_path)
+        results['html_path'] = os.path.basename(html_path)
         
         return jsonify(results)
     
@@ -271,11 +270,15 @@ async def api_upload():
         report_title = f"{title} - {datetime.datetime.now().strftime('%Y-%m-%d')}"
         report_path = await save_markdown_report(report_title, [image_result])
         
+        # Always convert to HTML as well
+        html_path = await convert_markdown_to_html(report_path)
+        
         return jsonify({
             "success": True,
             "file_path": os.path.basename(file_path),
             "extracted_text": extracted_text,
-            "report_path": os.path.basename(report_path)
+            "report_path": os.path.basename(report_path),
+            "html_path": os.path.basename(html_path)
         })
     
     except Exception as e:
