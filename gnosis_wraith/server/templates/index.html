@@ -18,8 +18,16 @@
     />
 
     <!-- Favicon links -->
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}" />
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="{{ url_for('static', filename='images/favicon.svg') }}"
+    />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{{ url_for('static', filename='images/favicon.ico') }}"
+    />
     <link
       rel="icon"
       href="{{ url_for('static', filename='images/favicon.ico') }}"
@@ -55,7 +63,7 @@
             <i class="fas fa-bars"></i>
           </a>
           <ul class="dropdown-menu">
-            <li><a href="{{ url_for('list_reports') }}">Reports</a></li>
+            <li><a href="{{ url_for('list_reports') }}">Reportage</a></li>
             <li><a href="{{ url_for('settings') }}">Settings</a></li>
           </ul>
         </li>
@@ -80,16 +88,16 @@
           <div class="crawl-form">
             <div class="form-group">
               <label for="url">URL:</label>
-              <input type="url" id="url" placeholder="https://example.com" />
+              <input
+                type="url"
+                id="url"
+                placeholder="https://news.ycombinator.com"
+              />
             </div>
 
             <div class="form-group">
               <label for="report-title">Report Title:</label>
-              <input
-                type="text"
-                id="report-title"
-                placeholder="My Web Crawl Report"
-              />
+              <input type="text" id="report-title" placeholder="Crawl Report" />
             </div>
 
             <div class="form-group">
@@ -133,8 +141,7 @@
               <label for="urls">URLs (one per line):</label>
               <textarea
                 id="urls"
-                placeholder="https://example.com
-            https://another-example.com"
+                placeholder="https://news.ycombinator.com\nhttps://stuff.com"
               ></textarea>
             </div>
 
@@ -143,7 +150,7 @@
               <input
                 type="text"
                 id="multi-report-title"
-                placeholder="My Multi-URL Crawl Report"
+                placeholder="Multi Crawl Report"
               />
             </div>
 
@@ -190,6 +197,11 @@
               <label for="image-file-input">Select Image:</label>
               <input type="file" id="image-file-input" accept="image/*" />
             </div>
+            
+            <div class="form-group">
+              <label for="image-report-title">Report Title:</label>
+              <input type="text" id="image-report-title" placeholder="Image Analysis Report" />
+            </div>
 
             <div class="form-group">
               <button id="upload-btn" class="btn primary">
@@ -197,7 +209,7 @@
               </button>
             </div>
           </div>
-          
+
           <div id="upload-status" class="status-box" style="display: none">
             <p>Status: <span id="upload-status-text">Idle</span></p>
             <div class="progress-bar">
@@ -221,7 +233,7 @@
         <!-- Code Examples Tab -->
         <section id="code-examples" class="tab-content card">
           <h2>Code Examples</h2>
-          
+
           <div class="code-section">
             <h3>Python Code for Image Upload</h3>
             <div class="code-container">
@@ -269,7 +281,7 @@ if __name__ == "__main__":
         print("Failed to extract text from image")</code></pre>
             </div>
           </div>
-          
+
           <div class="code-section">
             <h3>Python Code for Web Crawling</h3>
             <div class="code-container">

@@ -321,6 +321,26 @@ pre {
     transition: width 0.3s;
 }
 
+/* Gibson quote */
+.gibson-quote {
+    margin-bottom: 20px;
+}
+
+.gibson-quote blockquote {
+    color: var(--text-muted);
+    font-style: italic;
+    border-left: 3px solid var(--secondary-color);
+    padding-left: 15px;
+    margin-left: 0;
+}
+
+.gibson-quote cite {
+    display: block;
+    text-align: right;
+    margin-top: 5px;
+    color: var(--text-muted);
+}
+
 /* Search bar */
 .search-bar {
     display: flex;

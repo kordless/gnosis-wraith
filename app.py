@@ -239,6 +239,7 @@ async def api_crawl():
 async def api_upload():
     """API endpoint to upload images."""
     files = await request.files
+    form = await request.form
     
     if 'image' not in files:
         return jsonify({
@@ -248,6 +249,7 @@ async def api_upload():
     
     try:
         file = files['image']
+        title = form.get('title', 'Image Analysis Report')
         filename = f"{uuid.uuid4().hex}.png"
         file_path = os.path.join(SCREENSHOTS_DIR, filename)
         await file.save(file_path)
@@ -257,10 +259,23 @@ async def api_upload():
         model_manager = ModelManager()
         extracted_text = await model_manager.extract_text_from_image(file_path)
         
+        # Create a simplified result for report generation
+        image_result = {
+            'url': f"file://{file_path}",  # Use file URL format
+            'title': f"Image Analysis: {os.path.basename(file_path)}",
+            'screenshot': file_path,
+            'extracted_text': extracted_text
+        }
+        
+        # Generate a report
+        report_title = f"{title} - {datetime.datetime.now().strftime('%Y-%m-%d')}"
+        report_path = await save_markdown_report(report_title, [image_result])
+        
         return jsonify({
             "success": True,
             "file_path": os.path.basename(file_path),
-            "extracted_text": extracted_text
+            "extracted_text": extracted_text,
+            "report_path": os.path.basename(report_path)
         })
     
     except Exception as e:

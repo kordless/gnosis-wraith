@@ -268,10 +268,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 statusText.textContent = 'Uploading image...';
                 progressIndicator.style.width = '25%';
                 
+                // Get the report title
+                const reportTitle = document.getElementById('image-report-title').value || 'Image Analysis Report';
+                
                 // Prepare form data
                 const formData = new FormData();
                 formData.append('image', file);
-                console.log('FormData created:', formData); // Debug log
+                formData.append('title', reportTitle);
+                console.log('FormData created with title:', reportTitle); // Debug log
 
                 // Make API request
                 console.log('Sending to URL:', `${serverUrl}/api/upload`); // Debug log
@@ -308,6 +312,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 uploadResult.style.display = 'block';
                 previewImage.src = `${serverUrl}/screenshots/${result.file_path}`;
                 extractedTextContent.textContent = result.extracted_text || 'No text extracted';
+                
+                // Add report link if available
+                if (result.report_path) {
+                    const reportLinkContainer = document.createElement('div');
+                    reportLinkContainer.className = 'report-link-container';
+                    reportLinkContainer.innerHTML = `
+                        <h3>Generated Report</h3>
+                        <p>
+                            <a href="${serverUrl}/reports/${result.report_path}" target="_blank" class="btn secondary">
+                                <i class="fas fa-file-alt"></i> View Report
+                            </a>
+                        </p>
+                    `;
+                    uploadResult.appendChild(reportLinkContainer);
+                }
                 
                 // After a delay, hide the progress bar
                 setTimeout(() => {
