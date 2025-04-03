@@ -12,6 +12,11 @@ async def index():
     """Render the index page."""
     return await render_template('index.html')
 
+@pages_bp.route('/philosophy')
+async def philosophy():
+    """Render the philosophy page."""
+    return await render_template('philosophy.html')
+
 @pages_bp.route('/reports')
 async def list_reports():
     """List all generated reports."""
