@@ -258,11 +258,23 @@ async def api_upload():
         model_manager = ModelManager()
         extracted_text = await model_manager.extract_text_from_image(file_path)
         
+        # Copy the image to a predictable location relative to REPORTS_DIR
+        # This ensures the screenshot can be properly referenced in the Markdown
+        report_images_dir = os.path.join(REPORTS_DIR, "images")
+        os.makedirs(report_images_dir, exist_ok=True)
+        
+        # Copy the image to the reports/images directory
+        import shutil
+        report_image_path = os.path.join(report_images_dir, os.path.basename(file_path))
+        shutil.copy2(file_path, report_image_path)
+        
+        logger.info(f"Image uploaded to {file_path} and copied to {report_image_path} for reports")
+        
         # Create a simplified result for report generation
         image_result = {
-            'url': f"file://{file_path}",  # Use file URL format
+            'url': f"Uploaded Image: {os.path.basename(file_path)}",  # Descriptive URL
             'title': f"Image Analysis: {os.path.basename(file_path)}",
-            'screenshot': file_path,
+            'screenshot': report_image_path,  # Use the path in reports/images
             'extracted_text': extracted_text
         }
         

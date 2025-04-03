@@ -46,9 +46,14 @@ def generate_markdown_report(title: str, crawl_results: List[Dict[str, Any]]) ->
         else:
             # Add screenshot as image - use relative path
             if 'screenshot' in result:
-                relative_path = os.path.relpath(result['screenshot'], REPORTS_DIR)
-                md += f"**Screenshot**:\n\n"
-                md += f"![Screenshot of {result['url']}]({relative_path})\n\n"
+                logger.info(f"Adding screenshot to report: {result['screenshot']}")
+                try:
+                    relative_path = os.path.relpath(result['screenshot'], REPORTS_DIR)
+                    md += f"**Screenshot**:\n\n"
+                    md += f"![Screenshot of {result['url']}]({relative_path})\n\n"
+                except Exception as e:
+                    logger.error(f"Error adding screenshot to report: {str(e)}")
+                    md += f"**Screenshot**: Error including screenshot: {str(e)}\n\n"
             
             # Add LLM summary if available
             if 'llm_summary' in result:
@@ -103,6 +108,21 @@ async def convert_markdown_to_html(markdown_file: str) -> str:
     async with aiofiles.open(markdown_file, 'r') as f:
         md_content = await f.read()
     
+    # Check for image references and make sure they're valid
+    import re
+    image_refs = re.findall(r'!\[(.*?)\]\((.*?)\)', md_content)
+    for alt_text, image_path in image_refs:
+        logger.info(f"Found image reference in markdown: {alt_text} at path {image_path}")
+        
+        # Check if the image path exists or needs fixing
+        if not os.path.isabs(image_path):
+            # Try to resolve relative to the REPORTS_DIR
+            potential_path = os.path.join(os.path.dirname(markdown_file), image_path)
+            if os.path.exists(potential_path):
+                logger.info(f"Image path is valid: {potential_path}")
+            else:
+                logger.warning(f"Image path may be invalid: {potential_path}")
+    
     # Add extensions for better markdown rendering
     html = markdown.markdown(md_content, extensions=['tables', 'fenced_code', 'codehilite'])
     
@@ -133,7 +153,7 @@ async def convert_markdown_to_html(markdown_file: str) -> str:
             color: var(--text-color);
         }}
         
-        img {{ max-width: 100%; border-radius: 4px; }}
+        img {{ max-width: 100%; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }}
         
         code {{ 
             background-color: rgba(0,0,0,0.2); 
