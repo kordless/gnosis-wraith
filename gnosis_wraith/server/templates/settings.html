@@ -54,7 +54,12 @@
                 
                 <div class="form-group">
                     <label for="llm-api-token">LLM API Token:</label>
-                    <input type="password" id="llm-api-token" placeholder="Enter your API token" value="{{ llm_api_token }}">
+                    <div class="input-with-button">
+                        <input type="password" id="llm-api-token" placeholder="Enter your API token" value="{{ llm_api_token }}">
+                        <button type="button" id="delete-token-btn" class="btn danger small" title="Delete this token">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
                     <p class="help-text">API token for the selected LLM provider</p>
                     <div class="security-warning">
                         <blockquote>

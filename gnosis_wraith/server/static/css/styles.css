@@ -254,6 +254,21 @@ pre {
     font-size: 0.9rem;
 }
 
+/* Input with button layout */
+.input-with-button {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.input-with-button input {
+    flex: 1;
+}
+
+.input-with-button .btn {
+    white-space: nowrap;
+}
+
 /* Buttons */
 .btn {
     display: inline-block;
@@ -295,6 +310,16 @@ pre {
 .btn.secondary:hover {
     background-color: #7d67e0;
     box-shadow: 0 0 10px rgba(145, 121, 255, 0.4);
+}
+
+.btn.danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn.danger:hover {
+    background-color: #e73c3c;
+    box-shadow: 0 0 10px rgba(255, 97, 97, 0.4);
 }
 
 .btn i {

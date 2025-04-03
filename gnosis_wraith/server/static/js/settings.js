@@ -195,6 +195,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // Provider selection change
     llmProviderSelect.addEventListener('change', loadTokenForCurrentProvider);
     
+    // Delete token button
+    const deleteTokenBtn = document.getElementById('delete-token-btn');
+    if (deleteTokenBtn) {
+        deleteTokenBtn.addEventListener('click', function() {
+            if (confirm('Are you sure you want to delete this API token?')) {
+                // Get the current provider
+                const provider = llmProviderSelect.value;
+                const tokenCookieName = `gnosis_wraith_llm_token_${provider}`;
+                
+                // Delete the cookie
+                Cookies.delete(tokenCookieName);
+                
+                // Clear the input field
+                llmApiTokenInput.value = '';
+                
+                // Show success message
+                showMessage(`API token for ${provider} deleted successfully.`, 'success');
+            }
+        });
+    }
+    
     // Initial load
     loadSettings();
 });
