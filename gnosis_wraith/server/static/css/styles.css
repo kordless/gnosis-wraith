@@ -352,6 +352,24 @@ pre {
     font-size: 0.8rem;
 }
 
+/* Security warning */
+.security-warning {
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+.security-warning blockquote {
+    color: var(--danger-color);
+    font-style: italic;
+    border-left: 3px solid var(--danger-color);
+    padding-left: 15px;
+    margin-left: 0;
+    font-size: 0.85rem;
+    background-color: rgba(255, 97, 97, 0.08);
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+}
+
 /* Search bar */
 .search-bar {
     display: flex;

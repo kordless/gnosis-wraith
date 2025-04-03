@@ -56,6 +56,11 @@
                     <label for="llm-api-token">LLM API Token:</label>
                     <input type="password" id="llm-api-token" placeholder="Enter your API token" value="{{ llm_api_token }}">
                     <p class="help-text">API token for the selected LLM provider</p>
+                    <div class="security-warning">
+                        <blockquote>
+                            "API tokens are stored in cookies, locally, with SameSite=Strict to prevent CSRF attacks. While reasonably secure, you should monitor token usage and audit regularly."
+                        </blockquote>
+                    </div>
                 </div>
                 
                 <div class="form-group">
