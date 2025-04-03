@@ -375,6 +375,12 @@ if __name__ == "__main__":
         <!-- Browser Extension Tab -->
         <section id="extension" class="tab-content card">
           <h2>Browser Extension</h2>
+          <div class="author-quote">
+            <blockquote>
+              "The study of exobiology is indeed a worthwhile endeavor, but to predict beyond the data is illogical."
+              <cite>— Data, Star Trek: The Next Generation</cite>
+            </blockquote>
+          </div>
           <p class="extension-description">
             Download the WebWraith browser extension to analyze links before
             clicking, capture screenshots, and extract text from webpages
@@ -391,12 +397,15 @@ if __name__ == "__main__":
             </ol>
             <p>Compatible with Chrome, Firefox, and Edge browsers.</p>
 
-            <a
-              href="{{ url_for('static', filename='downloads/webwraith-extension.zip') }}"
-              class="btn primary download-btn"
-            >
-              <i class="fas fa-download"></i> Download Extension
-            </a>
+            <div style="margin-top: 20px;">
+              <a
+                href="{{ url_for('static', filename='downloads/webwraith-extension.zip') }}"
+                class="btn primary download-btn"
+                style="font-size: 0.9em; padding: 8px 16px;"
+              >
+                <i class="fas fa-download"></i> Download Extension
+              </a>
+            </div>
           </div>
         </section>
 
