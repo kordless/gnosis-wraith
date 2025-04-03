@@ -267,6 +267,12 @@ pre {
     font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
 }
 
+.btn.small {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    min-width: 30px;
+}
+
 .btn:active {
     transform: translateY(1px);
 }
@@ -321,24 +327,29 @@ pre {
     transition: width 0.3s;
 }
 
-/* Gibson quote */
-.gibson-quote {
+/* Author quotes */
+.gibson-quote,
+.author-quote {
     margin-bottom: 20px;
 }
 
-.gibson-quote blockquote {
+.gibson-quote blockquote,
+.author-quote blockquote {
     color: var(--text-muted);
     font-style: italic;
     border-left: 3px solid var(--secondary-color);
     padding-left: 15px;
     margin-left: 0;
+    font-size: 0.9rem;
 }
 
-.gibson-quote cite {
+.gibson-quote cite,
+.author-quote cite {
     display: block;
     text-align: right;
     margin-top: 5px;
     color: var(--text-muted);
+    font-size: 0.8rem;
 }
 
 /* Search bar */
@@ -413,6 +424,17 @@ table td {
     padding: 12px 15px;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
+}
+
+/* Timestamp styling */
+.timestamp {
+    white-space: nowrap;
+    color: var(--text-color);
+}
+
+.timestamp small {
+    color: var(--text-muted);
+    font-size: 0.8em;
 }
 
 table th {

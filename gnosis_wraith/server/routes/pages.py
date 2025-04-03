@@ -20,9 +20,23 @@ async def list_reports():
         if file.endswith('.md'):
             file_path = os.path.join(REPORTS_DIR, file)
             creation_time = os.path.getctime(file_path)
+            
+            # Format title from filename
+            # Extract report name from filename, removing date suffix and underscores
+            display_name = file.replace('.md', '')
+            # Remove timestamp pattern if present (typically last part after underscore)
+            if '_' in display_name:
+                parts = display_name.rsplit('_', 1)
+                if len(parts[1]) == 15 and parts[1].isdigit():  # Assuming YYYYMMDD_HHMMSS format = 15 chars
+                    display_name = parts[0]
+            # Replace underscores with spaces and capitalize words
+            display_name = display_name.replace('_', ' ').title()
+            
             reports.append({
                 "filename": file,
-                "created": datetime.datetime.fromtimestamp(creation_time).strftime('%Y-%m-%d %H:%M:%S'),
+                "title": display_name,
+                "created": datetime.datetime.fromtimestamp(creation_time),
+                "created_str": datetime.datetime.fromtimestamp(creation_time).strftime('%Y-%m-%d %H:%M:%S'),
                 "size": os.path.getsize(file_path)
             })
     

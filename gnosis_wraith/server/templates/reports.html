@@ -68,8 +68,8 @@
             <tbody>
               {% for report in reports %}
               <tr>
-                <td>{{ report.filename }}</td>
-                <td>{{ report.created }}</td>
+                <td>{{ report.title }}</td>
+                <td><span class="timestamp" title="{{ report.created_str }}">{{ report.created.strftime('%Y-%m-%d') }} <small>{{ report.created.strftime('%H:%M:%S') }}</small></span></td>
                 <td>{{ (report.size / 1024)|round(1) }} KB</td>
                 <td>
                   <a
