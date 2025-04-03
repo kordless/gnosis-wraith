@@ -770,6 +770,42 @@ footer .github-button {
     margin: 0; /* Remove left margin for centered positioning */
 }
 
+/* Philosophy tab styling */
+.philosophy-content {
+    line-height: 1.7;
+}
+
+.philosophy-content h3 {
+    color: var(--primary-color);
+    margin: 1.5em 0 1em;
+}
+
+.philosophy-content p {
+    margin-bottom: 1em;
+}
+
+.philosophy-list {
+    list-style-type: disc;
+    margin-left: 1.5em;
+    margin-bottom: 1.5em;
+    color: var(--text-color);
+}
+
+.philosophy-list li {
+    margin-bottom: 0.5em;
+}
+
+.highlighted-text {
+    color: var(--primary-color);
+    font-style: italic;
+    font-weight: 500;
+    padding: 10px 15px;
+    border-left: 3px solid var(--primary-color);
+    margin: 20px 0;
+    background-color: rgba(78, 158, 255, 0.08);
+    border-radius: var(--border-radius);
+}
+
 /* Message styles - add to styles.css */
 
 .message-container {
