@@ -53,7 +53,7 @@
   <body>
     <nav class="navbar">
       <div class="logo">
-        <a href="{{ url_for('index') }}">
+        <a href="{{ url_for('pages.index') }}">
           <span>Gnosis Wraith 👻</span>
         </a>
       </div>
@@ -63,9 +63,9 @@
             <i class="fas fa-bars"></i>
           </a>
           <ul class="dropdown-menu">
-            <li><a href="{{ url_for('philosophy') }}">Philosophy</a></li>
-            <li><a href="{{ url_for('list_reports') }}">Reportage</a></li>
-            <li><a href="{{ url_for('settings') }}">Settings</a></li>
+            <li><a href="{{ url_for('pages.philosophy') }}">Philosophy</a></li>
+            <li><a href="{{ url_for('pages.list_reports') }}">Reportage</a></li>
+            <li><a href="{{ url_for('pages.settings') }}">Settings</a></li>
           </ul>
         </li>
       </ul>
@@ -498,7 +498,7 @@ if __name__ == "__main__":
             </p>
             
             <div class="cta-buttons" style="margin-top: 30px; text-align: center;">
-              <a href="{{ url_for('philosophy') }}" class="btn primary">Explore Full Gnosis Philosophy</a>
+              <a href="{{ url_for('pages.philosophy') }}" class="btn primary">Explore Full Gnosis Philosophy</a>
             </div>
           </div>
         </section>
