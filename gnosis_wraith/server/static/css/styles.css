@@ -75,6 +75,16 @@ pre {
     color: var(--primary-color);
 }
 
+.logo a {
+    text-decoration: none;
+    display: block;
+    transition: transform 0.2s ease;
+}
+
+.logo a:hover {
+    transform: scale(1.05);
+}
+
 .logo span {
     font-size: 1.2rem;
     font-weight: bold;
