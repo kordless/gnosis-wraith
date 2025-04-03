@@ -313,7 +313,8 @@ pre {
 }
 
 .progress-bar #progress-indicator,
-.progress-bar #multi-progress-indicator {
+.progress-bar #multi-progress-indicator,
+.progress-bar #upload-progress-indicator {
     height: 100%;
     background-color: var(--primary-color);
     width: 0;
