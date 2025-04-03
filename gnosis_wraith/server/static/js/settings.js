@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Cookie utilities
     const Cookies = {
-        set: function(name, value, days = 365) {
+        set: function(name, value, days = 90) { // Changed from 365 to 90 days (3 months)
             const date = new Date();
             date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
             const expires = `expires=${date.toUTCString()}`;

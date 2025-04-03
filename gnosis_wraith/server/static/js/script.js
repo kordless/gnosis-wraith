@@ -466,10 +466,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const cachedData = localStorage.getItem('github_stars_data');
             const now = new Date().getTime();
             
-            // If we have cached data and it's less than 1 hour old, use it
+            // If we have cached data and it's less than 3 months old, use it
             if (cachedData) {
                 const data = JSON.parse(cachedData);
-                if (now - data.timestamp < 60 * 60 * 1000) { // 1 hour in milliseconds
+                if (now - data.timestamp < 90 * 24 * 60 * 60 * 1000) { // 90 days (3 months) in milliseconds
                     console.log('Using cached GitHub stars data');
                     updateStarCount(data.stars);
                     return data.stars;
