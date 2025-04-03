@@ -255,14 +255,25 @@
         <!-- Code Examples Tab -->
         <section id="code-examples" class="tab-content card">
           <h2>Code Examples</h2>
+          
+          <div class="author-quote">
+            <blockquote>
+              "I'm going to kill you with my teacup."
+              <cite>— Richard B. Riddick, The Chronicles of Riddick</cite>
+            </blockquote>
+          </div>
 
           <div class="code-section">
             <h3>Python Code for Image Upload</h3>
+            <p class="code-explanation">
+              This function takes a local image file and uploads it to Gnosis Wraith's API for text extraction. 
+              It handles file validation, proper cleanup of resources, and returns the extracted text in JSON format.
+            </p>
             <div class="code-container">
               <button class="copy-btn" title="Copy to clipboard">
                 <i class="fas fa-copy"></i>
               </button>
-              <pre class="language-python"><code>import requests
+              <pre class="language-python" style="font-size: 0.75em;"><code>import requests
 import os
 
 def upload_image_to_gnosis_wraith(image_path):
@@ -306,11 +317,16 @@ if __name__ == "__main__":
 
           <div class="code-section">
             <h3>Python Code for Web Crawling</h3>
+            <p class="code-explanation">
+              This function sends a crawl request to Gnosis Wraith with configurable options including JavaScript 
+              rendering and LLM integration. It processes the response to extract titles and text content from 
+              the crawled pages.
+            </p>
             <div class="code-container">
               <button class="copy-btn" title="Copy to clipboard">
                 <i class="fas fa-copy"></i>
               </button>
-              <pre class="language-python"><code>import requests
+              <pre class="language-python" style="font-size: 0.75em;"><code>import requests
 import json
 
 def crawl_url_with_gnosis_wraith(url, javascript_enabled=False, llm_provider=None, llm_token=None):

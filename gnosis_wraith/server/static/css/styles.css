@@ -457,6 +457,13 @@ table tr:hover {
     margin-bottom: 10px;
 }
 
+.code-explanation {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
 .code-container {
     position: relative;
     border-radius: var(--border-radius);
