@@ -321,6 +321,29 @@ pre {
     transition: width 0.3s;
 }
 
+/* Search bar */
+.search-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+
+.search-bar input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-family: inherit;
+}
+
+.search-bar button {
+    white-space: nowrap;
+}
+
 /* Result box */
 .result-box {
     margin-top: 20px;
