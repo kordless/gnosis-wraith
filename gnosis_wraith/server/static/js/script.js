@@ -259,6 +259,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 const file = fileInput.files[0];
                 console.log('Selected file:', file);
                 
+                // Show status box and update progress
+                const statusBox = document.getElementById('upload-status');
+                const statusText = document.getElementById('upload-status-text');
+                const progressIndicator = document.getElementById('upload-progress-indicator');
+                
+                statusBox.style.display = 'block';
+                statusText.textContent = 'Uploading image...';
+                progressIndicator.style.width = '25%';
+                
                 // Prepare form data
                 const formData = new FormData();
                 formData.append('image', file);
@@ -266,11 +275,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Make API request
                 console.log('Sending to URL:', `${serverUrl}/api/upload`); // Debug log
+                
+                // Update progress
+                statusText.textContent = 'Processing...';
+                progressIndicator.style.width = '50%';
+                
                 const response = await fetch(`${serverUrl}/api/upload`, {
                     method: 'POST',
                     body: formData
                 });
                 console.log('Response received:', response); // Debug log
+                
+                // Update progress
+                progressIndicator.style.width = '75%';
 
                 if (!response.ok) {
                     throw new Error(`Server responded with status: ${response.status}`);
@@ -278,6 +295,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const result = await response.json();
                 console.log('Result JSON:', result); // Debug log
+                
+                // Update progress to complete
+                statusText.textContent = 'Completed';
+                progressIndicator.style.width = '100%';
                 
                 // Display upload result
                 const uploadResult = document.getElementById('upload-result');
@@ -287,8 +308,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 uploadResult.style.display = 'block';
                 previewImage.src = `${serverUrl}/screenshots/${result.file_path}`;
                 extractedTextContent.textContent = result.extracted_text || 'No text extracted';
+                
+                // After a delay, hide the progress bar
+                setTimeout(() => {
+                    statusBox.style.display = 'none';
+                }, 2000);
             } catch (error) {
                 console.error('Error during upload:', error);
+                
+                // Update status for error
+                if (statusBox && statusText) {
+                    statusText.textContent = `Error: ${error.message}`;
+                    if (progressIndicator) {
+                        progressIndicator.style.width = '100%';
+                        progressIndicator.style.backgroundColor = '#e74c3c'; // Red color for error
+                    }
+                    
+                    // Hide status after delay
+                    setTimeout(() => {
+                        statusBox.style.display = 'none';
+                        if (progressIndicator) {
+                            progressIndicator.style.backgroundColor = ''; // Reset color
+                        }
+                    }, 3000);
+                }
+                
                 alert(`Upload failed: ${error.message}`);
             }
         });

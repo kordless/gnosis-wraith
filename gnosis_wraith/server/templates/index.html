@@ -68,6 +68,7 @@
         <button class="tab-btn" data-tab="multi-crawl">Multi-URL Crawl</button>
         <button class="tab-btn" data-tab="image-upload">Upload Image</button>
         <button class="tab-btn" data-tab="extension">Browser Extension</button>
+        <button class="tab-btn" data-tab="code-examples">Code Examples</button>
       </div>
 
       <main>
@@ -194,6 +195,13 @@
               </button>
             </div>
           </div>
+          
+          <div id="upload-status" class="status-box" style="display: none">
+            <p>Status: <span id="upload-status-text">Idle</span></p>
+            <div class="progress-bar">
+              <div id="upload-progress-indicator"></div>
+            </div>
+          </div>
 
           <div id="upload-result" class="result-box" style="display: none">
             <h3>Uploaded Image</h3>
@@ -206,9 +214,14 @@
               <pre id="extracted-text-content"></pre>
             </div>
           </div>
+        </section>
 
+        <!-- Code Examples Tab -->
+        <section id="code-examples" class="tab-content card">
+          <h2>Code Examples</h2>
+          
           <div class="code-section">
-            <h3>Python Code for API Upload</h3>
+            <h3>Python Code for Image Upload</h3>
             <div class="code-container">
               <button class="copy-btn" title="Copy to clipboard">
                 <i class="fas fa-copy"></i>
@@ -252,6 +265,73 @@ if __name__ == "__main__":
         print(f"Extracted text: {result['extracted_text']}")
     else:
         print("Failed to extract text from image")</code></pre>
+            </div>
+          </div>
+          
+          <div class="code-section">
+            <h3>Python Code for Web Crawling</h3>
+            <div class="code-container">
+              <button class="copy-btn" title="Copy to clipboard">
+                <i class="fas fa-copy"></i>
+              </button>
+              <pre class="language-python"><code>import requests
+import json
+
+def crawl_url_with_gnosis_wraith(url, javascript_enabled=False, llm_provider=None, llm_token=None):
+    """
+    Crawl a URL with Gnosis Wraith and get the extracted text and optionally LLM summary.
+    
+    Args:
+        url (str): The URL to crawl
+        javascript_enabled (bool): Whether to enable JavaScript for the crawl
+        llm_provider (str, optional): LLM provider to use for summarization (e.g., 'anthropic', 'openai')
+        llm_token (str, optional): API token for the LLM provider
+        
+    Returns:
+        dict: API response with crawl results
+    """
+    api_url = "http://localhost:5678/api/crawl"
+    
+    payload = {
+        "url": url,
+        "javascript_enabled": javascript_enabled,
+        "output_format": "markdown"
+    }
+    
+    # Add LLM configuration if provided
+    if llm_provider and llm_token:
+        payload["llm_provider"] = llm_provider
+        payload["llm_token"] = llm_token
+    
+    try:
+        response = requests.post(
+            api_url,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload)
+        )
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error during crawl: {e}")
+        return None
+
+# Example usage
+if __name__ == "__main__":
+    result = crawl_url_with_gnosis_wraith(
+        url="https://example.com",
+        javascript_enabled=True
+    )
+    
+    if result and result.get("success"):
+        print(f"Processed {len(result['results'])} URLs")
+        
+        # Print first result details
+        if result['results']:
+            first_result = result['results'][0]
+            print(f"Title: {first_result.get('title')}")
+            print(f"Extract: {first_result.get('extracted_text', '')[:100]}...")
+    else:
+        print("Crawl failed")</code></pre>
             </div>
           </div>
         </section>
