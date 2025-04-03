@@ -237,8 +237,10 @@ async def api_crawl():
 @app.route('/api/upload', methods=['POST'])
 async def api_upload():
     """API endpoint to upload images."""
+    logger.info("API upload endpoint called")
     files = await request.files
     form = await request.form
+    logger.info(f"Files received: {files.keys()}, Form data: {form.keys()}")
     
     if 'image' not in files:
         return jsonify({
@@ -280,10 +282,18 @@ async def api_upload():
         
         # Generate a report
         report_title = f"{title} - {datetime.datetime.now().strftime('%Y-%m-%d')}"
-        report_path = await save_markdown_report(report_title, [image_result])
+        logger.info(f"Generating image upload report with title: {report_title}")
         
-        # Always convert to HTML as well
-        html_path = await convert_markdown_to_html(report_path)
+        try:
+            report_path = await save_markdown_report(report_title, [image_result])
+            logger.info(f"Successfully generated markdown report: {report_path}")
+            
+            # Always convert to HTML as well
+            html_path = await convert_markdown_to_html(report_path)
+            logger.info(f"Successfully generated HTML report: {html_path}")
+        except Exception as report_error:
+            logger.error(f"Error generating reports: {str(report_error)}")
+            raise
         
         return jsonify({
             "success": True,

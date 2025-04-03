@@ -193,32 +193,11 @@ async def api_crawl():
 
 @api_bp.route('/upload', methods=['POST'])
 async def api_upload():
-    """API endpoint to upload images."""
-    files = await request.files
-    
-    if 'image' not in files:
-        return jsonify({
-            "success": False,
-            "error": "No image file provided"
-        }), 400
-    
+    """API endpoint to upload images - defers to the main app implementation."""
     try:
-        file = files['image']
-        filename = f"{uuid.uuid4().hex}.png"
-        file_path = os.path.join(SCREENSHOTS_DIR, filename)
-        await file.save(file_path)
-        
-        # Use ModelManager to extract text from the image
-        from ai.models import ModelManager
-        model_manager = ModelManager()
-        extracted_text = await model_manager.extract_text_from_image(file_path)
-        
-        return jsonify({
-            "success": True,
-            "file_path": os.path.basename(file_path),
-            "extracted_text": extracted_text
-        })
-    
+        # This route is handled by the main app.py implementation
+        from app import api_upload as main_api_upload
+        return await main_api_upload()
     except Exception as e:
         logger.error(f"API upload error: {str(e)}")
         return jsonify({
