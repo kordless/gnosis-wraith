@@ -392,17 +392,50 @@ async def serve_extension():
         shutil.copy2(gnosis_zip_path, webwraith_zip_path)
         logger.info(f"Created webwraith extension zip: {webwraith_zip_path}")
     
-    # Redirect to the static file with version in filename
-    return redirect(url_for('static', filename=f'downloads/{gnosis_zip_filename}'))
+    # Send file directly instead of redirecting to preserve filename
+    from quart import send_file
+    response = await send_file(gnosis_zip_path, 
+                               mimetype='application/zip',
+                               as_attachment=True,
+                               attachment_filename=gnosis_zip_filename)
+    
+    # Add Cache-Control header to prevent caching
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    return response
 
 @app.route('/webwraith-extension')
 async def serve_webwraith_extension():
     """Alternate URL for serving the extension zip file."""
+    downloads_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/server/static/downloads')
+    
     # Use the global version variable
     extension_version = EXTENSION_VERSION
     
-    # Redirect to the static file with version in filename
-    return redirect(url_for('static', filename=f'downloads/webwraith-extension-{extension_version}.zip'))
+    # Create versioned filename
+    webwraith_zip_filename = f'webwraith-extension-{extension_version}.zip'
+    webwraith_zip_path = os.path.join(downloads_dir, webwraith_zip_filename)
+    
+    # Ensure the file exists
+    if not os.path.exists(webwraith_zip_path):
+        # If not, redirect to main extension route which will create it
+        return redirect(url_for('serve_extension'))
+    
+    # Send file directly instead of redirecting to preserve filename
+    from quart import send_file
+    response = await send_file(webwraith_zip_path, 
+                           mimetype='application/zip',
+                           as_attachment=True,
+                           attachment_filename=webwraith_zip_filename)
+    
+    # Add Cache-Control header to prevent caching
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    return response
 
 @app.route('/settings')
 async def settings():
