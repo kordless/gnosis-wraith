@@ -111,7 +111,7 @@
   <body>
     <nav class="navbar">
       <div class="logo">
-        <a href="{{ url_for('index') }}">
+        <a href="{{ url_for('pages.index') }}">
           <span>Gnosis Wraith 👻</span>
         </a>
       </div>
@@ -121,9 +121,9 @@
             <i class="fas fa-bars"></i>
           </a>
           <ul class="dropdown-menu">
-            <li><a href="{{ url_for('index') }}">Home</a></li>
-            <li><a href="{{ url_for('list_reports') }}">Reportage</a></li>
-            <li><a href="{{ url_for('settings') }}">Settings</a></li>
+            <li><a href="{{ url_for('pages.index') }}">Home</a></li>
+            <li><a href="{{ url_for('pages.list_reports') }}">Reportage</a></li>
+            <li><a href="{{ url_for('pages.settings') }}">Settings</a></li>
           </ul>
         </li>
       </ul>
