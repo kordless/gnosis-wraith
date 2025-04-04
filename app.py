@@ -394,10 +394,27 @@ async def serve_extension():
     
     # Send file directly instead of redirecting to preserve filename
     from quart import send_file
-    response = await send_file(gnosis_zip_path, 
-                               mimetype='application/zip',
-                               as_attachment=True,
-                               attachment_filename=gnosis_zip_filename)
+    
+    # For Quart 0.18.0 and above
+    try:
+        response = await send_file(
+            gnosis_zip_path, 
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=gnosis_zip_filename
+        )
+    except TypeError:
+        # Fallback for older Quart versions
+        response = await send_file(
+            gnosis_zip_path, 
+            mimetype='application/zip',
+            as_attachment=True,
+            attachment_filename=gnosis_zip_filename
+        )
+    
+    # Force download headers
+    response.headers['Content-Disposition'] = f'attachment; filename="{gnosis_zip_filename}"'
+    response.headers['Content-Type'] = 'application/zip'
     
     # Add Cache-Control header to prevent caching
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
@@ -425,10 +442,27 @@ async def serve_webwraith_extension():
     
     # Send file directly instead of redirecting to preserve filename
     from quart import send_file
-    response = await send_file(webwraith_zip_path, 
-                           mimetype='application/zip',
-                           as_attachment=True,
-                           attachment_filename=webwraith_zip_filename)
+    
+    # For Quart 0.18.0 and above
+    try:
+        response = await send_file(
+            webwraith_zip_path, 
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=webwraith_zip_filename
+        )
+    except TypeError:
+        # Fallback for older Quart versions
+        response = await send_file(
+            webwraith_zip_path, 
+            mimetype='application/zip',
+            as_attachment=True,
+            attachment_filename=webwraith_zip_filename
+        )
+    
+    # Force download headers
+    response.headers['Content-Disposition'] = f'attachment; filename="{webwraith_zip_filename}"'
+    response.headers['Content-Type'] = 'application/zip'
     
     # Add Cache-Control header to prevent caching
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
