@@ -584,60 +584,76 @@ function stitchAndProcessFullPageScreenshot(sections, dimensions, url, title, ta
           console.log("Could not notify content script:", e);
         }
         
-        // Convert blob to data URL for processing
-        const reader = new FileReader();
-        reader.onloadend = function() {
-          try {
-            // Generate filename based on page title or URL
-            const filename = generateFilename(title || url || "fullpage");
-            const dataUrl = reader.result;
+        // In service workers, we need to handle blobs differently
+        // We'll create a temporary URL for the blob
+        try {
+          const filename = generateFilename(title || url || "fullpage");
+          
+          if (sendToApi) {
+            console.log("Sending stitched image to API server");
             
-            if (sendToApi) {
-              console.log("Sending stitched image to API server");
-              try {
-                // Upload the stitched image to the API
-                uploadImageToServer(dataUrl, { 
+            // Convert blob to base64 using a different approach for service workers
+            // Use a slightly different approach that works in service workers
+            const blobUrl = URL.createObjectURL(blob);
+            
+            // Use fetch to get the blob data
+            fetch(blobUrl)
+              .then(response => response.arrayBuffer())
+              .then(buffer => {
+                // Convert array buffer to base64
+                const base64 = btoa(
+                  new Uint8Array(buffer)
+                    .reduce((data, byte) => data + String.fromCharCode(byte), '')
+                );
+                
+                const dataUrl = `data:image/png;base64,${base64}`;
+                
+                // Upload using our function
+                return uploadImageToServer(dataUrl, { 
                   id: tabId, 
                   url: url, 
                   title: title 
-                }).catch(error => {
-                  console.error("Error uploading stitched image:", error);
-                  // Fallback to download if upload fails
-                  chrome.downloads.download({
-                    url: dataUrl,
-                    filename: "fullpage_" + filename,
-                    saveAs: true
-                  });
                 });
-              } catch (error) {
-                console.error("Error before uploadImageToServer can execute:", error);
-                // Fallback to download if upload fails
+              })
+              .catch(error => {
+                console.error("Error processing blob:", error);
+                // Fallback to download
+                const downloadUrl = URL.createObjectURL(blob);
                 chrome.downloads.download({
-                  url: dataUrl,
+                  url: downloadUrl,
                   filename: "fullpage_" + filename,
                   saveAs: true
                 });
-              }
-            } else {
-              console.log("Initiating download of stitched image");
-              // Download the data URL directly
-              chrome.downloads.download({
-                url: dataUrl,
-                filename: "fullpage_" + filename,
-                saveAs: true
+                // Clean up the URL
+                URL.revokeObjectURL(downloadUrl);
+              })
+              .finally(() => {
+                // Clean up the URL
+                URL.revokeObjectURL(blobUrl);
+                
+                // Save to history
+                saveToHistory(url, title);
               });
-            }
+            
+          } else {
+            // For direct download, we can use the blob URL directly
+            console.log("Initiating download of stitched image");
+            const blobUrl = URL.createObjectURL(blob);
+            chrome.downloads.download({
+              url: blobUrl,
+              filename: "fullpage_" + filename,
+              saveAs: true
+            });
+            
+            // Clean up the URL after download starts
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
             
             // Save to history
             saveToHistory(url, title);
-          } catch (error) {
-            console.error("Error in processing stitched image:", error);
           }
-        };
-        reader.onerror = function() {
-          console.error("Error reading blob as data URL");
-        };
-        reader.readAsDataURL(blob);
+        } catch (error) {
+          console.error("Error in processing stitched image:", error);
+        }
       }).catch(error => {
         console.error("Error converting canvas to blob:", error);
       });
