@@ -267,6 +267,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   } else if (message.action === 'capturingFinished') {
     restoreUIElements();
+    console.log('Received capturingFinished message:', message);
     // Fix ReferenceError by safely accessing the sendToApi property
     const wasApiSent = (message && message.sendToApi) ? true : false;
     const statusMessage = wasApiSent ? 'Screenshot sent for processing!' : 'Screenshot saved!';
