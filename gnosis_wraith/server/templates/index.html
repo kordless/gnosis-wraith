@@ -162,7 +162,7 @@
               <label for="urls">URLs (one per line):</label>
               <textarea
                 id="urls"
-                placeholder="https://news.ycombinator.com\nhttps://stuff.com"
+                placeholder="https://news.ycombinator.com"
               ></textarea>
             </div>
 
@@ -496,9 +496,14 @@ if __name__ == "__main__":
               Because perception without discrimination isn't awareness. It's
               just motion.
             </p>
-            
-            <div class="cta-buttons" style="margin-top: 30px; text-align: center;">
-              <a href="{{ url_for('pages.philosophy') }}" class="btn primary">Explore Full Gnosis Philosophy</a>
+
+            <div
+              class="cta-buttons"
+              style="margin-top: 30px; text-align: center"
+            >
+              <a href="{{ url_for('pages.philosophy') }}" class="btn primary"
+                >Explore Full Gnosis Philosophy</a
+              >
             </div>
           </div>
         </section>
