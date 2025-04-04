@@ -35,24 +35,21 @@ COPY . .
 # Set extension version
 ENV EXTENSION_VERSION=1.0.4
 
-# Create downloads directory
-RUN mkdir -p /app/gnosis_wraith/server/static/downloads
-
-# Try to copy pre-built extension zip from various locations
-# If it exists, use it; otherwise, create a new one
-COPY ./gnosis_wraith/server/static/downloads/gnosis-wraith-extension-*.zip /app/gnosis_wraith/server/static/downloads/ 2>/dev/null || true
-
-# Also check in /host-files if mounted
-COPY /host-files/gnosis-wraith-extension-*.zip /app/gnosis_wraith/server/static/downloads/ 2>/dev/null || true
-
-# If no zip file was copied, create it
-RUN if [ ! -f "/app/gnosis_wraith/server/static/downloads/gnosis-wraith-extension-${EXTENSION_VERSION}.zip" ] && [ -d "/app/gnosis_wraith/extension" ]; then \
-      echo "No extension zip found - creating new one with version ${EXTENSION_VERSION}" && \
-      cd /app/gnosis_wraith && \
-      zip -r /app/gnosis_wraith/server/static/downloads/gnosis-wraith-extension-${EXTENSION_VERSION}.zip extension; \
-    else \
-      echo "Found existing extension zip file - using that"; \
-    fi
+# Create extension zip file with a shell script that handles checking for existing files
+RUN mkdir -p /app/gnosis_wraith/server/static/downloads && \
+    echo "#!/bin/bash" > /app/build_extension.sh && \
+    echo "TARGET_FILE=\"/app/gnosis_wraith/server/static/downloads/gnosis-wraith-extension-${EXTENSION_VERSION}.zip\"" >> /app/build_extension.sh && \
+    echo "if [ -f \"/host-files/gnosis-wraith-extension-${EXTENSION_VERSION}.zip\" ]; then" >> /app/build_extension.sh && \
+    echo "  echo \"Found pre-built extension in host-files - copying it\"" >> /app/build_extension.sh && \
+    echo "  cp \"/host-files/gnosis-wraith-extension-${EXTENSION_VERSION}.zip\" \"\$TARGET_FILE\"" >> /app/build_extension.sh && \
+    echo "elif [ ! -f \"\$TARGET_FILE\" ] && [ -d \"/app/gnosis_wraith/extension\" ]; then" >> /app/build_extension.sh && \
+    echo "  echo \"No extension zip found - creating new one with version ${EXTENSION_VERSION}\"" >> /app/build_extension.sh && \
+    echo "  cd /app/gnosis_wraith && zip -r \"\$TARGET_FILE\" extension" >> /app/build_extension.sh && \
+    echo "else" >> /app/build_extension.sh && \
+    echo "  echo \"Found existing extension zip at \$TARGET_FILE - using that\"" >> /app/build_extension.sh && \
+    echo "fi" >> /app/build_extension.sh && \
+    chmod +x /app/build_extension.sh && \
+    /app/build_extension.sh
 
 # Volume for persistent storage
 VOLUME /data
