@@ -343,26 +343,38 @@ async def serve_screenshot(filename):
 async def serve_extension():
     """Generate and serve the extension zip file."""
     downloads_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/server/static/downloads')
-    zip_path = os.path.join(downloads_dir, 'gnosis-wraith-extension.zip')
     
-    # Check if extension zip exists, create it if not
-    if not os.path.exists(zip_path):
-        extension_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/extension')
-        if os.path.exists(extension_dir):
-            # Create downloads directory if it doesn't exist
-            os.makedirs(downloads_dir, exist_ok=True)
-            
-            # Create zip file
-            import zipfile
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk(extension_dir):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, os.path.join(extension_dir, '..'))
-                        zipf.write(file_path, arcname)
+    # Support both naming conventions
+    zip_paths = {
+        'gnosis': os.path.join(downloads_dir, 'gnosis-wraith-extension.zip'),
+        'webwraith': os.path.join(downloads_dir, 'webwraith-extension.zip')
+    }
     
-    # Redirect to the static file
+    for zip_name, zip_path in zip_paths.items():
+        # Check if extension zip exists, create it if not
+        if not os.path.exists(zip_path):
+            extension_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/extension')
+            if os.path.exists(extension_dir):
+                # Create downloads directory if it doesn't exist
+                os.makedirs(downloads_dir, exist_ok=True)
+                
+                # Create zip file
+                import zipfile
+                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                    for root, dirs, files in os.walk(extension_dir):
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_path, os.path.join(extension_dir, '..'))
+                            zipf.write(file_path, arcname)
+    
+    # Redirect to the static file (using the gnosis-wraith name for backward compatibility)
     return redirect(url_for('static', filename='downloads/gnosis-wraith-extension.zip'))
+
+@app.route('/webwraith-extension')
+async def serve_webwraith_extension():
+    """Alternate URL for serving the extension zip file."""
+    # Redirect to the static file with the webwraith name
+    return redirect(url_for('static', filename='downloads/webwraith-extension.zip'))
 
 @app.route('/settings')
 async def settings():
