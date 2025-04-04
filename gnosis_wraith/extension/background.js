@@ -272,6 +272,7 @@ async function captureUrl(url, sendToApi = false) {
 
 // Function to upload image to Wraith API server
 async function uploadImageToServer(dataUrl, tabInfo) {
+  console.log("uploadImageToServer called with tabInfo:", JSON.stringify(tabInfo));
   try {
     // Get server URL from storage, default to localhost if not set
     const { serverUrl = 'http://localhost:5678' } = await chrome.storage.local.get(['serverUrl']);
@@ -593,20 +594,30 @@ function stitchAndProcessFullPageScreenshot(sections, dimensions, url, title, ta
             
             if (sendToApi) {
               console.log("Sending stitched image to API server");
-              // Upload the stitched image to the API
-              uploadImageToServer(dataUrl, { 
-                id: tabId, 
-                url: url, 
-                title: title 
-              }).catch(error => {
-                console.error("Error uploading stitched image:", error);
+              try {
+                // Upload the stitched image to the API
+                uploadImageToServer(dataUrl, { 
+                  id: tabId, 
+                  url: url, 
+                  title: title 
+                }).catch(error => {
+                  console.error("Error uploading stitched image:", error);
+                  // Fallback to download if upload fails
+                  chrome.downloads.download({
+                    url: dataUrl,
+                    filename: "fullpage_" + filename,
+                    saveAs: true
+                  });
+                });
+              } catch (error) {
+                console.error("Error before uploadImageToServer can execute:", error);
                 // Fallback to download if upload fails
                 chrome.downloads.download({
                   url: dataUrl,
                   filename: "fullpage_" + filename,
                   saveAs: true
                 });
-              });
+              }
             } else {
               console.log("Initiating download of stitched image");
               // Download the data URL directly
