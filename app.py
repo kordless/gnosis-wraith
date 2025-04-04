@@ -344,37 +344,60 @@ async def serve_extension():
     """Generate and serve the extension zip file."""
     downloads_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/server/static/downloads')
     
-    # Support both naming conventions
-    zip_paths = {
-        'gnosis': os.path.join(downloads_dir, 'gnosis-wraith-extension.zip'),
-        'webwraith': os.path.join(downloads_dir, 'webwraith-extension.zip')
+    # Hardcode the version to match manifest.json
+    extension_version = "1.0.4"
+    logger.info(f"Using extension version: {extension_version}")
+    
+    # Include version in filenames to prevent browser caching
+    zip_filenames = {
+        'gnosis': f'gnosis-wraith-extension-{extension_version}.zip',
+        'webwraith': f'webwraith-extension-{extension_version}.zip'
     }
     
-    for zip_name, zip_path in zip_paths.items():
-        # Check if extension zip exists, create it if not
-        if not os.path.exists(zip_path):
-            extension_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/extension')
-            if os.path.exists(extension_dir):
-                # Create downloads directory if it doesn't exist
-                os.makedirs(downloads_dir, exist_ok=True)
-                
-                # Create zip file
-                import zipfile
-                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                    for root, dirs, files in os.walk(extension_dir):
-                        for file in files:
-                            file_path = os.path.join(root, file)
-                            arcname = os.path.relpath(file_path, os.path.join(extension_dir, '..'))
-                            zipf.write(file_path, arcname)
+    zip_paths = {
+        name: os.path.join(downloads_dir, filename) 
+        for name, filename in zip_filenames.items()
+    }
     
-    # Redirect to the static file (using the gnosis-wraith name for backward compatibility)
-    return redirect(url_for('static', filename='downloads/gnosis-wraith-extension.zip'))
+    # Create extension zips with version in filename
+    extension_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/extension')
+    if os.path.exists(extension_dir):
+        # Create downloads directory if it doesn't exist
+        os.makedirs(downloads_dir, exist_ok=True)
+        
+        # Remove any old version zip files
+        import glob
+        old_zips = glob.glob(os.path.join(downloads_dir, 'gnosis-wraith-extension-*.zip'))
+        old_zips.extend(glob.glob(os.path.join(downloads_dir, 'webwraith-extension-*.zip')))
+        for old_zip in old_zips:
+            try:
+                os.remove(old_zip)
+                logger.info(f"Removed old extension zip: {old_zip}")
+            except Exception as e:
+                logger.error(f"Error removing old zip: {str(e)}")
+        
+        # Create fresh zip files with version in filename
+        import zipfile
+        for zip_name, zip_path in zip_paths.items():
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(extension_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, os.path.join(extension_dir, '..'))
+                        zipf.write(file_path, arcname)
+            logger.info(f"Created new extension zip: {zip_path}")
+    
+    # Redirect to the static file with version in filename
+    return redirect(url_for('static', filename=f'downloads/{zip_filenames["gnosis"]}'))
 
 @app.route('/webwraith-extension')
 async def serve_webwraith_extension():
     """Alternate URL for serving the extension zip file."""
-    # Redirect to the static file with the webwraith name
-    return redirect(url_for('static', filename='downloads/webwraith-extension.zip'))
+    # Hardcode the version to match manifest.json
+    extension_version = "1.0.4"
+    
+    # Redirect to the static file with version in filename
+    return redirect(url_for('static', filename=f'downloads/webwraith-extension-{extension_version}.zip'))
 
 @app.route('/settings')
 async def settings():
