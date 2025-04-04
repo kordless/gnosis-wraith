@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Gnosis Wraith Capture",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Gnosis Wraith - Capture and analyze web pages, files, and data streams",
   "permissions": [
     "contextMenus",
