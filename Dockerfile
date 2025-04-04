@@ -32,11 +32,26 @@ RUN apt-get update && \
 # Copy application code
 COPY . .
 
-# Create extension zip file
-RUN mkdir -p /app/gnosis_wraith/server/static/downloads && \
-    if [ -d "/app/gnosis_wraith/extension" ]; then \
+# Set extension version
+ENV EXTENSION_VERSION=1.0.4
+
+# Create downloads directory
+RUN mkdir -p /app/gnosis_wraith/server/static/downloads
+
+# Try to copy pre-built extension zip from various locations
+# If it exists, use it; otherwise, create a new one
+COPY ./gnosis_wraith/server/static/downloads/gnosis-wraith-extension-*.zip /app/gnosis_wraith/server/static/downloads/ 2>/dev/null || true
+
+# Also check in /host-files if mounted
+COPY /host-files/gnosis-wraith-extension-*.zip /app/gnosis_wraith/server/static/downloads/ 2>/dev/null || true
+
+# If no zip file was copied, create it
+RUN if [ ! -f "/app/gnosis_wraith/server/static/downloads/gnosis-wraith-extension-${EXTENSION_VERSION}.zip" ] && [ -d "/app/gnosis_wraith/extension" ]; then \
+      echo "No extension zip found - creating new one with version ${EXTENSION_VERSION}" && \
       cd /app/gnosis_wraith && \
-      zip -r /app/gnosis_wraith/server/static/downloads/gnosis-wraith-extension.zip extension; \
+      zip -r /app/gnosis_wraith/server/static/downloads/gnosis-wraith-extension-${EXTENSION_VERSION}.zip extension; \
+    else \
+      echo "Found existing extension zip file - using that"; \
     fi
 
 # Volume for persistent storage

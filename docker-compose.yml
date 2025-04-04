@@ -8,6 +8,7 @@ services:
       - "5678:5678"
     volumes:
       - wraith-data:/data
+      - ./host-files:/host-files
     restart: unless-stopped
     environment:
       - GNOSIS_WRAITH_STORAGE_PATH=/data
@@ -22,6 +23,7 @@ services:
       - "5678:5678"
     volumes:
       - wraith-data:/data
+      - ./host-files:/host-files
     restart: unless-stopped
     environment:
       - GNOSIS_WRAITH_STORAGE_PATH=/data
