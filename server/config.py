@@ -24,7 +24,7 @@ logger.setLevel(logging.INFO)
 
 c_handler = logging.StreamHandler()
 f_handler = logging.FileHandler(LOG_FILE)
-c_handler.setLevel(logging.WARNING)
+c_handler.setLevel(logging.INFO)  # Changed from WARNING to INFO
 f_handler.setLevel(logging.INFO)
 
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
