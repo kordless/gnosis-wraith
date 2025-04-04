@@ -291,64 +291,48 @@ async function uploadImageToServer(dataUrl, tabInfo) {
         chrome.tabs.sendMessage(tabInfo.id, { action: 'uploadStarted' });
       }
       
-      // Create XHR to track progress
+      // Use fetch instead of XMLHttpRequest (which isn't available in service workers)
       return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        
-        xhr.open('POST', apiUrl, true);
-        
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable && tabInfo.id) {
-            const progress = Math.round((e.loaded / e.total) * 100);
-            chrome.tabs.sendMessage(tabInfo.id, { 
-              action: 'uploadProgress', 
-              progress 
-            });
-          }
-        };
-        
-        xhr.onload = function() {
-          if (this.status >= 200 && this.status < 300) {
-            try {
-              const response = JSON.parse(xhr.responseText);
-              
-              // Notify content script of successful upload
-              if (tabInfo.id) {
-                // Get server base URL to construct report URL
-                let reportUrl = `${serverUrl}/reports/${response.html_path}`;
-                
-                chrome.tabs.sendMessage(tabInfo.id, { 
-                  action: 'uploadFinished',
-                  reportUrl
-                });
-              }
-              
-              resolve(response);
-            } catch (e) {
-              reject(new Error('Invalid response from server'));
-            }
+        fetch(apiUrl, {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => {
+          if (response.ok) {
+            return response.json();
           } else {
             if (tabInfo.id) {
               chrome.tabs.sendMessage(tabInfo.id, { 
                 action: 'uploadError', 
-                error: 'Server error: ' + this.status
+                error: 'Server error: ' + response.status
               });
             }
-            reject(new Error('Server error: ' + this.status));
+            throw new Error('Server error: ' + response.status);
           }
-        };
-        
-        xhr.onerror = function() {
+        })
+        .then(data => {
+          // Notify content script of successful upload
+          if (tabInfo.id) {
+            // Get server base URL to construct report URL
+            let reportUrl = `${serverUrl}/reports/${data.html_path}`;
+            
+            chrome.tabs.sendMessage(tabInfo.id, { 
+              action: 'uploadFinished',
+              reportUrl
+            });
+          }
+          
+          resolve(data);
+        })
+        .catch(error => {
           if (tabInfo.id) {
             chrome.tabs.sendMessage(tabInfo.id, { 
               action: 'uploadError', 
-              error: 'Connection error'
+              error: error.message || 'Connection error'
             });
           }
-          reject(new Error('Connection error'));
-        };
-        
-        xhr.send(formData);
+          reject(error);
+        });
       });
     } catch (error) {
       if (tabInfo.id) {
