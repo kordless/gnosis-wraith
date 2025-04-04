@@ -94,7 +94,7 @@ chrome.action.onClicked.addListener((tab) => {
 // Listen for messages from popup or content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'captureUrl') {
-    captureUrl(message.url);
+    captureUrl(message.url, message.sendToApi);
     sendResponse({ status: 'capturing' });
     return true;
   }
@@ -106,14 +106,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.fullPage === true) {
           // Just use the existing content script if possible
           try {
-            chrome.tabs.sendMessage(tabs[0].id, { action: 'requestFullPageCapture' }, 
+            chrome.tabs.sendMessage(tabs[0].id, { 
+              action: 'requestFullPageCapture',
+              sendToApi: message.sendToApi
+            }, 
               response => {
                 if (chrome.runtime.lastError || !response) {
                   console.log("Content script not accessible, injecting script");
                   // Fallback - inject minimal script that just triggers the capture
                   chrome.scripting.executeScript({
                     target: { tabId: tabs[0].id },
-                    function: () => {
+                    function: (sendToApi) => {
                       chrome.runtime.sendMessage({
                         action: 'startFullPageCapture',
                         dimensions: {
@@ -121,22 +124,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                           scrollWidth: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth),
                           viewportHeight: window.innerHeight,
                           viewportWidth: window.innerWidth
-                        }
+                        },
+                        sendToApi: sendToApi
                       });
-                    }
+                    },
+                    args: [message.sendToApi]
                   }).catch(error => {
                     console.error("Could not inject script:", error);
-                    captureAndDownload(tabs[0]);
+                    captureAndProcess(tabs[0], message.sendToApi);
                   });
                 }
               });
           } catch (e) {
             console.error("Error communicating with content script:", e);
             // Still try to capture the visible part
-            captureAndDownload(tabs[0]);
+            captureAndProcess(tabs[0], message.sendToApi);
           }
         } else {
-          captureAndDownload(tabs[0]);
+          captureAndProcess(tabs[0], message.sendToApi);
         }
         sendResponse({ status: 'processing' });
       }
@@ -212,6 +217,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const dimensions = message.dimensions;
     const url = message.url;
     const title = message.title;
+    const sendToApi = message.sendToApi || false;
     
     // Validate the sections data
     if (!Array.isArray(sections) || sections.length === 0) {
@@ -224,7 +230,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Create a canvas to stitch the screenshots together
     try {
       console.log("Starting stitching process");
-      stitchAndDownloadFullPageScreenshot(sections, dimensions, url, title, sender.tab.id);
+      stitchAndProcessFullPageScreenshot(sections, dimensions, url, title, sender.tab.id, sendToApi);
       sendResponse({ status: 'stitching' });
     } catch (error) {
       console.error("Error in stitching process:", error);
@@ -244,7 +250,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 // Function to capture URL and navigate to it for screenshot
-async function captureUrl(url) {
+async function captureUrl(url, sendToApi = false) {
   try {
     // Create a new tab with the specified URL
     let processedUrl = url;
@@ -257,15 +263,110 @@ async function captureUrl(url) {
     // Wait for page to load
     // This is a simple approach - a more robust solution would listen for tab loading events
     setTimeout(() => {
-      captureAndDownload(tab);
+      captureAndProcess(tab, sendToApi);
     }, 5000); // Wait 5 seconds for the page to load
   } catch (error) {
     console.error("Error capturing URL:", error);
   }
 }
 
-// Function to capture and download
-async function captureAndDownload(tab) {
+// Function to upload image to Wraith API server
+async function uploadImageToServer(dataUrl, tabInfo) {
+  try {
+    // Get server URL from storage, default to localhost if not set
+    const { serverUrl = 'http://localhost:5678' } = await chrome.storage.local.get(['serverUrl']);
+    const apiUrl = `${serverUrl}/api/upload`;
+    
+    // Convert dataUrl to Blob
+    const blob = dataUrlToBlob(dataUrl);
+    
+    // Create FormData
+    const formData = new FormData();
+    formData.append('image', blob, 'screenshot.png');
+    formData.append('title', `Screenshot of ${tabInfo.title || tabInfo.url}`);
+    
+    try {
+      // Notify content script that upload is starting
+      if (tabInfo.id) {
+        chrome.tabs.sendMessage(tabInfo.id, { action: 'uploadStarted' });
+      }
+      
+      // Create XHR to track progress
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        
+        xhr.open('POST', apiUrl, true);
+        
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && tabInfo.id) {
+            const progress = Math.round((e.loaded / e.total) * 100);
+            chrome.tabs.sendMessage(tabInfo.id, { 
+              action: 'uploadProgress', 
+              progress 
+            });
+          }
+        };
+        
+        xhr.onload = function() {
+          if (this.status >= 200 && this.status < 300) {
+            try {
+              const response = JSON.parse(xhr.responseText);
+              
+              // Notify content script of successful upload
+              if (tabInfo.id) {
+                // Get server base URL to construct report URL
+                let reportUrl = `${serverUrl}/reports/${response.html_path}`;
+                
+                chrome.tabs.sendMessage(tabInfo.id, { 
+                  action: 'uploadFinished',
+                  reportUrl
+                });
+              }
+              
+              resolve(response);
+            } catch (e) {
+              reject(new Error('Invalid response from server'));
+            }
+          } else {
+            if (tabInfo.id) {
+              chrome.tabs.sendMessage(tabInfo.id, { 
+                action: 'uploadError', 
+                error: 'Server error: ' + this.status
+              });
+            }
+            reject(new Error('Server error: ' + this.status));
+          }
+        };
+        
+        xhr.onerror = function() {
+          if (tabInfo.id) {
+            chrome.tabs.sendMessage(tabInfo.id, { 
+              action: 'uploadError', 
+              error: 'Connection error'
+            });
+          }
+          reject(new Error('Connection error'));
+        };
+        
+        xhr.send(formData);
+      });
+    } catch (error) {
+      if (tabInfo.id) {
+        chrome.tabs.sendMessage(tabInfo.id, { 
+          action: 'uploadError', 
+          error: error.message
+        });
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error uploading to server:", error);
+    throw error;
+  }
+}
+
+// Function to capture and process
+async function captureAndProcess(tab, sendToApi = false) {
   // Prevent multiple captures at once
   if (isCapturing) return;
   isCapturing = true;
@@ -292,15 +393,32 @@ async function captureAndDownload(tab) {
       }
       
       try {
-        // Generate filename based on page title or URL
-        const filename = generateFilename(tab.title || tab.url);
-        
-        // Download directly from the data URL
-        chrome.downloads.download({
-          url: dataUrl,
-          filename: filename,
-          saveAs: true
-        });
+        if (sendToApi) {
+          // Upload to server
+          try {
+            await uploadImageToServer(dataUrl, tab);
+            // History is updated in the uploadImageToServer function
+          } catch (uploadError) {
+            console.error("Error uploading to server:", uploadError);
+            // Still save locally as fallback
+            const filename = generateFilename(tab.title || tab.url);
+            chrome.downloads.download({
+              url: dataUrl,
+              filename: filename,
+              saveAs: true
+            });
+          }
+        } else {
+          // Generate filename based on page title or URL
+          const filename = generateFilename(tab.title || tab.url);
+          
+          // Download directly from the data URL
+          chrome.downloads.download({
+            url: dataUrl,
+            filename: filename,
+            saveAs: true
+          });
+        }
         
         // Save to history
         saveToHistory(tab.url, tab.title);
@@ -310,7 +428,10 @@ async function captureAndDownload(tab) {
       } finally {
         // Notify content script that capture has finished
         try {
-          chrome.tabs.sendMessage(tab.id, { action: 'capturingFinished' });
+          chrome.tabs.sendMessage(tab.id, { 
+            action: 'capturingFinished',
+            sendToApi: sendToApi
+          });
         } catch (e) {
           console.log("Could not notify content script:", e);
         }
@@ -324,6 +445,11 @@ async function captureAndDownload(tab) {
     await setNormalIcon();
     isCapturing = false;
   }
+}
+
+// For backward compatibility - just calls the new function with download mode
+async function captureAndDownload(tab) {
+  return captureAndProcess(tab, false);
 }
 
 // Function to generate a clean filename
@@ -365,7 +491,7 @@ function saveToHistory(url, title = "") {
 }
 
 // Function to stitch screenshots together and download
-function stitchAndDownloadFullPageScreenshot(sections, dimensions, url, title, tabId) {
+function stitchAndProcessFullPageScreenshot(sections, dimensions, url, title, tabId, sendToApi = false) {
   console.log("Creating canvas for stitching");
   
   // Create an offscreen canvas
@@ -431,7 +557,7 @@ function stitchAndDownloadFullPageScreenshot(sections, dimensions, url, title, t
         loadedImages++;
         console.log(`Processed ${loadedImages}/${totalImages} sections`);
         
-        // When all images are loaded, convert canvas to blob and download
+        // When all images are loaded, convert canvas to blob and process
         if (loadedImages === totalImages) {
           finishStitching();
         }
@@ -455,9 +581,9 @@ function stitchAndDownloadFullPageScreenshot(sections, dimensions, url, title, t
     }
   });
   
-  // Function to handle final steps of stitching and downloading
+  // Function to handle final steps of stitching and processing
   function finishStitching() {
-    console.log("All sections processed, finalizing stitching and download");
+    console.log("All sections processed, finalizing stitching and processing");
     fullPageCaptureInProgress = false; // Reset flag since we're done with the capture process
     
     try {
@@ -466,32 +592,51 @@ function stitchAndDownloadFullPageScreenshot(sections, dimensions, url, title, t
         // Try to notify tab that stitching is complete
         try {
           chrome.tabs.sendMessage(tabId, { 
-            action: 'capturingFinished' 
+            action: 'capturingFinished',
+            sendToApi: sendToApi
           });
         } catch (e) {
           console.log("Could not notify content script:", e);
         }
         
-        // Convert blob to data URL for download
+        // Convert blob to data URL for processing
         const reader = new FileReader();
         reader.onloadend = function() {
           try {
             // Generate filename based on page title or URL
             const filename = generateFilename(title || url || "fullpage");
+            const dataUrl = reader.result;
             
-            console.log("Initiating download of stitched image");
-            
-            // Download the data URL directly
-            chrome.downloads.download({
-              url: reader.result,
-              filename: "fullpage_" + filename,
-              saveAs: true
-            });
+            if (sendToApi) {
+              console.log("Sending stitched image to API server");
+              // Upload the stitched image to the API
+              uploadImageToServer(dataUrl, { 
+                id: tabId, 
+                url: url, 
+                title: title 
+              }).catch(error => {
+                console.error("Error uploading stitched image:", error);
+                // Fallback to download if upload fails
+                chrome.downloads.download({
+                  url: dataUrl,
+                  filename: "fullpage_" + filename,
+                  saveAs: true
+                });
+              });
+            } else {
+              console.log("Initiating download of stitched image");
+              // Download the data URL directly
+              chrome.downloads.download({
+                url: dataUrl,
+                filename: "fullpage_" + filename,
+                saveAs: true
+              });
+            }
             
             // Save to history
             saveToHistory(url, title);
           } catch (error) {
-            console.error("Error in download process:", error);
+            console.error("Error in processing stitched image:", error);
           }
         };
         reader.onerror = function() {

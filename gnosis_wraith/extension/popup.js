@@ -25,12 +25,19 @@ document.addEventListener('DOMContentLoaded', function() {
     captureUrlBtn.addEventListener('click', function() {
       const url = urlInput.value.trim();
       if (url) {
+        // Check if we want to send to API
+        const sendToApi = document.getElementById('url-send-to-api-checkbox').checked;
+        
         // Send message to background script
         chrome.runtime.sendMessage({
           action: 'captureUrl',
-          url: url
+          url: url,
+          sendToApi: sendToApi
         }, function(response) {
-          showMessage('Opening page for capture...', 'info');
+          const message = sendToApi ? 
+            'Opening page for capture and analysis...' : 
+            'Opening page for capture...';
+          showMessage(message, 'info');
         });
         
         window.close(); // Close popup
@@ -57,22 +64,29 @@ document.addEventListener('DOMContentLoaded', function() {
           
           // Check if we want full page screenshot
           const isFullPage = fullPageCheckbox.checked;
+          // Check if we want to send to API
+          const sendToApi = document.getElementById('send-to-api-checkbox').checked;
           
           if (isFullPage) {
             // First try sending a message to the background script directly
             chrome.runtime.sendMessage({
               action: 'captureCurrentPage',
               fullPage: true,
-              tabId: tabs[0].id
+              tabId: tabs[0].id,
+              sendToApi: sendToApi
             }, function(response) {
-              showMessage('Capturing full page...', 'info');
+              const message = sendToApi ? 
+                'Capturing full page for analysis...' : 
+                'Capturing full page...';
+              showMessage(message, 'info');
               window.close(); // Close popup
             });
             
             // Also try sending to content script
             try {
               chrome.tabs.sendMessage(tabs[0].id, { 
-                action: 'requestFullPageCapture' 
+                action: 'requestFullPageCapture',
+                sendToApi: sendToApi
               }, function(response) {
                 if (chrome.runtime.lastError) {
                   console.log("Content script not accessible, already handled via background script");
@@ -85,9 +99,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // Send message to background script for regular capture
             chrome.runtime.sendMessage({
               action: 'captureCurrentPage',
-              tabId: tabs[0].id
+              tabId: tabs[0].id,
+              sendToApi: sendToApi
             }, function(response) {
-              showMessage('Capturing screenshot...', 'info');
+              const message = sendToApi ? 
+                'Capturing screenshot for analysis...' : 
+                'Capturing screenshot...';
+              showMessage(message, 'info');
               window.close(); // Close popup
             });
           }
