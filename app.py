@@ -339,25 +339,24 @@ async def serve_screenshot(filename):
     """Serve a screenshot file."""
     return await send_from_directory(SCREENSHOTS_DIR, filename)
 
+# Set this single variable to change the extension version everywhere
+EXTENSION_VERSION = "1.0.4"
+
 @app.route('/extension')
 async def serve_extension():
     """Generate and serve the extension zip file."""
     downloads_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/server/static/downloads')
     
-    # Hardcode the version to match manifest.json
-    extension_version = "1.0.4"
+    # Use the global version variable
+    extension_version = EXTENSION_VERSION
     logger.info(f"Using extension version: {extension_version}")
     
-    # Include version in filenames to prevent browser caching
-    zip_filenames = {
-        'gnosis': f'gnosis-wraith-extension-{extension_version}.zip',
-        'webwraith': f'webwraith-extension-{extension_version}.zip'
-    }
+    # Create versioned filenames to prevent browser caching
+    gnosis_zip_filename = f'gnosis-wraith-extension-{extension_version}.zip'
+    webwraith_zip_filename = f'webwraith-extension-{extension_version}.zip'
     
-    zip_paths = {
-        name: os.path.join(downloads_dir, filename) 
-        for name, filename in zip_filenames.items()
-    }
+    gnosis_zip_path = os.path.join(downloads_dir, gnosis_zip_filename)
+    webwraith_zip_path = os.path.join(downloads_dir, webwraith_zip_filename)
     
     # Create extension zips with version in filename
     extension_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/extension')
@@ -378,23 +377,29 @@ async def serve_extension():
         
         # Create fresh zip files with version in filename
         import zipfile
-        for zip_name, zip_path in zip_paths.items():
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for root, dirs, files in os.walk(extension_dir):
-                    for file in files:
-                        file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, os.path.join(extension_dir, '..'))
-                        zipf.write(file_path, arcname)
-            logger.info(f"Created new extension zip: {zip_path}")
+        
+        # Create gnosis zip
+        with zipfile.ZipFile(gnosis_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, dirs, files in os.walk(extension_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, os.path.join(extension_dir, '..'))
+                    zipf.write(file_path, arcname)
+        logger.info(f"Created gnosis extension zip: {gnosis_zip_path}")
+        
+        # Create webwraith zip (copy of gnosis zip with different name)
+        import shutil
+        shutil.copy2(gnosis_zip_path, webwraith_zip_path)
+        logger.info(f"Created webwraith extension zip: {webwraith_zip_path}")
     
     # Redirect to the static file with version in filename
-    return redirect(url_for('static', filename=f'downloads/{zip_filenames["gnosis"]}'))
+    return redirect(url_for('static', filename=f'downloads/{gnosis_zip_filename}'))
 
 @app.route('/webwraith-extension')
 async def serve_webwraith_extension():
     """Alternate URL for serving the extension zip file."""
-    # Hardcode the version to match manifest.json
-    extension_version = "1.0.4"
+    # Use the global version variable
+    extension_version = EXTENSION_VERSION
     
     # Redirect to the static file with version in filename
     return redirect(url_for('static', filename=f'downloads/webwraith-extension-{extension_version}.zip'))
