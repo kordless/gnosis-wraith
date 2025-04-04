@@ -267,8 +267,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   } else if (message.action === 'capturingFinished') {
     restoreUIElements();
-    const message = message.sendToApi ? 'Screenshot sent for processing!' : 'Screenshot saved!';
-    showSuccessAndHide(message);
+    const statusMessage = message.sendToApi ? 'Screenshot sent for processing!' : 'Screenshot saved!';
+    showSuccessAndHide(statusMessage);
     sendResponse({ status: 'success shown' });
     return true;
   } else if (message.action === 'uploadStarted') {
