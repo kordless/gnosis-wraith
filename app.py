@@ -340,7 +340,7 @@ async def serve_screenshot(filename):
     return await send_from_directory(SCREENSHOTS_DIR, filename)
 
 # Set this single variable to change the extension version everywhere
-EXTENSION_VERSION = "1.0.4"
+EXTENSION_VERSION = "1.0.5"
 
 @app.route('/extension')
 async def serve_extension():

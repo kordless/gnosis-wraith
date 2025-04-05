@@ -6,7 +6,7 @@ MANIFEST_PATH="gnosis_wraith/extension/manifest.json"
 VERSION=$(grep -o '"version": "[^"]*"' "$MANIFEST_PATH" | cut -d'"' -f4)
 
 if [ -z "$VERSION" ]; then
-    VERSION="1.0.4"  # Default version if not found
+    VERSION="1.0.5"  # Default version if not found
     echo "Warning: Could not determine version from manifest.json, using default: $VERSION"
 else
     echo "Found version $VERSION in manifest.json"

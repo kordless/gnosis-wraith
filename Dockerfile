@@ -33,7 +33,7 @@ RUN apt-get update && \
 COPY . .
 
 # Set extension version
-ENV EXTENSION_VERSION=1.0.4
+ENV EXTENSION_VERSION=1.0.5
 
 # Create extension zip file with a shell script that handles checking for existing files
 RUN mkdir -p /app/gnosis_wraith/server/static/downloads && \

@@ -12,11 +12,11 @@ if (Test-Path $manifestPath) {
         $version = $versionMatch.Groups[1].Value
         Write-Host "Found version $version in manifest.json"
     } else {
-        $version = "1.0.4"  # Default version if not found
+        $version = "1.0.5"  # Default version if not found
         Write-Host "Warning: Could not determine version from manifest.json, using default: $version"
     }
 } else {
-    $version = "1.0.4"  # Default version if manifest not found
+    $version = "1.0.5"  # Default version if manifest not found
     Write-Host "Warning: manifest.json not found, using default version: $version"
 }
 
