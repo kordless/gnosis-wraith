@@ -53,8 +53,29 @@ const setNormalIcon = async () => {
   }
 };
 
+// Initialize server URL settings
+async function initializeServerUrl() {
+  try {
+    // Get current server URL from storage
+    const { serverUrl } = await chrome.storage.local.get(['serverUrl']);
+    
+    // If no server URL is set, initialize with default
+    if (!serverUrl) {
+      await chrome.storage.local.set({ serverUrl: 'http://localhost:5678' });
+      console.log("Set default server URL: http://localhost:5678");
+    } else {
+      console.log(`Using existing server URL: ${serverUrl}`);
+    }
+  } catch (error) {
+    console.error("Error initializing server URL:", error);
+  }
+}
+
 // Create context menu items when extension is installed
 chrome.runtime.onInstalled.addListener(() => {
+  // Initialize server URL
+  initializeServerUrl();
+  
   // Context menu for links
   chrome.contextMenus.create({
     id: 'capture-link',
@@ -247,6 +268,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ status: 'error acknowledged' });
     return true;
   }
+  
+  if (message.action === 'serverUrlUpdated') {
+    // Handle server URL update from popup
+    const serverUrl = message.serverUrl;
+    console.log(`Server URL updated to: ${serverUrl}`);
+    
+    // Test connection to the server
+    fetch(`${serverUrl}/api/ping`, { 
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => {
+      if (response.ok) {
+        console.log("Connection to server successful");
+      } else {
+        console.warn(`Connection to server failed with status: ${response.status}`);
+      }
+    })
+    .catch(error => {
+      console.error(`Failed to connect to server: ${error.message}`);
+    });
+    
+    sendResponse({ status: 'server url updated' });
+    return true;
+  }
 });
 
 // Function to capture URL and navigate to it for screenshot
@@ -275,7 +321,17 @@ async function uploadImageToServer(dataUrl, tabInfo) {
   console.log("uploadImageToServer called with tabInfo:", JSON.stringify(tabInfo));
   try {
     // Get server URL from storage, default to localhost if not set
-    const { serverUrl = 'http://localhost:5678' } = await chrome.storage.local.get(['serverUrl']);
+    let { serverUrl = 'http://localhost:5678' } = await chrome.storage.local.get(['serverUrl']);
+    
+    // Force the server URL to use the correct protocol, host and port
+    if (!serverUrl.startsWith('http://')) {
+      serverUrl = 'http://' + serverUrl;
+    }
+    
+    // Ensure server URL ends without trailing slash
+    serverUrl = serverUrl.replace(/\/$/, '');
+    
+    console.log(`Using server URL: ${serverUrl}`);
     const apiUrl = `${serverUrl}/api/upload`;
     
     // Convert dataUrl to Blob
@@ -296,6 +352,10 @@ async function uploadImageToServer(dataUrl, tabInfo) {
       return new Promise((resolve, reject) => {
         fetch(apiUrl, {
           method: 'POST',
+          headers: {
+            'Origin': chrome.runtime.getURL('')
+          },
+          credentials: 'include',
           body: formData
         })
         .then(response => {

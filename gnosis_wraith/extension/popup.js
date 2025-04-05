@@ -7,12 +7,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const messageDiv = document.getElementById('message');
     const historyList = document.getElementById('history-list');
     const fullPageCheckbox = document.getElementById('full-page-checkbox');
+    const serverUrlInput = document.getElementById('server-url-input');
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
     
     // Set focus on input
     urlInput.focus();
     
     // Load and display history
     loadHistory();
+    
+    // Load server settings
+    loadServerSettings();
     
     // Handle Enter key in URL input
     urlInput.addEventListener('keypress', function(e) {
@@ -175,6 +180,37 @@ document.addEventListener('DOMContentLoaded', function() {
         historyList.appendChild(historyItem);
       });
     }
+    
+    // Function to load server settings
+    function loadServerSettings() {
+      chrome.storage.local.get(['serverUrl'], function(result) {
+        if (result.serverUrl) {
+          serverUrlInput.value = result.serverUrl;
+        } else {
+          serverUrlInput.value = 'http://localhost:5678';
+        }
+      });
+    }
+    
+    // Function to save server settings
+    saveSettingsBtn.addEventListener('click', function() {
+      const serverUrl = serverUrlInput.value.trim();
+      
+      if (serverUrl) {
+        // Save server URL to storage
+        chrome.storage.local.set({ serverUrl: serverUrl }, function() {
+          showMessage('Server settings saved', 'info');
+          
+          // Notify background script of the change
+          chrome.runtime.sendMessage({ 
+            action: 'serverUrlUpdated', 
+            serverUrl: serverUrl 
+          });
+        });
+      } else {
+        showMessage('Please enter a valid server URL', 'error');
+      }
+    });
   });
   
   // Listen for content script messages

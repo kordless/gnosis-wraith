@@ -12,7 +12,9 @@
     "downloads"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "<all_urls>",
+    "http://localhost:5678/*",
+    "http://127.0.0.1:5678/*"
   ],
   "action": {
     "default_popup": "popup.html",
