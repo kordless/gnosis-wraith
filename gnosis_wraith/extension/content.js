@@ -85,14 +85,17 @@ function updateCapturingIndicator(message) {
 
 // Show success message and auto-hide
 function showSuccessAndHide(message = 'Screenshot captured successfully!') {
+  // Clear any existing timeout first
+  if (captureTimeout) {
+    clearTimeout(captureTimeout);
+    captureTimeout = null;
+  }
+  
+  // Create a new notification or update existing one
+  showCapturingIndicator(message);
+  
   if (captureOverlay) {
     captureOverlay.style.backgroundColor = '#27ae60'; // Change to green
-    captureOverlay.textContent = message;
-    
-    // Clear any existing timeout first
-    if (captureTimeout) {
-      clearTimeout(captureTimeout);
-    }
     
     // Auto-hide after 3 seconds
     captureTimeout = setTimeout(() => {
@@ -108,14 +111,17 @@ function showSuccessAndHide(message = 'Screenshot captured successfully!') {
 
 // Show error message and auto-hide
 function showErrorAndHide(message = 'Error capturing screenshot') {
+  // Clear any existing timeout first
+  if (captureTimeout) {
+    clearTimeout(captureTimeout);
+    captureTimeout = null;
+  }
+  
+  // Create a new notification or update existing one
+  showCapturingIndicator(message);
+  
   if (captureOverlay) {
     captureOverlay.style.backgroundColor = '#e74c3c'; // Change to red
-    captureOverlay.textContent = message;
-    
-    // Clear any existing timeout first
-    if (captureTimeout) {
-      clearTimeout(captureTimeout);
-    }
     
     // Auto-hide after 5 seconds
     captureTimeout = setTimeout(() => {
@@ -286,6 +292,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Fix ReferenceError by safely accessing the sendToApi property
     const wasApiSent = (message && message.sendToApi) ? true : false;
     const statusMessage = wasApiSent ? 'Screenshot sent for processing!' : 'Screenshot saved!';
+    
+    // Immediately hide any existing notification first
+    hideCapturingIndicator();
+    
+    // Then show the success message with auto-hide
     showSuccessAndHide(statusMessage);
     sendResponse({ status: 'success shown' });
     return true;

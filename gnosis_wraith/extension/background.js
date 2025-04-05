@@ -476,9 +476,11 @@ async function captureAndProcess(tab, sendToApi = false) {
           chrome.tabs.sendMessage(tab.id, { 
             action: 'capturingFinished',
             sendToApi: sendToApi
+          }, response => {
+            console.log("Content script response to capturingFinished:", response);
           });
         } catch (e) {
-          console.log("Could not notify content script:", e);
+          console.error("Could not notify content script:", e);
         }
         
         await setNormalIcon();
