@@ -652,87 +652,145 @@ function stitchAndProcessFullPageScreenshot(sections, dimensions, url, title, ta
           if (sendToApi) {
             console.log("Sending stitched image to API server");
             
-            // Convert blob to base64 using a different approach for service workers
-            // Use a slightly different approach that works in service workers
-            const blobUrl = URL.createObjectURL(blob);
-            
-            // Use fetch to get the blob data
-            fetch(blobUrl)
-              .then(response => response.arrayBuffer())
-              .then(buffer => {
+            // Convert directly to base64 using FileReader for service workers
+            const reader = new FileReader();
+            reader.onloadend = function() {
+              try {
+                const arrayBuffer = reader.result;
+                
                 // Convert array buffer to base64
                 const base64 = btoa(
-                  new Uint8Array(buffer)
+                  new Uint8Array(arrayBuffer)
                     .reduce((data, byte) => data + String.fromCharCode(byte), '')
                 );
                 
                 const dataUrl = `data:image/png;base64,${base64}`;
                 
                 // Upload using our function
-                return uploadImageToServer(dataUrl, { 
+                uploadImageToServer(dataUrl, { 
                   id: tabId, 
                   url: url, 
                   title: title 
+                }).catch(error => {
+                  console.error("Error uploading to server:", error);
+                  
+                  // Fallback to download if upload fails
+                  chrome.downloads.download({
+                    url: dataUrl,
+                    filename: "fullpage_" + filename,
+                    saveAs: true
+                  });
+                }).finally(() => {
+                  // Save to history
+                  saveToHistory(url, title);
                 });
-              })
-              .catch(error => {
+              } catch (error) {
                 console.error("Error processing blob:", error);
-                // Fallback to download
-                const downloadUrl = URL.createObjectURL(blob);
-                chrome.downloads.download({
-                  url: downloadUrl,
-                  filename: "fullpage_" + filename,
-                  saveAs: true
-                });
-                // Clean up the URL
-                URL.revokeObjectURL(downloadUrl);
-              })
-              .finally(() => {
-                // Clean up the URL
-                URL.revokeObjectURL(blobUrl);
                 
-                // Save to history
-                saveToHistory(url, title);
-              });
+                // Notify tab that an error occurred
+                try {
+                  chrome.tabs.sendMessage(tabId, {
+                    action: 'capturingError',
+                    error: "Error processing blob: " + error.message
+                  });
+                } catch (e) {
+                  console.log("Could not notify content script about error:", e);
+                }
+              }
+            };
+            
+            reader.onerror = function() {
+              console.error("Error reading blob:", reader.error);
+              
+              // Notify tab that an error occurred
+              try {
+                chrome.tabs.sendMessage(tabId, {
+                  action: 'capturingError',
+                  error: "Error reading blob: " + reader.error
+                });
+              } catch (e) {
+                console.log("Could not notify content script about error:", e);
+              }
+              
+              // Save to history anyway
+              saveToHistory(url, title);
+            };
+            
+            // Start reading the blob
+            reader.readAsArrayBuffer(blob);
             
           } else {
-            // For direct download, we can use the blob URL directly
+            // For direct download, we need to use chrome.downloads API directly
             console.log("Initiating download of stitched image");
-            const blobUrl = URL.createObjectURL(blob);
             
-            // Make sure to trigger the download
-            try {
-              chrome.downloads.download({
-                url: blobUrl,
-                filename: "fullpage_" + filename,
-                saveAs: true
-              }, (downloadId) => {
-                if (downloadId) {
-                  console.log("Download started with ID:", downloadId);
-                } else {
-                  console.error("Download failed:", chrome.runtime.lastError);
+            // Convert blob to array buffer
+            const reader = new FileReader();
+            reader.onloadend = function() {
+              const arrayBuffer = reader.result;
+              
+              // Create a Blob URL using self.URL for service workers
+              try {
+                // Convert to base64 data URL for downloading
+                const base64 = btoa(
+                  new Uint8Array(arrayBuffer)
+                    .reduce((data, byte) => data + String.fromCharCode(byte), '')
+                );
+                
+                const dataUrl = `data:image/png;base64,${base64}`;
+                
+                // Use chrome.downloads API
+                chrome.downloads.download({
+                  url: dataUrl,
+                  filename: "fullpage_" + filename,
+                  saveAs: true
+                }, (downloadId) => {
+                  if (downloadId) {
+                    console.log("Download started with ID:", downloadId);
+                  } else {
+                    console.error("Download failed:", chrome.runtime.lastError);
+                    // Notify tab that an error occurred
+                    try {
+                      chrome.tabs.sendMessage(tabId, {
+                        action: 'capturingError',
+                        error: "Download failed: " + (chrome.runtime.lastError ? chrome.runtime.lastError.message : "Unknown error")
+                      });
+                    } catch (e) {
+                      console.log("Could not notify content script about error:", e);
+                    }
+                  }
+                  
+                  // Save to history
+                  saveToHistory(url, title);
+                });
+              } catch (downloadError) {
+                console.error("Error starting download:", downloadError);
+                // Notify tab that an error occurred
+                try {
+                  chrome.tabs.sendMessage(tabId, {
+                    action: 'capturingError',
+                    error: "Error starting download: " + downloadError.message
+                  });
+                } catch (e) {
+                  console.log("Could not notify content script about error:", e);
                 }
-                
-                // Clean up the URL after download starts
-                setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-                
-                // Save to history
-                saveToHistory(url, title);
-              });
-            } catch (downloadError) {
-              console.error("Error starting download:", downloadError);
-              // Try a different approach as fallback
-              const a = document.createElement('a');
-              a.href = blobUrl;
-              a.download = "fullpage_" + filename;
-              a.click();
-              
-              // Clean up
-              setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-              
-              // Save to history
-              saveToHistory(url, title);
-            }
+              }
+            };
+            
+            reader.onerror = function() {
+              console.error("Error reading blob:", reader.error);
+              // Notify tab that an error occurred
+              try {
+                chrome.tabs.sendMessage(tabId, {
+                  action: 'capturingError',
+                  error: "Error reading blob: " + reader.error
+                });
+              } catch (e) {
+                console.log("Could not notify content script about error:", e);
+              }
+            };
+            
+            // Start reading the blob
+            reader.readAsArrayBuffer(blob);
           }
         } catch (error) {
           console.error("Error in processing stitched image:", error);
