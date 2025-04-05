@@ -32,6 +32,16 @@ document.addEventListener('DOMContentLoaded', function() {
       if (url) {
         // Check if we want to send to API
         const sendToApi = document.getElementById('url-send-to-api-checkbox').checked;
+        // Check if we want to use this browser
+        const useBrowser = document.getElementById('url-use-browser-checkbox').checked;
+        
+        if (sendToApi && !useBrowser) {
+          // Just send URL to server for crawling without opening in browser
+          sendUrlToServer(url);
+          showMessage('Sent URL to server for analysis...', 'info');
+          window.close(); // Close popup
+          return;
+        }
         
         // Send message to background script
         chrome.runtime.sendMessage({
@@ -212,6 +222,76 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
+  
+  // Function to send URL directly to server for crawling
+  async function sendUrlToServer(url) {
+    try {
+      // Get server URL from storage
+      chrome.storage.local.get(['serverUrl'], async function(result) {
+        let serverUrl = result.serverUrl || 'http://localhost:5678';
+        
+        // Force the server URL to use the correct protocol
+        if (!serverUrl.startsWith('http://')) {
+          serverUrl = 'http://' + serverUrl;
+        }
+        
+        // Ensure server URL ends without trailing slash
+        serverUrl = serverUrl.replace(/\/$/, '');
+        
+        // Prepare data for API call
+        const apiUrl = `${serverUrl}/api/crawl`;
+        const data = {
+          url: url,
+          title: `Crawl Report for ${url}`,
+          javascript_enabled: true,
+          output_format: 'both'
+        };
+        
+        // Send to server
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Origin': chrome.runtime.getURL('')
+          },
+          body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+          const responseData = await response.json();
+          console.log('Server responded:', responseData);
+          
+          // Save to history
+          chrome.storage.local.get(['history'], function(result) {
+            let history = result.history || [];
+            
+            // Remove duplicates
+            history = history.filter(item => item.url !== url);
+            
+            // Add to beginning
+            history.unshift({
+              url: url,
+              title: `Crawl: ${url}`,
+              timestamp: Date.now()
+            });
+            
+            // Limit size
+            const MAX_HISTORY = 20;
+            if (history.length > MAX_HISTORY) {
+              history = history.slice(0, MAX_HISTORY);
+            }
+            
+            // Save
+            chrome.storage.local.set({history: history});
+          });
+        } else {
+          console.error('Server error:', response.status);
+        }
+      });
+    } catch (error) {
+      console.error('Error sending URL to server:', error);
+    }
+  }
   
   // Listen for content script messages
   chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
