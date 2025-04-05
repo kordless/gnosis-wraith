@@ -699,26 +699,76 @@ function stitchAndProcessFullPageScreenshot(sections, dimensions, url, title, ta
             // For direct download, we can use the blob URL directly
             console.log("Initiating download of stitched image");
             const blobUrl = URL.createObjectURL(blob);
-            chrome.downloads.download({
-              url: blobUrl,
-              filename: "fullpage_" + filename,
-              saveAs: true
-            });
             
-            // Clean up the URL after download starts
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-            
-            // Save to history
-            saveToHistory(url, title);
+            // Make sure to trigger the download
+            try {
+              chrome.downloads.download({
+                url: blobUrl,
+                filename: "fullpage_" + filename,
+                saveAs: true
+              }, (downloadId) => {
+                if (downloadId) {
+                  console.log("Download started with ID:", downloadId);
+                } else {
+                  console.error("Download failed:", chrome.runtime.lastError);
+                }
+                
+                // Clean up the URL after download starts
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+                
+                // Save to history
+                saveToHistory(url, title);
+              });
+            } catch (downloadError) {
+              console.error("Error starting download:", downloadError);
+              // Try a different approach as fallback
+              const a = document.createElement('a');
+              a.href = blobUrl;
+              a.download = "fullpage_" + filename;
+              a.click();
+              
+              // Clean up
+              setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+              
+              // Save to history
+              saveToHistory(url, title);
+            }
           }
         } catch (error) {
           console.error("Error in processing stitched image:", error);
+          try {
+            // Notify tab that an error occurred
+            chrome.tabs.sendMessage(tabId, {
+              action: 'capturingError',
+              error: error.message
+            });
+          } catch (e) {
+            console.log("Could not notify content script about error:", e);
+          }
         }
       }).catch(error => {
         console.error("Error converting canvas to blob:", error);
+        try {
+          // Notify tab that an error occurred
+          chrome.tabs.sendMessage(tabId, {
+            action: 'capturingError',
+            error: error.message
+          });
+        } catch (e) {
+          console.log("Could not notify content script about error:", e);
+        }
       });
     } catch (error) {
       console.error("Error in finishStitching:", error);
+      try {
+        // Notify tab that an error occurred
+        chrome.tabs.sendMessage(tabId, {
+          action: 'capturingError',
+          error: error.message
+        });
+      } catch (e) {
+        console.log("Could not notify content script about error:", e);
+      }
     }
   }
 }

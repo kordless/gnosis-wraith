@@ -89,6 +89,11 @@ function showSuccessAndHide(message = 'Screenshot captured successfully!') {
     captureOverlay.style.backgroundColor = '#27ae60'; // Change to green
     captureOverlay.textContent = message;
     
+    // Clear any existing timeout first
+    if (captureTimeout) {
+      clearTimeout(captureTimeout);
+    }
+    
     // Auto-hide after 3 seconds
     captureTimeout = setTimeout(() => {
       if (captureOverlay) {
@@ -106,6 +111,11 @@ function showErrorAndHide(message = 'Error capturing screenshot') {
   if (captureOverlay) {
     captureOverlay.style.backgroundColor = '#e74c3c'; // Change to red
     captureOverlay.textContent = message;
+    
+    // Clear any existing timeout first
+    if (captureTimeout) {
+      clearTimeout(captureTimeout);
+    }
     
     // Auto-hide after 5 seconds
     captureTimeout = setTimeout(() => {
@@ -268,11 +278,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.action === 'capturingFinished') {
     restoreUIElements();
     console.log('Received capturingFinished message:', message);
+    // Make sure any timeout is cleared
+    if (captureTimeout) {
+      clearTimeout(captureTimeout);
+      captureTimeout = null;
+    }
     // Fix ReferenceError by safely accessing the sendToApi property
     const wasApiSent = (message && message.sendToApi) ? true : false;
     const statusMessage = wasApiSent ? 'Screenshot sent for processing!' : 'Screenshot saved!';
     showSuccessAndHide(statusMessage);
     sendResponse({ status: 'success shown' });
+    return true;
+  } else if (message.action === 'capturingError') {
+    restoreUIElements();
+    console.log('Received capturingError message:', message);
+    // Make sure any timeout is cleared
+    if (captureTimeout) {
+      clearTimeout(captureTimeout);
+      captureTimeout = null;
+    }
+    showErrorAndHide(`Error: ${message.error || 'Unknown error occurred'}`);
+    sendResponse({ status: 'error shown' });
     return true;
   } else if (message.action === 'uploadStarted') {
     updateCapturingIndicator('Uploading to server...');
