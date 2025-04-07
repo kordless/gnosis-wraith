@@ -37,7 +37,7 @@ RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install openai openai[datalib] tenacity playwright aiohttp
 
 # Install PyTorch with CUDA 12.3 support
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu123
+RUN pip install --no-cache-dir torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu121
 
 # Install Quart and Hypercorn
 RUN pip install --no-cache-dir quart httpx werkzeug hypercorn quart_cors
