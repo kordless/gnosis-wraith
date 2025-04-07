@@ -25,10 +25,18 @@ services:
       - wraith-data:/data
       - ./host-files:/host-files
     restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu, utility, compute]
     environment:
       - GNOSIS_WRAITH_STORAGE_PATH=/data
       - QUART_APP=gnosis_wraith.server.app:app
       - QUART_ENV=production
+      - NVIDIA_VISIBLE_DEVICES=all
     profiles: [gpu]
 
 volumes:
