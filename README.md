@@ -1,7 +1,7 @@
 # Gnosis Wraith
 
 ## Try It Now!
-![Gnosis Wraith](https://gnosis-wraith-949870462453.us-central1.run.app)
+[Gnosis Wraith](https://gnosis-wraith-949870462453.us-central1.run.app)
 
 ## Vision: The Adaptive Web Perception Engine
 
