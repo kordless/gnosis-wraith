@@ -1,6 +1,7 @@
 # Gnosis Wraith
 
-![Gnosis Wraith](https://raw.githubusercontent.com/kordless/gnosis-wraith/main/gnosis_wraith/server/static/images/wraith-128x128.png)
+## Try It Now!
+![Gnosis Wraith](https://gnosis-wraith-949870462453.us-central1.run.app)
 
 ## Vision: The Adaptive Web Perception Engine
 
