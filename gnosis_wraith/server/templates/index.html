@@ -48,12 +48,219 @@
       sizes="180x180"
       href="{{ url_for('static', filename='images/favicon-128x128.png') }}"
     />
+    
+    <!-- Added inline script to handle dependent dropdowns and keyboard shortcuts -->
+    <script type="text/javascript">
+      document.addEventListener('DOMContentLoaded', function() {
+        // Setup the dependency between screenshot and OCR options
+        const screenshotSelect = document.getElementById('take-screenshot');
+        const ocrSelect = document.getElementById('ocr-extraction');
+        const ocrFormGroup = ocrSelect ? ocrSelect.closest('.form-group') : null;
+        
+        function updateOcrOptions() {
+          if (!screenshotSelect || !ocrSelect) return;
+          
+          if (screenshotSelect.value === 'false') {
+            // If screenshots are disabled, disable OCR and set to "No"
+            ocrSelect.value = 'false';
+            ocrSelect.disabled = true;
+            if (ocrFormGroup) ocrFormGroup.classList.add('disabled-option');
+            console.log('Screenshots disabled, OCR also disabled');
+          } else {
+            // If screenshots are enabled, enable OCR
+            ocrSelect.disabled = false;
+            if (ocrFormGroup) ocrFormGroup.classList.remove('disabled-option');
+            console.log('Screenshots enabled, OCR enabled');
+          }
+        }
+        
+        // Add change handler to screenshot select
+        if (screenshotSelect) {
+          updateOcrOptions(); // Initialize state
+          screenshotSelect.addEventListener('change', updateOcrOptions);
+        }
+        
+        // Add keyboard shortcut for Ctrl+Y to populate URL and start crawling
+        document.addEventListener('keydown', function(e) {
+          // Check if Ctrl+Y is pressed
+          if (e.ctrlKey && e.key === 'y') {
+            const urlInput = document.getElementById('url');
+            const crawlBtn = document.getElementById('crawl-btn');
+            
+            // If URL field is empty or not focused, populate it and click the button
+            if (urlInput && crawlBtn && 
+                (document.activeElement !== urlInput || urlInput.value.trim() === '')) {
+              // Prevent default browser behavior
+              e.preventDefault();
+              
+              // Populate with Hacker News URL
+              urlInput.value = 'https://news.ycombinator.com/';
+              
+              // Flash the URL input to indicate it's been populated
+              urlInput.classList.add('highlight-input');
+              setTimeout(() => {
+                urlInput.classList.remove('highlight-input');
+              }, 500);
+              
+              // Click the crawl button after a short delay
+              setTimeout(() => {
+                crawlBtn.click();
+              }, 300);
+            }
+          }
+        });
+      });
+    </script>
+    
+    <!-- Add some CSS for disabled options and action buttons -->
+    <style>
+      .disabled-option {
+        opacity: 0.6;
+      }
+      
+      .disabled-option select {
+        background-color: #f1f1f1;
+      }
+      
+      /* Action buttons styles */
+      .action-buttons {
+        display: flex;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin: 15px 0;
+      }
+      
+      .btn.danger {
+        background-color: #e74c3c;
+        color: white;
+        border: 1px solid #c0392b;
+      }
+      
+      .btn.danger:hover {
+        background-color: #c0392b;
+      }
+      
+      /* Style for browser-specific instructions */
+      .browser-instructions {
+        margin: 30px 0;
+        padding: 20px;
+        border-radius: 8px;
+        background-color: var(--input-bg);
+        border: 1px solid var(--border-color);
+      }
+      
+      .browser-instructions h4 {
+        margin-top: 0;
+        display: flex;
+        align-items: center;
+        font-size: 1.1em;
+      }
+      
+      .browser-instructions h4 i {
+        margin-right: 8px;
+        font-size: 1.2em;
+      }
+      
+      .browser-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 20px 0;
+        border-bottom: 1px solid #dee2e6;
+      }
+      
+      .browser-tab {
+        padding: 8px 16px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+        margin-right: 4px;
+        margin-bottom: -1px;
+        color: var(--text-color);
+        transition: all 0.2s ease;
+      }
+      
+      .browser-tab:hover {
+        background-color: rgba(78, 158, 255, 0.08);
+        border-color: var(--border-color);
+      }
+      
+      .browser-tab.active {
+        border-color: var(--primary-color) var(--primary-color) var(--card-bg);
+        background-color: var(--card-bg);
+        font-weight: bold;
+        color: var(--primary-color);
+      }
+      
+      .browser-content {
+        display: none;
+      }
+      
+      .browser-content.active {
+        display: block;
+      }
+      
+      .keyboard-shortcuts {
+        margin-top: 30px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+      }
+      
+      .shortcut-key {
+        display: inline-block;
+        padding: 2px 8px;
+        margin: 0 2px;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--primary-color);
+        border-radius: 3px;
+        font-family: monospace;
+        font-weight: bold;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      
+      .feature-list {
+        margin-top: 20px;
+        padding-left: 20px;
+      }
+      
+      .feature-item {
+        margin-bottom: 10px;
+      }
+      
+      /* Highlight effect for keyboard shortcut */
+      @keyframes highlight-pulse {
+        0% { background-color: transparent; }
+        50% { background-color: rgba(92, 184, 92, 0.2); }
+        100% { background-color: transparent; }
+      }
+      
+      .highlight-input {
+        animation: highlight-pulse 0.5s ease-in-out;
+      }
+      
+      /* Keyboard key style */
+      kbd {
+        display: inline-block;
+        padding: 1px 5px;
+        margin: 0 2px;
+        font-size: 0.85em;
+        font-family: monospace;
+        background-color: #f7f7f7;
+        color: #0c0c0c;
+        font-weight: bold;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+      }
+    </style>
   </head>
 
   <body>
     <nav class="navbar">
       <div class="logo">
-        <a href="{{ url_for('pages.index') }}">
+        <a href="{{ url_for('index') }}">
           <span>Gnosis Wraith 👻</span>
         </a>
       </div>
@@ -63,9 +270,8 @@
             <i class="fas fa-bars"></i>
           </a>
           <ul class="dropdown-menu">
-            <li><a href="{{ url_for('pages.philosophy') }}">Philosophy</a></li>
-            <li><a href="{{ url_for('pages.list_reports') }}">Reportage</a></li>
-            <li><a href="{{ url_for('pages.settings') }}">Settings</a></li>
+            <li><a href="{{ url_for('list_reports') }}">Reportage</a></li>
+            <li><a href="{{ url_for('settings') }}">Settings</a></li>
           </ul>
         </li>
       </ul>
@@ -76,7 +282,6 @@
         <button class="tab-btn active" data-tab="single-crawl">
           Single URL Crawl
         </button>
-        <button class="tab-btn" data-tab="multi-crawl">Multi-URL Crawl</button>
         <button class="tab-btn" data-tab="image-upload">Upload Image</button>
         <button class="tab-btn" data-tab="extension">Browser Extension</button>
         <button class="tab-btn" data-tab="code-examples">Code Examples</button>
@@ -94,9 +299,17 @@
               "The difference between ignorant and educated people is that the
               latter know more facts. But that has nothing to do with whether
               they are stupid or intelligent."
-              <cite>— Neal Stephenson, The Diamond Age</cite>
+              <cite>—Neal Stephenson, The Diamond Age</cite>
             </blockquote>
           </div>
+          
+          <div id="crawl-status" class="status-box" style="display: none">
+            <p>Status: <span id="status-text">Idle</span></p>
+            <div class="progress-bar">
+              <div id="progress-indicator"></div>
+            </div>
+          </div>
+          
           <div class="crawl-form">
             <div class="form-group">
               <label for="url">URL:</label>
@@ -105,6 +318,9 @@
                 id="url"
                 placeholder="https://news.ycombinator.com"
               />
+              <p class="help-text">
+                Press <kbd>Ctrl</kbd>+<kbd>Y</kbd> to quickly load Hacker News and start crawling
+              </p>
             </div>
 
             <div class="form-group">
@@ -113,13 +329,37 @@
             </div>
 
             <div class="form-group">
-              <label for="output-format">Save Screenshots:</label>
-              <select id="output-format">
-                <option value="both" selected>Yes - Save Screenshots</option>
-                <option value="markdown">No - Text Only</option>
+              <label for="take-screenshot">Take Screenshot:</label>
+              <select id="take-screenshot">
+                <option value="true" selected>Yes - Take Screenshot</option>
+                <option value="false">No - Skip Screenshot</option>
               </select>
               <p class="help-text">
-                Screenshots will still be displayed during crawling
+                Screenshots will be automatically saved if taken
+              </p>
+              <!-- No debugging info here -->
+            </div>
+
+            <div class="form-group">
+              <label for="ocr-extraction">OCR Extraction:</label>
+              <select id="ocr-extraction">
+                <option value="true" selected>Yes - Extract Text via OCR</option>
+                <option value="false">No - Skip OCR</option>
+              </select>
+              <p class="help-text">
+                OCR will only be performed if screenshot is taken
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label for="markdown-extraction">Extract Markdown:</label>
+              <select id="markdown-extraction">
+                <option value="enhanced" selected>Enhanced Markdown (with filtering)</option>
+                <option value="basic">Basic Markdown (no filtering)</option>
+                <option value="none">No Markdown Extraction</option>
+              </select>
+              <p class="help-text">
+                Determine how HTML content is processed and converted
               </p>
             </div>
 
@@ -138,78 +378,6 @@
               <button id="crawl-btn" class="btn primary">Start Crawling</button>
             </div>
           </div>
-
-          <div id="crawl-status" class="status-box" style="display: none">
-            <p>Status: <span id="status-text">Idle</span></p>
-            <div class="progress-bar">
-              <div id="progress-indicator"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Multi URL Crawl Tab with JavaScript Option -->
-        <section id="multi-crawl" class="tab-content card">
-          <h2>Crawl Multiple URLs</h2>
-          <div class="author-quote">
-            <blockquote>
-              "The most exciting phrase to hear in science, the one that heralds
-              new discoveries, is not 'Eureka!' but 'That's funny...'"
-              <cite>— Isaac Asimov</cite>
-            </blockquote>
-          </div>
-          <div class="crawl-form">
-            <div class="form-group">
-              <label for="urls">URLs (one per line):</label>
-              <textarea
-                id="urls"
-                placeholder="https://news.ycombinator.com"
-              ></textarea>
-            </div>
-
-            <div class="form-group">
-              <label for="multi-report-title">Report Title:</label>
-              <input
-                type="text"
-                id="multi-report-title"
-                placeholder="Multi Crawl Report"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="multi-output-format">Save Screenshots:</label>
-              <select id="multi-output-format">
-                <option value="both" selected>Yes - Save Screenshots</option>
-                <option value="markdown">No - Text Only</option>
-              </select>
-              <p class="help-text">
-                Screenshots will still be displayed during crawling
-              </p>
-            </div>
-
-            <div class="form-group">
-              <label for="javascript-enabled-multi">JavaScript:</label>
-              <select id="javascript-enabled-multi">
-                <option value="false" selected>Disabled (safer)</option>
-                <option value="true">Enabled (better rendering)</option>
-              </select>
-              <p class="help-text">
-                Enable JavaScript when crawling these websites
-              </p>
-            </div>
-
-            <div class="form-group">
-              <button id="multi-crawl-btn" class="btn primary">
-                Start Crawling
-              </button>
-            </div>
-          </div>
-
-          <div id="multi-crawl-status" class="status-box" style="display: none">
-            <p>Status: <span id="multi-status-text">Idle</span></p>
-            <div class="progress-bar">
-              <div id="multi-progress-indicator"></div>
-            </div>
-          </div>
         </section>
 
         <!-- Image Upload Tab -->
@@ -219,7 +387,7 @@
             <blockquote>
               "Reality is that which, when you stop believing in it, doesn't go
               away."
-              <cite>— Philip K. Dick</cite>
+              <cite>—Philip K. Dick</cite>
             </blockquote>
           </div>
           <div class="upload-form">
@@ -271,7 +439,7 @@
           <div class="author-quote">
             <blockquote>
               "I'm going to kill you with my teacup."
-              <cite>— Richard B. Riddick, The Chronicles of Riddick</cite>
+              <cite>—Richard B. Riddick, The Chronicles of Riddick</cite>
             </blockquote>
           </div>
 
@@ -290,7 +458,8 @@
               <pre
                 class="language-python"
                 style="font-size: 0.75em"
-              ><code>import requests
+              ><code>
+import requests
 import os
 
 def upload_image_to_gnosis_wraith(image_path):
@@ -347,17 +516,22 @@ if __name__ == "__main__":
               <pre
                 class="language-python"
                 style="font-size: 0.75em"
-              ><code>import requests
+              ><code>
+import requests
 import json
 
-def crawl_url_with_gnosis_wraith(url, javascript_enabled=False, llm_provider=None, llm_token=None):
+def crawl_url_with_gnosis_wraith(url, javascript_enabled=False, take_screenshot=True, ocr_extraction=True, 
+                               markdown_extraction="enhanced", llm_provider=None, llm_token=None):
     """
     Crawl a URL with Gnosis Wraith and get the extracted text and optionally LLM summary.
     
     Args:
         url (str): The URL to crawl
         javascript_enabled (bool): Whether to enable JavaScript for the crawl
-        llm_provider (str, optional): LLM provider to use for summarization (e.g., 'anthropic', 'openai')
+        take_screenshot (bool): Whether to capture a screenshot
+        ocr_extraction (bool): Whether to extract text using OCR
+        markdown_extraction (str): Markdown extraction mode - "enhanced", "basic", or "none"
+        llm_provider (str, optional): LLM provider to use for summarization
         llm_token (str, optional): API token for the LLM provider
         
     Returns:
@@ -368,6 +542,9 @@ def crawl_url_with_gnosis_wraith(url, javascript_enabled=False, llm_provider=Non
     payload = {
         "url": url,
         "javascript_enabled": javascript_enabled,
+        "take_screenshot": take_screenshot,
+        "ocr_extraction": ocr_extraction,
+        "markdown_extraction": markdown_extraction,
         "output_format": "markdown"
     }
     
@@ -392,7 +569,10 @@ def crawl_url_with_gnosis_wraith(url, javascript_enabled=False, llm_provider=Non
 if __name__ == "__main__":
     result = crawl_url_with_gnosis_wraith(
         url="https://example.com",
-        javascript_enabled=True
+        javascript_enabled=True,
+        take_screenshot=True,
+        ocr_extraction=True,
+        markdown_extraction="enhanced"
     )
     
     if result and result.get("success"):
@@ -402,49 +582,199 @@ if __name__ == "__main__":
         if result['results']:
             first_result = result['results'][0]
             print(f"Title: {first_result.get('title')}")
-            print(f"Extract: {first_result.get('extracted_text', '')[:100]}...")
+            print(f"Extract: {first_result.get('markdown', first_result.get('extracted_text', ''))[:100]}...")
     else:
         print("Crawl failed")</code></pre>
             </div>
           </div>
         </section>
 
-        <!-- Browser Extension Tab -->
+        <!-- Browser Extension Tab - UPDATED -->
         <section id="extension" class="tab-content card">
           <h2>Browser Extension</h2>
           <div class="author-quote">
             <blockquote>
               "The study of exobiology is indeed a worthwhile endeavor, but to
               predict beyond the data is illogical."
-              <cite>— Data, Star Trek: The Next Generation</cite>
+              <cite>—Data, Star Trek: The Next Generation</cite>
             </blockquote>
           </div>
-          <p class="extension-description">
-            Download the WebWraith browser extension to analyze links before
-            clicking, capture screenshots, and extract text from webpages
-            directly in your browser.
-          </p>
+          
+          <!-- New Feature Highlight Box -->
+          <div class="message info" style="margin-bottom: 30px;">
+            <h3 style="color: inherit; margin-top: 0;"><i class="fas fa-rocket"></i> New! DOM Capture Technology</h3>
+            <p style="margin-bottom: 0;">
+              Our extension now captures the complete DOM content directly from your browser, 
+              ensuring what you see is exactly what gets processed - including all JavaScript-generated content!
+            </p>
+          </div>
+          
+          <!-- Download button with improved styling - moved to top -->
+          <div class="download-container">
+            <!-- Extension Version Debug: {{ extension_version|default('Version not set') }} -->
+            <a
+              href="{{ url_for('serve_extension') }}"
+              class="btn primary download-btn"
+              download="gnosis-wraith-extension-{{ extension_version|default('unknown') }}.zip"
+            >
+              <i class="fas fa-download"></i> Download Extension v{{ extension_version|default('1.1.0') }}
+            </a>
+            <p class="download-version-info">Latest version with DOM capture technology</p>
+          </div>
 
-          <div class="install-instructions">
-            <h3>Installation Instructions</h3>
-            <ol>
-              <li>Download and extract the zip file</li>
-              <li>Open your browser's extension management page</li>
-              <li>Enable "Developer mode"</li>
-              <li>Click "Load unpacked" and select the extracted folder</li>
-            </ol>
-            <p>Compatible with Chrome, Firefox, and Edge browsers.</p>
-
-            <div style="margin-top: 20px">
-              <a
-                href="{{ url_for('serve_extension') }}"
-                class="btn primary download-btn"
-                style="font-size: 0.9em; padding: 8px 16px"
-                download="gnosis-wraith-extension-1.0.6.zip"
-              >
-                <i class="fas fa-download"></i> Download Extension (v1.0.6)
-              </a>
+          <!-- Main Description with better styling -->
+          <div class="extension-container">
+            <p class="extension-description">
+              The Gnosis Wraith browser extension enhances your data collection capabilities with:
+            </p>
+            
+            <div class="feature-grid">
+              <div class="result-item">
+                <i class="fas fa-camera"></i>
+                <h4>Screenshot Capture</h4>
+                <p>Capture full pages or visible areas with a single click or keyboard shortcut</p>
+              </div>
+              
+              <div class="result-item">
+                <i class="fas fa-file-alt"></i>
+                <h4>Content Extraction</h4>
+                <p>Extract structured content from any webpage, preserving formatting and links</p>
+              </div>
+              
+              <div class="result-item" style="text-align: center; margin-bottom: 0; background-color: var(--card-bg); color: var(--text-color);">
+                <i class="fas fa-brain" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 10px;"></i>
+                <h4>Intelligent Processing</h4>
+                <p>Auto-filter content to focus on what matters most in the page</p>
+              </div>
+              
+              <div class="result-item" style="text-align: center; margin-bottom: 0; background-color: var(--card-bg); color: var(--text-color);">
+                <i class="fas fa-chart-line" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 10px;"></i>
+                <h4>Data Analysis</h4>
+                <p>Generate comprehensive reports with extracted text and metadata</p>
+              </div>
+              
+              <div class="result-item" style="text-align: center; margin-bottom: 0; background-color: var(--card-bg); color: var(--text-color);">
+                <i class="fas fa-search-plus" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 10px;"></i>
+                <h4>Search & Discussion</h4>
+                <p>Save pages for later search or use in collaborative discussions</p>
+              </div>
+              
+              <div class="result-item" style="text-align: center; margin-bottom: 0; background-color: var(--card-bg); color: var(--text-color);">
+                <i class="fas fa-robot" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 10px;"></i>
+                <h4>Intelligent Crawls</h4>
+                <p>Generate LLM summaries and insights from website content</p>
+              </div>
             </div>
+          </div>
+          
+          <!-- Improved Browser Tabs -->
+          <div class="result-item" style="padding: 25px 25px 15px 25px; background-color: var(--card-bg); color: var(--text-color);">
+            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">Installation Instructions</h3>
+            
+            <div class="browser-tabs">
+              <div class="browser-tab active" data-browser="chrome">
+                <i class="fab fa-chrome"></i> Chrome
+              </div>
+              <div class="browser-tab" data-browser="firefox">
+                <i class="fab fa-firefox"></i> Firefox
+              </div>
+              <div class="browser-tab" data-browser="edge">
+                <i class="fab fa-edge"></i> Edge
+              </div>
+              <div class="browser-tab" data-browser="safari">
+                <i class="fab fa-safari"></i> Safari
+              </div>
+            </div>
+            
+            <!-- Chrome Instructions -->
+            <div class="browser-content active" id="chrome-instructions">
+              <div class="browser-instructions">
+                <h4><i class="fab fa-chrome"></i> Installing on Chrome/Chromium</h4>
+                <ol style="padding-left: 25px; margin-top: 15px;">
+                  <li>Click the <strong>"Download Extension"</strong> button above</li>
+                  <li>When download completes, <strong>right-click</strong> on the file in your downloads bar and select "Show in folder" (Windows) or find it in your Downloads folder (Mac)</li>
+                  <li>Extract the ZIP file by right-clicking and selecting "Extract All..." (Windows) or double-clicking (Mac)</li>
+                  <li>In Chrome, navigate to <code style="background-color: var(--card-bg); color: var(--primary-color);">chrome://extensions/</code> by typing it in the address bar</li>
+                  <li>Enable <strong>"Developer mode"</strong> using the toggle in the top-right corner</li>
+                  <li>Click <strong>"Load unpacked"</strong> and select the folder where you extracted the extension</li>
+                  <li>The extension icon should now appear in your browser toolbar</li>
+                </ol>
+              </div>
+            </div>
+            
+            <!-- Firefox Instructions -->
+            <div class="browser-content" id="firefox-instructions">
+              <div class="browser-instructions">
+                <h4><i class="fab fa-firefox"></i> Installing on Firefox</h4>
+                <ol style="padding-left: 25px; margin-top: 15px;">
+                  <li>Click the <strong>"Download Extension"</strong> button above</li>
+                  <li>In Firefox, navigate to <code style="background-color: var(--card-bg); color: var(--primary-color);">about:debugging#/runtime/this-firefox</code> by typing it in the address bar</li>
+                  <li>Click <strong>"Load Temporary Add-on..."</strong></li>
+                  <li>Select the ZIP file you downloaded (no need to extract it)</li>
+                  <li>The extension will be installed temporarily and will be removed when Firefox is closed</li>
+                  <li><em>Note: For permanent installation, you'd need to package the extension for Firefox Web Store, which is not covered here</em></li>
+                </ol>
+              </div>
+            </div>
+            
+            <!-- Edge Instructions -->
+            <div class="browser-content" id="edge-instructions">
+              <div class="browser-instructions">
+                <h4><i class="fab fa-edge"></i> Installing on Edge</h4>
+                <ol style="padding-left: 25px; margin-top: 15px;">
+                  <li>Click the <strong>"Download Extension"</strong> button above</li>
+                  <li>Extract the ZIP file to a folder</li>
+                  <li>In Edge, navigate to <code style="background-color: var(--card-bg); color: var(--primary-color);">edge://extensions/</code> by typing it in the address bar</li>
+                  <li>Enable <strong>"Developer mode"</strong> using the toggle in the left sidebar</li>
+                  <li>Click <strong>"Load unpacked"</strong> and select the folder where you extracted the extension</li>
+                  <li>The extension icon should now appear in your browser toolbar</li>
+                </ol>
+              </div>
+            </div>
+            
+            <!-- Safari Instructions -->
+            <div class="browser-content" id="safari-instructions">
+              <div class="browser-instructions">
+                <h4><i class="fab fa-safari"></i> Installing on Safari</h4>
+                <p>We're currently not actively supporting Safari due to Apple's complex extension requirements and limited demand.</p>
+                <p>Safari support would require:</p>
+                <ul style="padding-left: 25px; margin-top: 15px;">
+                  <li>Repackaging as a Safari Web Extension</li>
+                  <li>Using Xcode to build and distribute</li>
+                  <li>Going through the App Store approval process</li>
+                </ul>
+                <div class="note-box">
+                  <p><i class="fas fa-sticky-note"></i> <em>Honestly, we probably won't implement Safari support until someone specifically complains about it. If you really need Safari support, please let us know!</em></p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Keyboard Shortcuts improved -->
+          <div class="result-item" style="padding: 25px; margin: 20px 0; background-color: var(--card-bg); color: var(--text-color);">
+            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">Keyboard Shortcuts</h3>
+            <p style="margin-bottom: 15px;">Once installed, you can use these keyboard shortcuts:</p>
+            <ul style="list-style-type: none; padding-left: 5px;">
+              <li style="margin-bottom: 10px; display: flex; align-items: center;"><i class="fas fa-keyboard" style="margin-right: 10px;"></i> <span class="shortcut-key">Alt</span> + <span class="shortcut-key">Shift</span> + <span class="shortcut-key">W</span> - Capture screenshot and save locally</li>
+              <li style="margin-bottom: 10px; display: flex; align-items: center;"><i class="fas fa-keyboard" style="color: var(--primary-color); margin-right: 10px;"></i> <span class="shortcut-key">Alt</span> + <span class="shortcut-key">Shift</span> + <span class="shortcut-key">U</span> - Capture screenshot and upload for processing</li>
+              <li style="margin-bottom: 10px; display: flex; align-items: center;"><i class="fas fa-keyboard" style="color: var(--primary-color); margin-right: 10px;"></i> <span class="shortcut-key">Alt</span> + <span class="shortcut-key">Shift</span> + <span class="shortcut-key">F</span> - Capture full page screenshot and save locally</li>
+              <li style="margin-bottom: 10px; display: flex; align-items: center;"><i class="fas fa-keyboard" style="color: var(--primary-color); margin-right: 10px;"></i> <span class="shortcut-key">Alt</span> + <span class="shortcut-key">Shift</span> + <span class="shortcut-key">A</span> - Capture full page screenshot and upload for processing</li>
+              <li style="margin-bottom: 10px; display: flex; align-items: center;"><i class="fas fa-keyboard" style="color: var(--primary-color); margin-right: 10px;"></i> <span class="shortcut-key">Alt</span> + <span class="shortcut-key">Shift</span> + <span class="shortcut-key">D</span> - Capture DOM content and process on server</li>
+            </ul>
+            <p style="margin-top: 15px; color: var(--text-color);">You can also right-click on any page or link and select options from the context menu.</p>
+          </div>
+          
+          <!-- Server Configuration in proper container -->
+          <div class="result-item" style="padding: 25px; margin: 20px 0; background-color: var(--card-bg); color: var(--text-color);">
+            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">Server Configuration</h3>
+            <p style="margin-bottom: 15px;">The extension connects to the Gnosis Wraith server running at <code>http://localhost:5678</code> by default.</p>
+            <p style="margin-bottom: 15px;">To change the server URL:</p>
+            <ol style="padding-left: 25px;">
+              <li>Click on the extension icon in your browser toolbar</li>
+              <li>Click on the <strong>"Settings"</strong> tab</li>
+              <li>Enter the new server URL</li>
+              <li>Click <strong>"Save Settings"</strong></li>
+            </ol>
           </div>
         </section>
 
@@ -455,7 +785,7 @@ if __name__ == "__main__":
             <blockquote>
               "Not everything that can be counted counts, and not everything
               that counts can be counted."
-              <cite>— Albert Einstein</cite>
+              <cite>—Albert Einstein</cite>
             </blockquote>
           </div>
 
@@ -502,8 +832,8 @@ if __name__ == "__main__":
               class="cta-buttons"
               style="margin-top: 30px; text-align: center"
             >
-              <a href="{{ url_for('pages.philosophy') }}" class="btn primary"
-                >Explore Full Gnosis Philosophy</a
+              <a href="{{ url_for('list_reports') }}" class="btn primary"
+                >Explore Reports</a
               >
             </div>
           </div>
@@ -513,13 +843,46 @@ if __name__ == "__main__":
         <section id="crawl-results" class="card" style="display: none">
           <h2>Crawl Results</h2>
           <div id="results-summary"></div>
+          
+          <!-- Add action buttons at the top -->
+          <div id="results-actions-top" class="action-buttons" style="margin: 10px 0 15px 0; text-align: right;">
+            <a
+              id="report-link-top"
+              href="#"
+              class="btn secondary"
+              style="display: none; margin-right: 5px;"
+              target="_blank"
+              >
+              <i class="fas fa-file-alt"></i> View Report</a
+            >
+            <a
+              id="html-link-top"
+              href="#"
+              class="btn primary"
+              style="display: none; margin-right: 5px;"
+              target="_blank"
+              >
+              <i class="fas fa-code"></i> View HTML</a
+            >
+            <button
+              id="delete-report-btn"
+              class="btn danger"
+              style="display: none;"
+              >
+              <i class="fas fa-trash"></i> Delete Report</button
+            >
+          </div>
+          
           <div id="results-content"></div>
-          <div id="results-actions">
+          
+          <!-- Keep the bottom actions too for convenience -->
+          <div id="results-actions" style="margin-top: 20px;">
             <a
               id="report-link"
               href="#"
               class="btn secondary"
               style="display: none"
+              target="_blank"
               >View Report</a
             >
             <a
@@ -527,6 +890,7 @@ if __name__ == "__main__":
               href="#"
               class="btn secondary"
               style="display: none"
+              target="_blank"
               >View HTML</a
             >
           </div>
@@ -554,5 +918,29 @@ if __name__ == "__main__":
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    
+    <!-- Script for browser tabs -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const browserTabs = document.querySelectorAll('.browser-tab');
+        const browserContents = document.querySelectorAll('.browser-content');
+        
+        browserTabs.forEach(tab => {
+          tab.addEventListener('click', function() {
+            // Remove active class from all tabs
+            browserTabs.forEach(t => t.classList.remove('active'));
+            // Add active class to clicked tab
+            this.classList.add('active');
+            
+            // Hide all content sections
+            browserContents.forEach(content => content.classList.remove('active'));
+            
+            // Show the selected content
+            const browser = this.getAttribute('data-browser');
+            document.getElementById(`${browser}-instructions`).classList.add('active');
+          });
+        });
+      });
+    </script>
   </body>
 </html>

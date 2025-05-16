@@ -10,7 +10,9 @@ from server.config import SCREENSHOTS_DIR, REPORTS_DIR, STORAGE_PATH, logger
 @pages_bp.route('/')
 async def index():
     """Render the index page."""
-    return await render_template('index.html')
+    # Get the extension version from the main app
+    from app import EXTENSION_VERSION
+    return await render_template('index.html', extension_version=EXTENSION_VERSION)
 
 @pages_bp.route('/philosophy')
 async def philosophy():

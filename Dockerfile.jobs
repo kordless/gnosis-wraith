@@ -82,16 +82,29 @@ RUN mkdir -p /app/gnosis_wraith/server/static/downloads && \
     chmod +x /app/build_extension.sh && \
     /app/build_extension.sh
 
+# Install Redis for local job queue
+RUN apt-get update && apt-get install -y redis-server && \
+    rm -rf /var/lib/apt/lists/*
+
 # Volume for persistent storage
 VOLUME /data
 
 # Define environment variables
 ENV GNOSIS_WRAITH_STORAGE_PATH=/data
-ENV QUART_APP=gnosis_wraith.server.app:app
+ENV QUART_APP=app:app
 ENV QUART_ENV=production
+ENV RUNNING_IN_CLOUD=false
+ENV REDIS_HOST=localhost
+ENV REDIS_PORT=6379
 
 # Expose the port
 EXPOSE 5678
 
-# Command to run using Hypercorn
-CMD ["hypercorn", "--bind", "0.0.0.0:5678", "gnosis_wraith.server.app:app"]
+# Startup script
+RUN echo "#!/bin/bash" > /app/startup.sh && \
+    echo "service redis-server start" >> /app/startup.sh && \
+    echo "exec hypercorn --bind 0.0.0.0:5678 app:app" >> /app/startup.sh && \
+    chmod +x /app/startup.sh
+
+# Command to run with Redis and app.py
+CMD ["/app/startup.sh"]

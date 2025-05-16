@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Gnosis Wraith Capture",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "Gnosis Wraith - Capture and analyze web pages, files, and data streams",
   "permissions": [
     "contextMenus",
@@ -14,7 +14,9 @@
   "host_permissions": [
     "<all_urls>",
     "http://localhost:5678/*",
-    "http://127.0.0.1:5678/*"
+    "http://127.0.0.1:5678/*",
+    "https://gnosis-wraith-949870462453.us-central1.run.app/*",
+    "https://nuts.services/wraith/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -36,9 +38,20 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js",
+        "content/dom-capture.js"
+      ],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["images/*"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

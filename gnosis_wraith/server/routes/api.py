@@ -1,4 +1,7 @@
-"""API routes for the Gnosis Wraith application."""
+"""API routes for the Gnosis Wraith application.
+
+Version: 2025-05-14 - Fixed URL handling and settings processing in /api/crawl
+"""
 import os
 import uuid
 import logging
@@ -7,7 +10,7 @@ from quart import request, jsonify, send_from_directory, url_for
 
 from gnosis_wraith.server.routes import api_bp
 from server.config import SCREENSHOTS_DIR, REPORTS_DIR, logger
-from server.crawler import crawl_urls
+from server.crawler import crawl_url
 from server.reports import save_markdown_report, convert_markdown_to_html
 from ai.processing import process_with_llm
 from lightning.client import make_lightning_payment
@@ -15,7 +18,9 @@ from lightning.client import make_lightning_payment
 @api_bp.route('/crawl', methods=['POST'])
 async def api_crawl():
     """API endpoint to crawl URLs with LLM processing."""
+    logger.info("Blueprint /api/crawl endpoint called")
     data = await request.get_json()
+    logger.info(f"API crawl received data: {data}")
     
     urls = data.get('urls', [])
     if 'url' in data and data['url']:
@@ -30,10 +35,26 @@ async def api_crawl():
     title = data.get('title', f"Web Crawl Report - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     output_format = data.get('output_format', 'markdown')
     
-    # Process JavaScript enabled setting from request
+    # Process all settings from request
+    # Process JavaScript enabled setting
     javascript_enabled = data.get('javascript_enabled', False)
     if isinstance(javascript_enabled, str):
         javascript_enabled = javascript_enabled.lower() == 'true'
+    
+    # Process screenshot settings
+    take_screenshot = data.get('take_screenshot', True)
+    if isinstance(take_screenshot, str):
+        take_screenshot = take_screenshot.lower() == 'true'
+    
+    # Process OCR extraction settings
+    ocr_extraction = data.get('ocr_extraction', True)
+    if isinstance(ocr_extraction, str):
+        ocr_extraction = ocr_extraction.lower() == 'true'
+    
+    # Process markdown extraction settings
+    markdown_extraction = data.get('markdown_extraction', 'enhanced')
+    
+    logger.info(f"Crawl settings: JS={javascript_enabled}, Screenshot={take_screenshot}, OCR={ocr_extraction}, Markdown={markdown_extraction}")
     
     # Get LLM configuration from request
     llm_provider = data.get('llm_provider', '')
@@ -51,7 +72,23 @@ async def api_crawl():
     
     try:
         # Crawl the URLs
-        crawl_results = await crawl_urls(urls, javascript_enabled=javascript_enabled)
+        # Pass all the settings to the crawl_url function
+        # Make sure the crawl_url function is updated to accept these parameters
+        raw_crawl_results = await crawl_url(
+            urls, 
+            javascript_enabled=javascript_enabled,
+            take_screenshot=take_screenshot,
+            ocr_extraction=ocr_extraction,
+            markdown_extraction=markdown_extraction
+        )
+        
+        # Ensure crawl_results is always a list
+        if isinstance(raw_crawl_results, dict):
+            logger.info("Single result converted to list for processing")
+            crawl_results = [raw_crawl_results]
+        else:
+            logger.info(f"Results type: {type(raw_crawl_results)}")
+            crawl_results = raw_crawl_results if isinstance(raw_crawl_results, list) else []
         
         # Process extracted text with LLM if provider and token are specified
         if llm_provider:
@@ -142,10 +179,18 @@ async def api_crawl():
         }
         
         for result in crawl_results:
+            # Process URL to handle list/string inconsistencies
+            response_url = result.get('url', urls[0] if urls else "Unknown URL")
+            if isinstance(response_url, list) and len(response_url) > 0:
+                response_url = response_url[0]  # Extract single URL from list
+            
             result_item = {
-                "url": result['url'],
+                "url": response_url,  # Use processed URL
                 "title": result.get('title', 'Untitled Page'),
-                "javascript_enabled": result.get('javascript_enabled', javascript_enabled)
+                "javascript_enabled": result.get('javascript_enabled', javascript_enabled),
+                "take_screenshot": result.get('take_screenshot', take_screenshot),
+                "ocr_extraction": result.get('ocr_extraction', ocr_extraction),
+                "markdown_extraction": result.get('markdown_extraction', markdown_extraction)
             }
             
             if 'error' in result:
@@ -182,14 +227,22 @@ async def api_crawl():
                 html_path = await convert_markdown_to_html(markdown_path)
                 results['html_path'] = os.path.basename(html_path)
         
+        # Check if 'results' is a dictionary with a 'results' key or a string
+        if isinstance(results, dict) and 'results' in results:
+            result_count = len(results.get('results', []))
+            logger.info(f"API crawl success: returning {result_count} results")
+        else:
+            logger.info(f"API crawl success: returning direct result")
         return jsonify(results)
     
     except Exception as e:
         logger.error(f"API crawl error: {str(e)}")
-        return jsonify({
+        error_response = {
             "success": False,
             "error": str(e)
-        }), 500
+        }
+        logger.error(f"Returning error response: {error_response}")
+        return jsonify(error_response), 500
 
 @api_bp.route('/upload', methods=['POST'])
 async def api_upload():

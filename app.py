@@ -1,9 +1,11 @@
 """
-Gnosis Wraith Main Application
+Gnosis Wraith Main Application with Job-Based Processing
 
 This is the main entry point for the Gnosis Wraith application which can 
 run as both a web server and a CLI tool.
 """
+
+# VERSION: 2025-05-14-V2 - Simple fix for string indices error
 
 import os
 import re
@@ -15,6 +17,7 @@ import uuid
 import click
 from typing import Dict, Any, List, Optional, Union
 from pathlib import Path
+from server.browser import BrowserControl
 
 from quart import Quart, render_template, request, jsonify, send_from_directory, redirect, url_for
 
@@ -22,17 +25,36 @@ from quart import Quart, render_template, request, jsonify, send_from_directory,
 from server.config import logger, STORAGE_PATH, SCREENSHOTS_DIR, REPORTS_DIR, check_gpu_availability
 
 # Import crawler and reporting modules
-from server.crawler import extract_urls, crawl_urls
+from server.crawler import extract_urls, crawl_url
 from server.reports import save_markdown_report, convert_markdown_to_html, generate_markdown_report
 
 # Import AI processing modules
 from ai.processing import process_with_llm
 from lightning.client import make_lightning_payment
 
+from server.initializers import init_job_system
+
 # Create Quart app
 app = Quart(__name__, 
            static_folder='gnosis_wraith/server/static', 
            template_folder='gnosis_wraith/server/templates')
+
+# Add version log at startup
+@app.before_serving
+async def log_version():
+    version = "2025-05-14-V2"  # Match the version at the top of the file
+    logger.info(f"Starting app_with_jobs.py version {version}")
+
+# Initialize job-based processing system
+init_job_system(app)
+
+# Add a middleware-like function to log all requests - but only for non-static paths
+@app.before_request
+async def log_request():
+    # Skip logging for static resources to reduce noise
+    if not request.path.startswith('/static/'):
+        logger.info(f"Request to: {request.path}")
+    return None  # Continue with the request
 
 # Register blueprints if available (in try block to handle restructuring phase)
 try:
@@ -43,7 +65,6 @@ try:
     logger.info("Blueprints registered successfully")
 except ImportError as e:
     logger.warning(f"Could not register blueprints: {str(e)}")
-    logger.warning("Falling back to monolithic route definitions")
 
 # Ensure the downloads directory exists
 os.makedirs(os.path.join(os.path.dirname(__file__), 'gnosis_wraith/server/static/downloads'), exist_ok=True)
@@ -51,196 +72,28 @@ os.makedirs(os.path.join(os.path.dirname(__file__), 'gnosis_wraith/server/static
 # Web routes - These will be used if blueprints aren't registered
 # They'll be ignored if the route is already defined by a blueprint
 
+# Read version from manifest.json
+manifest_path = os.path.join(os.path.dirname(__file__), 'gnosis_wraith', 'extension', 'manifest.json')
+try:
+    with open(manifest_path, 'r') as f:
+        manifest_data = json.load(f)
+        EXTENSION_VERSION = manifest_data.get('version', '1.0.7')  # Fallback to 1.0.7 if not found
+except (FileNotFoundError, json.JSONDecodeError) as e:
+    # Fallback in case the file can't be read
+    EXTENSION_VERSION = '1.0.7'
+    logger.error(f"Could not read extension version from manifest.json: {e}")
+    
+# Then in the index route, pass the version to the template
 @app.route('/')
 async def index():
     """Render the index page."""
-    return await render_template('index.html')
-
-@app.route('/api/crawl', methods=['POST'])
-async def api_crawl():
-    """API endpoint to crawl URLs with LLM processing."""
-    data = await request.get_json()
-    
-    urls = data.get('urls', [])
-    if 'url' in data and data['url']:
-        urls.append(data['url'])
-    
-    if not urls:
-        return jsonify({
-            "success": False,
-            "error": "No URLs provided"
-        }), 400
-    
-    title = data.get('title', f"Web Crawl Report - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    output_format = data.get('output_format', 'markdown')
-    
-    # Process JavaScript enabled setting from request
-    javascript_enabled = data.get('javascript_enabled', False)
-    if isinstance(javascript_enabled, str):
-        javascript_enabled = javascript_enabled.lower() == 'true'
-    
-    # Get LLM configuration from request
-    llm_provider = data.get('llm_provider', '')
-    llm_token = data.get('llm_token', '')
-    
-    # Check if we should use Lightning Network for payment
-    use_lightning = data.get('use_lightning', False)
-    lightning_budget = data.get('lightning_budget', 0)
-    
-    # If Lightning is enabled but no provider specified, use local model as fallback
-    if use_lightning and not llm_provider:
-        llm_provider = 'local'
-    
-    logger.info(f"API crawl request: {len(urls)} URLs, JavaScript {'enabled' if javascript_enabled else 'disabled'}, LLM: {llm_provider or 'None'}")
-    
-    try:
-        # Crawl the URLs
-        crawl_results = await crawl_urls(urls, javascript_enabled=javascript_enabled)
-        
-        # Process extracted text with LLM if provider and token are specified
-        if llm_provider:
-            overall_text = ""
-            
-            # Process each result with LLM
-            for result in crawl_results:
-                if 'extracted_text' in result and result['extracted_text']:
-                    try:
-                        # Check if we need to pay for this processing via Lightning
-                        if use_lightning:
-                            # Make Lightning Network payment (this is a placeholder for your actual payment code)
-                            payment_successful = await make_lightning_payment(
-                                service_type="text-analysis", 
-                                amount=min(100, lightning_budget),  # Use 100 sats or budget, whichever is lower
-                                provider=llm_provider
-                            )
-                            
-                            # If payment failed, skip LLM processing
-                            if not payment_successful:
-                                result['llm_error'] = "Lightning payment failed"
-                                continue
-                            
-                            # Reduce available budget
-                            lightning_budget -= 100
-                            
-                            # If budget exhausted, skip future processing
-                            if lightning_budget <= 0:
-                                break
-                        
-                        # Process the extracted text with the specified LLM
-                        llm_summary = await process_with_llm(
-                            result['extracted_text'], 
-                            llm_provider, 
-                            llm_token
-                        )
-                        
-                        result['llm_summary'] = llm_summary
-                        result['llm_provider'] = llm_provider
-                        
-                        # Collect text for overall summary
-                        if len(overall_text) < 10000:  # Keep overall text within reasonable limits
-                            overall_text += f"\n\n--- {result.get('title', 'Untitled Page')} ---\n\n"
-                            overall_text += result['extracted_text'][:1000]  # Take first 1000 chars from each result
-                        
-                        logger.info(f"LLM processing completed for {result.get('url', 'unknown URL')}")
-                    except Exception as llm_error:
-                        logger.error(f"LLM processing error: {str(llm_error)}")
-                        result['llm_error'] = str(llm_error)
-            
-            # Generate an overall summary if we have enough text
-            if overall_text and len(crawl_results) > 1:
-                try:
-                    # Check if we need to pay for this processing via Lightning
-                    if use_lightning and lightning_budget >= 200:
-                        # Make Lightning Network payment for overall summary (more expensive than individual summaries)
-                        payment_successful = await make_lightning_payment(
-                            service_type="overall-analysis", 
-                            amount=200,  # Higher cost for overall analysis
-                            provider=llm_provider
-                        )
-                        
-                        if payment_successful:
-                            lightning_budget -= 200
-                            
-                            # Process for overall summary
-                            overall_prompt = f"You've analyzed content from {len(crawl_results)} webpages. Please provide a brief executive summary that synthesizes the key information across all pages:\n\n{overall_text}"
-                            overall_summary = await process_with_llm(overall_prompt, llm_provider, llm_token)
-                            
-                            # Add to first result for inclusion in the report
-                            if overall_summary:
-                                crawl_results[0]['overall_summary'] = overall_summary
-                    elif not use_lightning:
-                        # Process for overall summary without Lightning payment
-                        overall_prompt = f"You've analyzed content from {len(crawl_results)} webpages. Please provide a brief executive summary that synthesizes the key information across all pages:\n\n{overall_text}"
-                        overall_summary = await process_with_llm(overall_prompt, llm_provider, llm_token)
-                        
-                        # Add to first result for inclusion in the report
-                        if overall_summary:
-                            crawl_results[0]['overall_summary'] = overall_summary
-                except Exception as overall_error:
-                    logger.error(f"Overall summary error: {str(overall_error)}")
-        
-        results = {
-            "success": True,
-            "urls_processed": urls,
-            "results": []
-        }
-        
-        for result in crawl_results:
-            result_item = {
-                "url": result['url'],
-                "title": result.get('title', 'Untitled Page'),
-                "javascript_enabled": result.get('javascript_enabled', javascript_enabled)
-            }
-            
-            if 'error' in result:
-                result_item['error'] = result['error']
-            else:
-                # Get relative paths for the web app
-                if 'screenshot' in result:
-                    result_item['screenshot'] = os.path.basename(result['screenshot'])
-                
-                # Truncate extracted text if too long
-                if 'extracted_text' in result:
-                    result_item['extracted_text'] = result['extracted_text'][:1000] + '...' if len(result['extracted_text']) > 1000 else result['extracted_text']
-                
-                # Include LLM summary if available
-                if 'llm_summary' in result:
-                    result_item['llm_summary'] = result['llm_summary']
-                
-                # Include overall summary if available
-                if 'overall_summary' in result:
-                    result_item['overall_summary'] = result['overall_summary']
-                
-                # Include any LLM errors
-                if 'llm_error' in result:
-                    result_item['llm_error'] = result['llm_error']
-            
-            results['results'].append(result_item)
-        
-        # Always generate markdown report
-        markdown_path = await save_markdown_report(title, crawl_results)
-        results['report_path'] = os.path.basename(markdown_path)
-        
-        # Always convert to HTML as well
-        html_path = await convert_markdown_to_html(markdown_path)
-        results['html_path'] = os.path.basename(html_path)
-        
-        return jsonify(results)
-    
-    except Exception as e:
-        logger.error(f"API crawl error: {str(e)}")
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        }), 500
+    return await render_template('index.html', extension_version=EXTENSION_VERSION)
 
 @app.route('/api/upload', methods=['POST'])
 async def api_upload():
     """API endpoint to upload images."""
-    logger.info("API upload endpoint called")
     files = await request.files
     form = await request.form
-    logger.info(f"Files received: {files.keys()}, Form data: {form.keys()}")
     
     if 'image' not in files:
         return jsonify({
@@ -270,8 +123,6 @@ async def api_upload():
         report_image_path = os.path.join(report_images_dir, os.path.basename(file_path))
         shutil.copy2(file_path, report_image_path)
         
-        logger.info(f"Image uploaded to {file_path} and copied to {report_image_path} for reports")
-        
         # Create a simplified result for report generation
         image_result = {
             'url': f"Uploaded Image: {os.path.basename(file_path)}",  # Descriptive URL
@@ -282,15 +133,12 @@ async def api_upload():
         
         # Generate a report
         report_title = f"{title} - {datetime.datetime.now().strftime('%Y-%m-%d')}"
-        logger.info(f"Generating image upload report with title: {report_title}")
         
         try:
             report_path = await save_markdown_report(report_title, [image_result])
-            logger.info(f"Successfully generated markdown report: {report_path}")
             
             # Always convert to HTML as well
             html_path = await convert_markdown_to_html(report_path)
-            logger.info(f"Successfully generated HTML report: {html_path}")
         except Exception as report_error:
             logger.error(f"Error generating reports: {str(report_error)}")
             raise
@@ -318,9 +166,23 @@ async def list_reports():
         if file.endswith('.md'):
             file_path = os.path.join(REPORTS_DIR, file)
             creation_time = os.path.getctime(file_path)
+            
+            # Get the title from the markdown file (first heading)
+            title = file  # Default to filename
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read(1000)  # Read just the beginning
+                    match = re.search(r'^# (.+)$', content, re.MULTILINE)
+                    if match:
+                        title = match.group(1)
+            except Exception as e:
+                logger.error(f"Error reading report title: {str(e)}")
+            
             reports.append({
                 "filename": file,
-                "created": datetime.datetime.fromtimestamp(creation_time).strftime('%Y-%m-%d %H:%M:%S'),
+                "title": title,
+                "created": datetime.datetime.fromtimestamp(creation_time),  # Store as datetime object
+                "created_str": datetime.datetime.fromtimestamp(creation_time).strftime('%Y-%m-%d %H:%M:%S'),
                 "size": os.path.getsize(file_path)
             })
     
@@ -339,9 +201,6 @@ async def serve_screenshot(filename):
     """Serve a screenshot file."""
     return await send_from_directory(SCREENSHOTS_DIR, filename)
 
-# Set this single variable to change the extension version everywhere
-EXTENSION_VERSION = "1.0.6"
-
 @app.route('/extension')
 async def serve_extension():
     """Generate and serve the extension zip file."""
@@ -349,7 +208,6 @@ async def serve_extension():
     
     # Use the global version variable
     extension_version = EXTENSION_VERSION
-    logger.info(f"Using extension version: {extension_version}")
     
     # Create versioned filenames to prevent browser caching
     gnosis_zip_filename = f'gnosis-wraith-extension-{extension_version}.zip'
@@ -371,7 +229,6 @@ async def serve_extension():
         for old_zip in old_zips:
             try:
                 os.remove(old_zip)
-                logger.info(f"Removed old extension zip: {old_zip}")
             except Exception as e:
                 logger.error(f"Error removing old zip: {str(e)}")
         
@@ -385,12 +242,10 @@ async def serve_extension():
                     file_path = os.path.join(root, file)
                     arcname = os.path.relpath(file_path, os.path.join(extension_dir, '..'))
                     zipf.write(file_path, arcname)
-        logger.info(f"Created gnosis extension zip: {gnosis_zip_path}")
         
         # Create webwraith zip (copy of gnosis zip with different name)
         import shutil
         shutil.copy2(gnosis_zip_path, webwraith_zip_path)
-        logger.info(f"Created webwraith extension zip: {webwraith_zip_path}")
     
     # Send file directly instead of redirecting to preserve filename
     from quart import send_file
@@ -550,8 +405,6 @@ async def update_settings():
                 # Ensure the new directories exist
                 os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
                 os.makedirs(REPORTS_DIR, exist_ok=True)
-                
-                logger.info(f"Storage path updated to {new_path}")
             except Exception as e:
                 logger.error(f"Error setting storage path: {str(e)}")
                 return jsonify({
@@ -561,8 +414,6 @@ async def update_settings():
         
         # Note: We don't store LLM tokens on the server for security reasons
         # The client will send the appropriate token with each API request
-        
-        logger.info("Settings updated successfully")
         return jsonify({
             "success": True,
             "message": "Settings updated successfully"
@@ -588,7 +439,8 @@ def cli():
               help="Output format: markdown, image, or both.")
 @click.option('-t', '--title', default=None, help="Title for the markdown report.")
 @click.option('-d', '--dir', default=None, help="Directory to save outputs. Defaults to current directory.")
-def crawl(file, uri, output, title, dir):
+@click.option('--enhanced-markdown/--no-enhanced-markdown', default=True, help="Use enhanced markdown generation.")
+def crawl(file, uri, output, title, dir, enhanced_markdown):
     """Crawl specified URLs, capture screenshots, and generate output as markdown or images."""
     if bool(file) == bool(uri):
         click.echo("Error: Exactly one of --file or --uri must be provided.")
@@ -617,13 +469,13 @@ def crawl(file, uri, output, title, dir):
         urls = [uri]
     
     # Run the async crawl
-    result = asyncio.run(async_crawl_cli(urls, output, title, output_dir))
+    result = asyncio.run(async_crawl_cli(urls, output, title, output_dir, enhanced_markdown))
     click.echo(json.dumps(result, indent=2))
 
-async def async_crawl_cli(urls, output_format, title, output_dir):
+async def async_crawl_cli(urls, output_format, title, output_dir, enhanced_markdown=True):
     """Async function to crawl URLs and generate output for CLI."""
     try:
-        crawl_results = await crawl_urls(urls)
+        crawl_results = await crawl_url(urls)
         
         outputs = {}
         
@@ -662,6 +514,7 @@ async def async_crawl_cli(urls, output_format, title, output_dir):
                 "title": title,
                 "urls_processed": urls,
                 "url_count": len(urls),
+                "enhanced_markdown": enhanced_markdown,
                 "outputs": outputs
             }
         }

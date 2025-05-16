@@ -70,15 +70,22 @@
           </blockquote>
         </div>
 
+        <!-- New action buttons at the top -->
+        <div class="action-buttons" style="margin-bottom: 20px; display: flex; justify-content: center; gap: 15px;">
+          <a href="{{ url_for('index') }}" class="btn primary">
+            <i class="fas fa-spider"></i> Start New Crawl
+          </a>
+          <button id="refresh-btn" class="btn secondary">
+            <i class="fas fa-sync-alt"></i> Refresh Reports
+          </button>
+        </div>
+
         <div class="search-bar">
           <input
             type="text"
             id="search-reports"
             placeholder="Search reports..."
           />
-          <button id="refresh-btn" class="btn secondary">
-            <i class="fas fa-sync-alt"></i> Refresh
-          </button>
         </div>
 
         {% if reports %}
@@ -96,7 +103,9 @@
               {% for report in reports %}
               <tr>
                 <td>{{ report.title }}</td>
-                <td><span class="timestamp" title="{{ report.created_str }}">{{ report.created.strftime('%Y-%m-%d') }} <small>{{ report.created.strftime('%H:%M:%S') }}</small></span></td>
+                <td><span class="timestamp" title="{{ report.created_str }}">
+                  {{ report.created }}
+                </span></td>
                 <td>{{ (report.size / 1024)|round(1) }} KB</td>
                 <td>
                   <a
@@ -132,7 +141,7 @@
         <div class="empty-state">
           <i class="fas fa-file-alt fa-3x"></i>
           <p>No reports found</p>
-          <p>Start crawling to generate reports</p>
+          <p><a href="{{ url_for('index') }}" class="btn primary">Start Crawling</a></p>
         </div>
         {% endif %}
       </div>

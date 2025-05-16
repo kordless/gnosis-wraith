@@ -66,9 +66,10 @@ class ModelManager:
             
             image = Image.open(image_path)
             image_np = np.array(image)
+
             results = self.ocr_reader.readtext(image_np)
-            extracted_text = ' '.join([result[1] for result in results])
-            
+            extracted_text = ' '.join([result[1] if isinstance(result, (list, tuple)) and len(result) > 1 else str(result) for result in results])
+
             end_time = time.time()
             processing_time = end_time - start_time
             

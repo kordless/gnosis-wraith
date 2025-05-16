@@ -1,11 +1,9 @@
-/**
- * Updated WebWraith content.js with support for job-based processing
- */
+// WebWraith content script for browser-based screenshot capture
+// This script runs in the context of the browser tab
 
 // Keep track of overlay elements
 let flashOverlay = null;
 let captureOverlay = null;
-let progressBar = null;  // New progress bar element
 let isCapturing = false; // Flag to prevent multiple captures
 let captureTimeout = null; // For auto-hiding the message
 
@@ -46,7 +44,7 @@ function createFlashEffect() {
   }, 50);
 }
 
-// Create a capturing indicator with progress bar
+// Create a capturing indicator
 function showCapturingIndicator(message = 'Capturing screenshot...') {
   // Remove any existing overlay
   if (captureOverlay) {
@@ -75,53 +73,13 @@ function showCapturingIndicator(message = 'Capturing screenshot...') {
   captureOverlay.style.zIndex = '999999';
   captureOverlay.style.transition = 'opacity 0.5s ease-in-out';
   captureOverlay.textContent = message;
-  
-  // Add progress bar container
-  const progressContainer = document.createElement('div');
-  progressContainer.style.marginTop = '8px';
-  progressContainer.style.width = '100%';
-  progressContainer.style.height = '6px';
-  progressContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.3)';
-  progressContainer.style.borderRadius = '3px';
-  progressContainer.style.overflow = 'hidden';
-  
-  // Add progress bar
-  progressBar = document.createElement('div');
-  progressBar.style.width = '0%';
-  progressBar.style.height = '100%';
-  progressBar.style.backgroundColor = 'white';
-  progressBar.style.transition = 'width 0.5s ease-in-out';
-  
-  progressContainer.appendChild(progressBar);
-  captureOverlay.appendChild(progressContainer);
-  
   document.body.appendChild(captureOverlay);
 }
 
-// Update capturing indicator text and progress
-function updateCapturingIndicator(message, progress = null) {
+// Update capturing indicator text
+function updateCapturingIndicator(message) {
   if (captureOverlay) {
-    // Update message
-    if (typeof message === 'string') {
-      // Replace only the text node, preserving the progress bar
-      const textNodes = Array.from(captureOverlay.childNodes)
-        .filter(node => node.nodeType === Node.TEXT_NODE);
-      
-      if (textNodes.length > 0) {
-        textNodes[0].nodeValue = message;
-      } else {
-        // Insert text node at the beginning
-        captureOverlay.insertBefore(
-          document.createTextNode(message), 
-          captureOverlay.firstChild
-        );
-      }
-    }
-    
-    // Update progress bar if provided
-    if (progress !== null && progressBar) {
-      progressBar.style.width = `${progress}%`;
-    }
+    captureOverlay.textContent = message;
   }
 }
 
@@ -138,11 +96,6 @@ function showSuccessAndHide(message = 'Screenshot captured successfully!') {
   
   if (captureOverlay) {
     captureOverlay.style.backgroundColor = '#27ae60'; // Change to green
-    
-    // Set progress to 100%
-    if (progressBar) {
-      progressBar.style.width = '100%';
-    }
     
     // Auto-hide after 3 seconds
     captureTimeout = setTimeout(() => {
@@ -170,11 +123,6 @@ function showErrorAndHide(message = 'Error capturing screenshot') {
   if (captureOverlay) {
     captureOverlay.style.backgroundColor = '#e74c3c'; // Change to red
     
-    // Set progress to 100%
-    if (progressBar) {
-      progressBar.style.width = '100%';
-    }
-    
     // Auto-hide after 5 seconds
     captureTimeout = setTimeout(() => {
       if (captureOverlay) {
@@ -192,7 +140,6 @@ function hideCapturingIndicator() {
   if (captureOverlay && captureOverlay.parentNode) {
     document.body.removeChild(captureOverlay);
     captureOverlay = null;
-    progressBar = null;
   }
   
   if (captureTimeout) {
@@ -269,13 +216,13 @@ function restoreUIElements() {
 async function captureVisibleScreen(sendToApi = false) {
   // Create visual indicator that screenshot is being taken
   createFlashEffect();
-  showCapturingIndicator('Preparing to capture...', 0);
+  showCapturingIndicator('Preparing to capture...');
   
   try {
     // Hide UI elements first
     await hideUIElementsForCapture();
     
-    updateCapturingIndicator('Taking screenshot...', 10);
+    updateCapturingIndicator('Taking screenshot...');
     
     // Notify the background script to take the screenshot
     chrome.runtime.sendMessage({
@@ -291,7 +238,7 @@ async function captureVisibleScreen(sendToApi = false) {
         showErrorAndHide('Failed to capture screenshot');
       } else if (response.status === 'processing') {
         // We're just starting the process, status updates will come later
-        updateCapturingIndicator('Processing screenshot...', 20);
+        updateCapturingIndicator('Processing screenshot...');
       } else if (response.status !== 'capturing') {
         if (sendToApi) {
           showSuccessAndHide('Screenshot sent for processing!');
@@ -324,98 +271,15 @@ document.addEventListener('keydown', (e) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'captureVisibleTab') {
     createFlashEffect();
-    showCapturingIndicator('Taking screenshot...', 10);
+    showCapturingIndicator('Taking screenshot...');
     sendResponse({ status: 'capturing' });
     return true;
   } else if (message.action === 'capturingStarted') {
     createFlashEffect();
     hideUIElementsForCapture().then(() => {
-      showCapturingIndicator('Taking screenshot...', 10);
+      showCapturingIndicator('Taking screenshot...');
       sendResponse({ status: 'showing indicator' });
     });
-    return true;
-  } else if (message.action === 'uploadStarted') {
-    updateCapturingIndicator('Uploading to server...', 30);
-    sendResponse({ status: 'upload started' });
-    return true;
-  } else if (message.action === 'uploadJobStarted') {
-    // New: Specific message for job-based processing
-    updateCapturingIndicator('Processing initiated...', 40);
-    sendResponse({ status: 'job started' });
-    return true;
-  } else if (message.action === 'uploadProgress') {
-    // Updated to include percentage
-    const progressMsg = message.status === 'processing' ? 
-      'Processing image...' : 
-      `${message.status.charAt(0).toUpperCase() + message.status.slice(1)}...`;
-    
-    updateCapturingIndicator(progressMsg, message.progress);
-    sendResponse({ status: 'progress shown' });
-    return true;
-  } else if (message.action === 'uploadFinished') {
-    restoreUIElements();
-    showSuccessAndHide('Processing complete!');
-    
-    // If a report URL was provided, create a link
-    if (message.reportUrl) {
-      // Create a link to the report
-      const linkDiv = document.createElement('div');
-      linkDiv.style.position = 'fixed';
-      linkDiv.style.bottom = '20px';
-      linkDiv.style.right = '20px';
-      linkDiv.style.backgroundColor = '#ffffff';
-      linkDiv.style.padding = '10px';
-      linkDiv.style.borderRadius = '5px';
-      linkDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-      linkDiv.style.zIndex = '999998';
-      
-      const link = document.createElement('a');
-      link.href = message.reportUrl;
-      link.target = '_blank';
-      link.textContent = message.extractedText ? 'View Analysis Report' : 'View Report';
-      link.style.color = '#3498db';
-      link.style.textDecoration = 'none';
-      link.style.fontFamily = 'Arial, sans-serif';
-      link.style.fontWeight = 'bold';
-      
-      // If there's extracted text, show a preview
-      if (message.extractedText) {
-        const textPreview = document.createElement('div');
-        textPreview.style.marginTop = '8px';
-        textPreview.style.padding = '8px';
-        textPreview.style.backgroundColor = '#f8f9fa';
-        textPreview.style.borderRadius = '3px';
-        textPreview.style.maxHeight = '100px';
-        textPreview.style.overflow = 'auto';
-        textPreview.style.fontSize = '12px';
-        textPreview.style.fontFamily = 'monospace';
-        textPreview.style.color = '#333';
-        
-        // Limit text length
-        const previewText = message.extractedText.length > 200 ?
-          message.extractedText.substring(0, 200) + '...' :
-          message.extractedText;
-        
-        textPreview.textContent = 'Extracted Text: ' + previewText;
-        linkDiv.appendChild(textPreview);
-      }
-      
-      linkDiv.appendChild(link);
-      document.body.appendChild(linkDiv);
-      
-      // Remove after 15 seconds
-      setTimeout(() => {
-        if (linkDiv.parentNode) {
-          document.body.removeChild(linkDiv);
-        }
-      }, 15000);
-    }
-    
-    sendResponse({ status: 'upload complete' });
-    return true;
-  } else if (message.action === 'uploadError') {
-    showErrorAndHide(`Upload error: ${message.error}`);
-    sendResponse({ status: 'error shown' });
     return true;
   } else if (message.action === 'capturingFinished') {
     restoreUIElements();
@@ -447,6 +311,55 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     showErrorAndHide(`Error: ${message.error || 'Unknown error occurred'}`);
     sendResponse({ status: 'error shown' });
     return true;
+  } else if (message.action === 'uploadStarted') {
+    updateCapturingIndicator('Uploading to server...');
+    sendResponse({ status: 'upload started' });
+    return true;
+  } else if (message.action === 'uploadProgress') {
+    updateCapturingIndicator(`Uploading: ${message.progress}%`);
+    sendResponse({ status: 'progress shown' });
+    return true;
+  } else if (message.action === 'uploadFinished') {
+    showSuccessAndHide('Screenshot uploaded and processed!');
+    // If a report URL was provided, we could offer to open it
+    if (message.reportUrl) {
+      // Create a link to the report
+      const linkDiv = document.createElement('div');
+      linkDiv.style.position = 'fixed';
+      linkDiv.style.bottom = '20px';
+      linkDiv.style.right = '20px';
+      linkDiv.style.backgroundColor = '#ffffff';
+      linkDiv.style.padding = '10px';
+      linkDiv.style.borderRadius = '5px';
+      linkDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+      linkDiv.style.zIndex = '999998';
+      
+      const link = document.createElement('a');
+      link.href = message.reportUrl;
+      link.target = '_blank';
+      link.textContent = 'View Analysis Report';
+      link.style.color = '#3498db';
+      link.style.textDecoration = 'none';
+      link.style.fontFamily = 'Arial, sans-serif';
+      link.style.fontWeight = 'bold';
+      
+      linkDiv.appendChild(link);
+      document.body.appendChild(linkDiv);
+      
+      // Remove after 10 seconds
+      setTimeout(() => {
+        if (linkDiv.parentNode) {
+          document.body.removeChild(linkDiv);
+        }
+      }, 10000);
+    }
+    
+    sendResponse({ status: 'upload complete' });
+    return true;
+  } else if (message.action === 'uploadError') {
+    showErrorAndHide(`Upload error: ${message.error}`);
+    sendResponse({ status: 'error shown' });
+    return true;
   } else if (message.action === 'readyForFullPageCapture') {
     if (!isCapturing) {
       captureFullPage(message.sendToApi);
@@ -466,10 +379,54 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+// Inject a button into certain sites if needed (optional)
+function injectCaptureButton() {
+  // Check if we're on a site where we want to add a capture button
+  // For example, sites with login walls or paywalls
+  const currentDomain = window.location.hostname;
+  const sitesToInject = [
+    'medium.com',
+    'nytimes.com',
+    'wsj.com'
+    // Add more sites as needed
+  ];
+  
+  if (!sitesToInject.some(site => currentDomain.includes(site))) {
+    return;
+  }
+  
+  // Create button
+  const button = document.createElement('button');
+  button.textContent = 'Capture Screenshot';
+  button.style.position = 'fixed';
+  button.style.bottom = '20px';
+  button.style.right = '20px';
+  button.style.padding = '10px 15px';
+  button.style.backgroundColor = '#3498db';
+  button.style.color = 'white';
+  button.style.border = 'none';
+  button.style.borderRadius = '4px';
+  button.style.fontFamily = 'Arial, sans-serif';
+  button.style.fontSize = '14px';
+  button.style.fontWeight = 'bold';
+  button.style.cursor = 'pointer';
+  button.style.zIndex = '999999';
+  button.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+  
+  // Add click handler
+  button.addEventListener('click', captureVisibleScreen);
+  
+  // Add to page
+  document.body.appendChild(button);
+}
+
 // Initialize
 function initialize() {
   // Add to window object for debugging and direct access if needed
   window.webwraithCapture = captureVisibleScreen;
+  
+  // Inject button for specific sites
+  injectCaptureButton();
   
   // Let background script know content script is loaded
   chrome.runtime.sendMessage({ action: 'contentScriptReady' });
@@ -482,7 +439,7 @@ if (document.readyState === 'loading') {
   initialize();
 }
 
-// Function to capture full page (scrolling) - Simplified for brevity
+// Function to capture full page (scrolling)
 async function captureFullPage(sendToApi = false) {
   // Prevent multiple captures from running simultaneously
   if (isCapturing) {
@@ -494,14 +451,188 @@ async function captureFullPage(sendToApi = false) {
     isCapturing = true;
     
     // Show capturing indicator
-    showCapturingIndicator('Starting full page capture...', 0);
+    showCapturingIndicator('Starting full page capture...');
     
     // Hide UI elements first
     await hideUIElementsForCapture();
     
-    // [Rest of full page capture logic]
-    // Note: Full implementation omitted for brevity
+    // Get page dimensions
+    const scrollHeight = Math.max(
+      document.documentElement.scrollHeight,
+      document.body.scrollHeight
+    );
+    const scrollWidth = Math.max(
+      document.documentElement.scrollWidth,
+      document.body.scrollWidth
+    );
     
+    // Get visible dimensions
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    
+    // Save original scroll position to restore later
+    const originalScrollTop = window.scrollY;
+    const originalScrollLeft = window.scrollX;
+    
+    // Notify background we're doing a full page capture
+    updateCapturingIndicator('Preparing capture process...');
+    
+    try {
+      const response = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          action: 'startFullPageCapture',
+          dimensions: {
+            scrollHeight,
+            scrollWidth,
+            viewportHeight,
+            viewportWidth
+          },
+          sendToApi: sendToApi
+        }, response => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else if (!response || response.status !== 'ready') {
+            reject(new Error("Background not ready: " + (response ? response.status : "No response")));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+      
+      // Calculate number of steps needed
+      const verticalSteps = Math.ceil(scrollHeight / viewportHeight);
+      const horizontalSteps = Math.ceil(scrollWidth / viewportWidth);
+      
+      // Track progress
+      let capturesComplete = 0;
+      const totalCaptures = verticalSteps * horizontalSteps;
+      
+      // Update indicator to show progress
+      updateCapturingIndicator(`Capturing full page (0/${totalCaptures})`);
+      
+      // Capture each viewport section
+      const sections = [];
+      
+      // Sequential capture to avoid race conditions
+      for (let vStep = 0; vStep < verticalSteps; vStep++) {
+        for (let hStep = 0; hStep < horizontalSteps; hStep++) {
+          // Calculate scroll position
+          const scrollTop = vStep * viewportHeight;
+          const scrollLeft = hStep * viewportWidth;
+          
+          // Scroll to position
+          window.scrollTo(scrollLeft, scrollTop);
+          
+          // Wait for any repaints/reflows to complete
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          // Request background to take screenshot
+          try {
+            updateCapturingIndicator(`Capturing section ${capturesComplete+1} of ${totalCaptures}`);
+            
+            const response = await new Promise((resolve, reject) => {
+              chrome.runtime.sendMessage({
+                action: 'captureViewport',
+                position: {
+                  x: scrollLeft,
+                  y: scrollTop,
+                  vStep,
+                  hStep,
+                  viewportWidth,
+                  viewportHeight
+                }
+              }, response => {
+                if (chrome.runtime.lastError) {
+                  reject(chrome.runtime.lastError);
+                } else if (!response) {
+                  reject(new Error("No response from background"));
+                } else if (response.error) {
+                  reject(new Error(response.error));
+                } else {
+                  resolve(response);
+                }
+              });
+            });
+            
+            // Store the section if we got a valid response
+            if (response && response.dataUrl) {
+              sections.push({
+                dataUrl: response.dataUrl,
+                position: {
+                  x: scrollLeft,
+                  y: scrollTop,
+                  width: viewportWidth,
+                  height: viewportHeight
+                }
+              });
+            }
+          } catch (error) {
+            console.error(`Error capturing section ${capturesComplete+1}/${totalCaptures}:`, error);
+          }
+          
+          // Update progress
+          capturesComplete++;
+          updateCapturingIndicator(`Captured ${capturesComplete} of ${totalCaptures} sections`);
+        }
+      }
+      
+      // Restore original scroll position
+      window.scrollTo(originalScrollLeft, originalScrollTop);
+      
+      // Restore UI elements before sending data to the background
+      restoreUIElements();
+      
+      // Send all sections to background script for stitching
+      updateCapturingIndicator('Creating full page image...');
+      
+      if (sections.length === 0) {
+        throw new Error("No sections were captured");
+      }
+      
+      await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          action: 'stitchFullPageScreenshot',
+          sections: sections,
+          dimensions: {
+            scrollHeight,
+            scrollWidth,
+            viewportHeight,
+            viewportWidth
+          },
+          url: window.location.href,
+          title: document.title,
+          sendToApi: sendToApi
+        }, response => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else if (!response) {
+            reject(new Error("No response from stitching request"));
+          } else if (response.error) {
+            reject(new Error(response.error));
+          } else {
+            resolve(response);
+          }
+        });
+      });
+      
+      // The background script will handle the download or upload
+      if (sendToApi) {
+        updateCapturingIndicator('Sending to server for processing...');
+      } else {
+        showSuccessAndHide('Full page screenshot saved!');
+      }
+      
+    } catch (error) {
+      console.error("Error in capture/stitch process:", error);
+      restoreUIElements();
+      showErrorAndHide(`Error: ${error.message}`);
+      
+      // Notify background of failure
+      chrome.runtime.sendMessage({
+        action: 'fullPageCaptureFailed',
+        error: error.message
+      });
+    }
   } catch (error) {
     console.error('Error in full page capture process:', error);
     restoreUIElements();

@@ -1,0 +1,14 @@
+/* Fix for code borders */
+#code-examples .code-container code,
+#code-examples .code-container code * {
+    text-decoration: none !important;
+    border: 0px solid #ccc !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+/* Ensure the code container itself has proper styling */
+.code-container {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+}

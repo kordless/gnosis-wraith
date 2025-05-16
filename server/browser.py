@@ -27,7 +27,8 @@ class BrowserControl:
             raise Exception("Browser not started")
         
         try:
-            await self.page.screenshot(path=path)
+            # Take full page screenshot to capture everything
+            await self.page.screenshot(path=path, full_page=True)
             logger.info(f"Screenshot saved to {path}")
         except Exception as e:
             logger.error(f"Error taking screenshot: {str(e)}")
@@ -59,11 +60,80 @@ class BrowserControl:
                 logger.error(f"Error creating error image: {str(img_error)}")
                 raise e
 
-    async def navigate(self, url):
+    async def wait_for_render_stability(self, javascript_enabled=False):
+        """
+        Wait for the page to stabilize by checking element count and layout stability.
+        This is more reliable than networkidle for JS-rendered content.
+        """
+        if not javascript_enabled:
+            # No need for render stability checks without JavaScript
+            await asyncio.sleep(1)
+            return
+        
+        try:
+            # Initial delay to allow JavaScript to start executing
+            await asyncio.sleep(1)
+            
+            # Check DOM stability by comparing element counts
+            previous_count = -1
+            stable_checks = 0
+            max_checks = 10
+            check_interval = 0.5  # seconds
+            
+            for i in range(max_checks):
+                # Count elements on the page
+                current_count = await self.page.evaluate("""() => {
+                    return document.querySelectorAll('*').length;
+                }""")
+                
+                logger.info(f"DOM stability check {i+1}/{max_checks}: {current_count} elements (previous: {previous_count})")
+                
+                if current_count == previous_count and current_count > 10:
+                    # DOM is potentially stable if element count hasn't changed
+                    stable_checks += 1
+                    if stable_checks >= 2:
+                        logger.info(f"DOM appears stable after {i+1} checks")
+                        break
+                else:
+                    # Reset stability counter
+                    stable_checks = 0
+                
+                previous_count = current_count
+                await asyncio.sleep(check_interval)
+            
+            # Additional wait for animations and final rendering
+            await asyncio.sleep(2)
+            
+            # Verify content existence (check if main content area has elements)
+            content_check = await self.page.evaluate("""() => {
+                const mainContent = document.querySelector('main') || 
+                                    document.querySelector('#content') || 
+                                    document.querySelector('.content') ||
+                                    document.querySelector('article') ||
+                                    document.querySelector('body');
+                                    
+                return mainContent ? mainContent.querySelectorAll('*').length : 0;
+            }""")
+            
+            logger.info(f"Content elements found: {content_check}")
+            
+            if content_check < 5:
+                # Very few elements found, wait longer
+                logger.warning("Few content elements detected, waiting longer for render...")
+                await asyncio.sleep(3)
+            
+            return True
+        except Exception as e:
+            logger.warning(f"Error during render stability check: {str(e)}")
+            # Fall back to simple wait
+            await asyncio.sleep(3)
+            return False
+
+    async def navigate(self, url, javascript_enabled=False):
         """Navigate to a URL with improved error handling and retry logic."""
         if not self.page:
             logger.info("Browser not started, initializing before navigation")
-            await self.start_browser()
+            await self.start_browser(javascript_enabled=javascript_enabled)
         
         # Set maximum retries
         max_retries = 2
@@ -72,13 +142,28 @@ class BrowserControl:
         while retry_count <= max_retries:
             try:
                 # Set a reasonable timeout for navigation
-                logger.info(f"Navigating to {url} (attempt {retry_count + 1}/{max_retries + 1})")
+                logger.info(f"Navigating to {url} (attempt {retry_count + 1}/{max_retries + 1}) with JS {'enabled' if javascript_enabled else 'disabled'}")
                 
-                # Set a longer timeout for complex sites
-                await self.page.goto(url, timeout=45000, wait_until='domcontentloaded')
+                # Use consistent wait_until strategy regardless of JS setting
+                # This ensures the page is at least initially loaded before we apply custom waiting
+                await self.page.goto(url, timeout=60000, wait_until='domcontentloaded')
                 
-                # Wait a bit for the page to stabilize
-                await asyncio.sleep(2)
+                # After basic loading, use our custom wait strategy
+                logger.info(f"Basic page load complete, waiting for render stability...")
+                await self.wait_for_render_stability(javascript_enabled)
+                
+                # Special case handling for known problematic sites
+                site_keywords = ["splunk", "tableau", "dashboard", "visualize", "analytics"]
+                is_complex_site = any(keyword in url.lower() for keyword in site_keywords)
+                
+                if javascript_enabled:
+                    if is_complex_site:
+                        # Force longer wait for complex sites when JS is enabled
+                        logger.info(f"Detected complex JS site, applying extended waiting period...")
+                        await asyncio.sleep(7)  # Long wait for complex JS sites
+                    else:
+                        # Default additional wait for JS-enabled sites
+                        await asyncio.sleep(3)
                 
                 logger.info(f"Successfully navigated to {url}")
                 return

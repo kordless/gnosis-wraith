@@ -1,0 +1,43 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    container_name: gnosis-wraith-dev
+    ports:
+      - "5678:5678"
+    environment:
+      - RUNNING_IN_CLOUD=false
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - STORAGE_PATH=/app/storage
+      - QUART_APP=app_with_jobs:app
+      - QUART_ENV=development
+      - QUART_DEBUG=1
+    volumes:
+      - ./:/app
+      - ./storage:/app/storage
+    depends_on:
+      - redis
+    command: python app_with_jobs.py
+
+  redis:
+    image: redis:6-alpine
+    container_name: gnosis-wraith-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: gnosis-wraith-redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+
+volumes:
+  redis-data:
