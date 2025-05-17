@@ -1,11 +1,15 @@
+// Track the current progress tracker to avoid multiple instances
+let currentProgressTracker = null;
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Handle predefined search terms
+    setupSearchHandler();
+    
     // Fetch GitHub repository star count
     fetchGitHubStars();
     
-    // Initialize image upload functionality if we're on a page with that tab
-    if (document.getElementById('upload-btn')) {
-        setTimeout(initializeImageUpload, 300); // Small delay to ensure DOM is ready
-    }
+    // Let upload.js handle all image upload functionality
+    console.log('script.js: Delegating image upload handling to upload.js');
     
     // Copy code button functionality
     const copyButtons = document.querySelectorAll('.copy-btn');
@@ -47,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             const tabId = button.getAttribute('data-tab');
+            console.log('Tab clicked:', tabId);
 
             // Remove active class from all buttons and tabs
             tabButtons.forEach(btn => btn.classList.remove('active'));
@@ -59,24 +64,27 @@ document.addEventListener('DOMContentLoaded', function() {
             // Hide results when switching tabs
             document.getElementById('crawl-results').style.display = 'none';
             
-            // Initialize upload functionality if this is the image-upload tab
-            if (tabId === 'image-upload') {
-                console.log('Image upload tab activated, reinitializing elements');
-                // Initialize the image upload functionality when tab is clicked
-                setTimeout(initializeImageUpload, 100); // Small delay to ensure DOM is ready
-            }
+            // No special tab handling needed
         });
     });
+    
+    // Image upload tab has been removed
 
     // Server URL from localStorage or default
     const serverUrl = window.location.origin;
 
-    // Single URL Crawl with improved progress updates
+    // Single URL Crawl with improved progress updates and file upload support
     const crawlButton = document.getElementById('crawl-btn');
     if (crawlButton) {
         crawlButton.addEventListener('click', async () => {
-            const url = document.getElementById('url').value.trim();
-            const reportTitle = document.getElementById('report-title').value.trim() || 'Web Crawl Report';
+            const urlInput = document.getElementById('url');
+            const url = urlInput.value.trim();
+            
+            // Get report title if toggle is enabled, otherwise use default
+            const reportTitleToggle = document.getElementById('report-title-toggle');
+            const reportTitle = (reportTitleToggle && reportTitleToggle.checked) ? 
+                document.getElementById('report-title').value.trim() || 'Web Crawl Report' : 
+                'Web Crawl Report';
             
             // Get new parameters from the updated UI
             let takeScreenshot = false;
@@ -84,15 +92,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const screenshotSelect = document.getElementById('take-screenshot');
                 const screenshotValue = screenshotSelect.value;
                 
-                // Log the raw DOM element value
-                console.log('Screenshot select DOM element:', screenshotSelect);
-                console.log(`Screenshot select value: ${screenshotValue} (type: ${typeof screenshotValue})`);
-                
                 // Explicitly convert to boolean based on string value
                 takeScreenshot = screenshotValue === 'true';
-                
-                // Log the final converted value
-                console.log(`Final takeScreenshot value: ${takeScreenshot} (type: ${typeof takeScreenshot})`);
+                console.log(`Screenshot setting: ${takeScreenshot}`);
             }
             
             const ocrExtraction = document.getElementById('ocr-extraction') ? 
@@ -105,8 +107,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('javascript-enabled-single').value === 'true' : 
                 false;
 
-            if (!url) {
-                alert('Please enter a URL');
+            // Check if we're in file mode - if the input has the file-selected class
+            const isFileMode = urlInput.classList.contains('file-selected');
+            const mainFileInput = document.getElementById('main-file-input');
+            
+            if (!url && !isFileMode) {
+                alert('Please enter a URL or select a file');
                 return;
             }
 
@@ -117,112 +123,161 @@ document.addEventListener('DOMContentLoaded', function() {
                 const progressIndicator = document.getElementById('progress-indicator');
                 
                 statusBox.style.display = 'block';
-                updateProgress(statusText, progressIndicator, 'Initializing browser...', 5);
-
-                // Prepare request data with explicit boolean conversions
-                const requestData = {
-                    url: url,
-                    title: reportTitle,
-                    take_screenshot: Boolean(takeScreenshot),  // Force boolean type
-                    ocr_extraction: Boolean(ocrExtraction),    // Force boolean type
-                    markdown_extraction: markdownExtraction,
-                    javascript_enabled: Boolean(javascriptEnabled)  // Force boolean type
-                };
                 
-                // Add more detailed logging of what's being sent to the server
-                console.log('Sending request with data:', requestData);
-                console.log('DETAILED PARAMETER INFO:');
-                console.log('- take_screenshot:', takeScreenshot, '(type:', typeof takeScreenshot, ')');
-                console.log('- ocr_extraction:', ocrExtraction, '(type:', typeof ocrExtraction, ')');
-                console.log('- Raw JSON being sent:', JSON.stringify(requestData));
-
-                // Track whether the request is still active
-                let requestActive = true;
-                
-                // Start smart progress tracking with OCR loitering
-                const { progressUpdater, loiteringAtOcr } = smartProgressTracker(statusText, progressIndicator, {
-                    takeScreenshot,
-                    ocrExtraction,
-                    markdownExtraction
-                });
-
-                // Convert to JSON string for request
-                const jsonString = JSON.stringify(requestData);
-                
-                // Log the exact JSON string being sent
-                console.log('REQUEST JSON STRING:', jsonString);
-                console.log('PARSED BACK:', JSON.parse(jsonString));
-                
-                // Make API request
-                const fetchPromise = fetch(`${serverUrl}/api/crawl`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: jsonString
-                });
-
-                // Once the request completes, mark it as inactive
-                fetchPromise.then(() => {
-                    requestActive = false;
-                    // If the progress was loitering at OCR, release it to continue
-                    if (loiteringAtOcr()) {
-                        console.log('Request completed, resuming progress after OCR stage');
-                        progressUpdater.resumeAfterOcr();
-                    }
-                }).catch(() => {
-                    requestActive = false;
-                });
-
-                // Wait for the response
-                const response = await fetchPromise;
-
-                // Clear any remaining intervals
-                progressUpdater.clear();
-
-                if (!response.ok) {
-                    // Get a clone of the response for reading the text if needed
-                    const responseClone = response.clone();
-                    
-                    // Try to get error message from response if possible
-                    try {
-                        const errorData = await response.json();
-                        throw new Error(`Server error: ${errorData.error || 'Unknown error'} (Status: ${response.status})`);
-                    } catch (parseError) {
-                        try {
-                            const responseText = await responseClone.text();
-                            throw new Error(`Server responded with status: ${response.status}. ${responseText || ''}`);
-                        } catch (textError) {
-                            throw new Error(`Server responded with status: ${response.status}`);
-                        }
-                    }
+                // Different starting messages based on mode
+                if (isFileMode) {
+                    updateProgress(statusText, progressIndicator, 'Preparing file...', 5);
+                } else {
+                    updateProgress(statusText, progressIndicator, 'Initializing browser...', 5);
                 }
 
-                const result = await response.json();
-                console.log('Received result:', result);
+                // Handle file upload or URL crawl differently
+                if (isFileMode && mainFileInput && mainFileInput.files && mainFileInput.files.length > 0) {
+                    // File mode - create FormData and append file
+                    console.log('File mode detected, preparing file upload');
+                    
+                    // First check for custom report title from the title toggle
+                    let imageTitle = 'Image Analysis';
+                    
+                    // Check if custom report title toggle is enabled
+                    const reportTitleToggle = document.getElementById('report-title-toggle');
+                    if (reportTitleToggle && reportTitleToggle.checked) {
+                        const titleInput = document.getElementById('report-title');
+                        if (titleInput && titleInput.value.trim()) {
+                            imageTitle = titleInput.value.trim();
+                            console.log('Using custom report title:', imageTitle);
+                        }
+                    } 
+                    // If no custom title but URL field contains user text, use that
+                    else if (url && !url.startsWith('File:')) {
+                        // User typed a description in the URL field - use this as title
+                        imageTitle = url;
+                        console.log('Using URL field text as title:', imageTitle);
+                    }
+                    
+                    // Store report title in window for later reference
+                    window.lastReportTitle = imageTitle;
+                    
+                    const formData = new FormData();
+                    formData.append('image', mainFileInput.files[0]);
+                    formData.append('title', imageTitle);
+                    formData.append('ocr_extraction', ocrExtraction);
+                    
+                    updateProgress(statusText, progressIndicator, 'Uploading file...', 20);
+                    
+                    // Make API request to the file upload endpoint
+                    // Use the correct endpoint for file uploads (should be /api/upload)
+                    const response = await fetch(`${serverUrl}/api/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('File processing result:', result);
+                    
+                    updateProgress(statusText, progressIndicator, 'Processing complete!', 100);
+                    displayResults(result);
+                    
+                } else {
+                    // Normal URL mode
+                    console.log('URL mode detected, preparing crawl request');
+                    
+                    // Prepare request data with explicit boolean conversions
+                    const requestData = {
+                        url: url,
+                        title: reportTitle,
+                        take_screenshot: Boolean(takeScreenshot),  // Force boolean type
+                        ocr_extraction: Boolean(ocrExtraction),    // Force boolean type
+                        markdown_extraction: markdownExtraction,
+                        javascript_enabled: Boolean(javascriptEnabled)  // Force boolean type
+                    };
                 
-                // Update final progress
-                updateProgress(statusText, progressIndicator, 'Processing complete!', 100);
+                // Track whether the request is still active
+                    let requestActive = true;
+                    
+                    // Clear any existing progress tracker
+                    if (currentProgressTracker && currentProgressTracker.progressUpdater) {
+                        currentProgressTracker.progressUpdater.clear();
+                    }
+                    
+                    // Start smart progress tracking with OCR loitering
+                    currentProgressTracker = smartProgressTracker(statusText, progressIndicator, {
+                        takeScreenshot,
+                        ocrExtraction,
+                        markdownExtraction
+                    });
+                    
+                    const { progressUpdater, loiteringAtOcr } = currentProgressTracker;
 
-                // Display results
-                displayResults(result);
+                    // Make API request
+                    const fetchPromise = fetch(`${serverUrl}/api/crawl`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+
+                    // Once the request completes, mark it as inactive
+                    fetchPromise.then(() => {
+                        requestActive = false;
+                        // If the progress was loitering at OCR, release it to continue
+                        if (loiteringAtOcr()) {
+                            console.log('Request completed, resuming progress after OCR stage');
+                            progressUpdater.resumeAfterOcr();
+                        }
+                    }).catch(() => {
+                        requestActive = false;
+                    });
+
+                    // Wait for the response
+                    const response = await fetchPromise;
+
+                    // Clear the progress tracker intervals
+                    if (progressUpdater) {
+                        progressUpdater.clear();
+                    }
+                    
+                    // Reset the global tracker
+                    currentProgressTracker = null;
+                    
+                    if (!response.ok) {
+                        throw new Error(`Server error: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('Crawl result:', result);
+                    
+                    updateProgress(statusText, progressIndicator, 'Processing complete!', 100);
+                    displayResults(result);
+                }
 
                 // After a short delay, hide the progress bar
                 setTimeout(() => {
                     statusBox.style.display = 'none';
                 }, 3000);
+                
+                // Note: We've already processed the response and displayed results above
+                // No need to attempt additional response processing
             } catch (error) {
                 console.error('Error during crawl:', error);
                 
                 const statusText = document.getElementById('status-text');
                 const progressIndicator = document.getElementById('progress-indicator');
                 
+                // Clear any running progress tracker
+                if (currentProgressTracker && currentProgressTracker.progressUpdater) {
+                    currentProgressTracker.progressUpdater.clear();
+                    currentProgressTracker = null;
+                }
+                
                 statusText.textContent = `Error: ${error.message}`;
                 progressIndicator.style.width = '100%';
                 progressIndicator.style.backgroundColor = '#e74c3c'; // Red color for error
-                
-                // Change color but don't hide the status box
-                progressIndicator.style.backgroundColor = '#e74c3c'; // Red color
                 
                 // Update status text to show detailed error
                 statusText.textContent = `Error: ${error.message}`;
@@ -345,223 +400,12 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    // Image Upload - Using a function to ensure proper initialization
-    function initializeImageUpload() {
-        console.log('Initializing image upload functionality');
-        const uploadButton = document.getElementById('upload-btn');
-        console.log('Upload button found:', uploadButton);
-        
-        if (!uploadButton) {
-            console.error('Upload button not found!');
-            return; // Exit if button not found
-        }
-        
-        // Remove any existing event listeners by cloning and replacing
-        const newUploadButton = uploadButton.cloneNode(true);
-        uploadButton.parentNode.replaceChild(newUploadButton, uploadButton);
-        
-        // Add the event listener to the new button
-        newUploadButton.addEventListener('click', async () => {
-            console.log('Upload button clicked');
-            
-            try {
-                const fileInput = document.getElementById('image-file-input');
-                console.log('File input element:', fileInput);
-                
-                if (!fileInput) {
-                    console.error('File input element not found');
-                    alert('Error: File input element not found');
-                    return;
-                }
-                
-                if (!fileInput.files || fileInput.files.length === 0) {
-                    console.log('No file selected');
-                    alert('Please select an image to upload');
-                    return;
-                }
-                
-                const file = fileInput.files[0];
-                console.log('Selected file:', file);
-                
-                // Show status box and update progress
-                const statusBox = document.getElementById('upload-status');
-                const statusText = document.getElementById('upload-status-text');
-                const progressIndicator = document.getElementById('upload-progress-indicator');
-                
-                statusBox.style.display = 'block';
-                
-                // Set up progress updates for upload
-                const uploadProgressStages = [
-                    { percentage: 10, message: 'Preparing image...' },
-                    { percentage: 25, message: 'Uploading image...' },
-                    { percentage: 50, message: 'Server processing image...' },
-                    { percentage: 70, message: 'Extracting text with OCR...' },
-                    { percentage: 85, message: 'Generating report...' }
-                ];
-                
-                let stageIndex = 0;
-                updateProgress(statusText, progressIndicator, uploadProgressStages[0].message, uploadProgressStages[0].percentage);
-                
-                // Track whether the request is still active
-                let requestActive = true;
-                const ocrStageIndex = 3; // Index of OCR stage in uploadProgressStages
-                let isLoiteringAtOcr = false;
-                
-                const progressUpdater = setInterval(() => {
-                    stageIndex++;
-                    
-                    // If we've reached the OCR stage, loiter here while request is active
-                    if (stageIndex === ocrStageIndex) {
-                        isLoiteringAtOcr = true;
-                        if (!requestActive) {
-                            // If the request is already complete, don't loiter
-                            stageIndex++;
-                        } else {
-                            // Otherwise, stay at this stage
-                            return;
-                        }
-                    }
-                    
-                    if (stageIndex >= uploadProgressStages.length) {
-                        stageIndex = uploadProgressStages.length - 1;
-                        return;
-                    }
-                    
-                    updateProgress(
-                        statusText, 
-                        progressIndicator, 
-                        uploadProgressStages[stageIndex].message, 
-                        uploadProgressStages[stageIndex].percentage
-                    );
-                }, 1200);
-                
-                // Get the report title - FIX: Add null check and default value
-                let reportTitle = 'Image Analysis Report';
-                const reportTitleElement = document.getElementById('image-report-title');
-                if (reportTitleElement && reportTitleElement.value) {
-                    reportTitle = reportTitleElement.value;
-                }
-                
-                // Prepare form data
-                const formData = new FormData();
-                formData.append('image', file);
-                formData.append('title', reportTitle);
-                console.log('FormData created with title:', reportTitle); // Debug log
-
-                // Make API request
-                console.log('Sending to URL:', `${serverUrl}/api/upload`); // Debug log
-                
-                const fetchPromise = fetch(`${serverUrl}/api/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                // Once the request completes, mark it as inactive
-                fetchPromise.then(() => {
-                    requestActive = false;
-                    // If we were loitering at OCR, move to the next stage
-                    if (isLoiteringAtOcr) {
-                        stageIndex = ocrStageIndex + 1;
-                        updateProgress(
-                            statusText, 
-                            progressIndicator, 
-                            uploadProgressStages[stageIndex].message, 
-                            uploadProgressStages[stageIndex].percentage
-                        );
-                    }
-                }).catch(() => {
-                    requestActive = false;
-                });
-                
-                // Wait for the response
-                const response = await fetchPromise;
-                console.log('Response received:', response); // Debug log
-                
-                // Clear progress updates
-                clearInterval(progressUpdater);
-
-                if (!response.ok) {
-                    throw new Error(`Server responded with status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                console.log('Result JSON:', result); // Debug log
-                
-                // Update progress to complete
-                updateProgress(statusText, progressIndicator, 'Processing complete!', 100);
-                
-                // Display upload result
-                const uploadResult = document.getElementById('upload-result');
-                const previewImage = document.getElementById('preview-image');
-                const extractedTextContent = document.getElementById('extracted-text-content');
-                
-                uploadResult.style.display = 'block';
-                previewImage.src = `${serverUrl}/screenshots/${result.file_path}`;
-                extractedTextContent.textContent = result.extracted_text || 'No text extracted';
-                
-                // Add report links if available
-                if (result.report_path) {
-                    const reportLinkContainer = document.createElement('div');
-                    reportLinkContainer.className = 'report-link-container';
-                    
-                    let linksHtml = `<h3>Generated Reports</h3><p>`;
-                    
-                    // Add Markdown link
-                    linksHtml += `
-                        <a href="${serverUrl}/reports/${result.report_path}" target="_blank" class="btn secondary small">
-                            <i class="fas fa-file-alt"></i> Markdown
-                        </a>
-                    `;
-                    
-                    // Add HTML link if available
-                    if (result.html_path) {
-                        linksHtml += `
-                            <a href="${serverUrl}/reports/${result.html_path}" target="_blank" class="btn primary small">
-                                <i class="fas fa-code"></i> HTML
-                            </a>
-                        `;
-                    }
-                    
-                    linksHtml += `</p>`;
-                    reportLinkContainer.innerHTML = linksHtml;
-                    uploadResult.appendChild(reportLinkContainer);
-                }
-                
-                // After a delay, hide the progress bar
-                setTimeout(() => {
-                    statusBox.style.display = 'none';
-                }, 2000);
-            } catch (error) {
-                console.error('Error during upload:', error);
-                
-                // Update status for error
-                const statusBox = document.getElementById('upload-status');
-                const statusText = document.getElementById('upload-status-text');
-                const progressIndicator = document.getElementById('upload-progress-indicator');
-                
-                if (statusBox && statusText) {
-                    statusText.textContent = `Error: ${error.message}`;
-                    if (progressIndicator) {
-                        progressIndicator.style.width = '100%';
-                        progressIndicator.style.backgroundColor = '#e74c3c'; // Red color for error
-                    }
-                    
-                    // Hide status after delay
-                    setTimeout(() => {
-                        statusBox.style.display = 'none';
-                        if (progressIndicator) {
-                            progressIndicator.style.backgroundColor = ''; // Reset color
-                        }
-                    }, 3000);
-                }
-                
-                alert(`Upload failed: ${error.message}`);
-            }
-        });
-    }
+    // Removed conflicting image upload function - now handled entirely in upload.js
 
     // Helper function to display crawl results
     function displayResults(result) {
+        console.log('Displaying results:', result);
+        
         if (!result.success) {
             alert(`Operation failed: ${result.error}`);
             return;
@@ -578,10 +422,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const htmlLinkTop = document.getElementById('html-link-top');
         const deleteReportBtn = document.getElementById('delete-report-btn');
 
+        // Clear any existing report links and buttons before showing new ones
+        reportLink.style.display = 'none';
+        htmlLink.style.display = 'none';
+        reportLinkTop.style.display = 'none';
+        // Do NOT hide HTML top link by default
+        // htmlLinkTop.style.display = 'none';
+        deleteReportBtn.style.display = 'none';
+        
+        // Remove any existing click handlers on delete button
+        if (deleteReportBtn) {
+            deleteReportBtn.onclick = null;
+        }
+
         // Show results section
         resultsSection.style.display = 'block';
 
-        // Handle both old format (results array) and new format (single result)
+        // Handle both old format (results array) and new format (single result or direct object)
         let resultsArray = [];
         
         if (result.results) {
@@ -592,8 +449,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // New format with single result
             resultsArray = [result.result];
             resultsSummary.textContent = `Processed URL: ${result.url_processed || 'Unknown'}`;
+        } else if (result.file_path || result.html_path || result.report_path) {
+            // Direct result object (file upload response)
+            resultsArray = [result];
+            
+            // Use the title from the result if available, otherwise use filename
+            if (result.title) {
+                resultsSummary.textContent = `${result.title}`;
+            } else {
+                resultsSummary.textContent = `Processed file: ${result.file_path ? result.file_path.split('/').pop() : 'Unknown'}`;
+            }
         } else {
-            // Fallback if neither format is found
+            // Fallback if no recognizable format is found
+            console.warn('Unrecognized result format:', result);
             resultsArray = [];
             resultsSummary.textContent = 'No results found';
         }
@@ -606,10 +474,44 @@ document.addEventListener('DOMContentLoaded', function() {
             const resultItem = document.createElement('div');
             resultItem.className = 'result-item';
 
+            // Check if this is a file upload (no URL) or a URL crawl
+            const isFileUpload = !item.url && (item.file_path || item.screenshot);
+            
+            // For debugging - log item details to help troubleshoot title issues
+            console.log('Result item details:', {
+                title: item.title,
+                isFileUpload: isFileUpload,
+                reportTitle: result.title, // Check if title exists at result level
+                hasFilePath: !!item.file_path,
+                reportPath: item.report_path
+            });
+            
+            // For file uploads, check various places where the title might be
+            let displayTitle = 'Untitled';
+            if (item.title) {
+                displayTitle = item.title;
+            } else if (result.title) {
+                displayTitle = result.title;
+            } else if (window.lastReportTitle) {
+                displayTitle = window.lastReportTitle;
+            }
+            
+            // For debugging
+            console.log('Title sources:', {
+                itemTitle: item.title,
+                resultTitle: result.title,
+                windowTitle: window.lastReportTitle,
+                finalTitle: displayTitle
+            });
+            
             let itemContent = `
-                <h3>${item.title || 'Untitled'}</h3>
-                <div class="result-url">${item.url || 'Unknown URL'}</div>
+                <h3>${displayTitle}</h3>
             `;
+            
+            // Only show URL info if this is not a file upload
+            if (!isFileUpload) {
+                itemContent += `<div class="result-url">${item.url || 'Unknown URL'}</div>`;
+            }
 
             // Add JavaScript setting information
             if (typeof item.javascript_enabled !== 'undefined') {
@@ -650,10 +552,19 @@ document.addEventListener('DOMContentLoaded', function() {
             if (item.error) {
                 itemContent += `<div class="result-error">Error: ${item.error}</div>`;
             } else {
+                // Handle both file paths and screenshots depending on what's available in the response
                 if (item.screenshot) {
                     itemContent += `
                         <div class="result-screenshot">
-                            <img src="${serverUrl}/screenshots/${item.screenshot}" alt="Screenshot of ${item.url}">
+                            <img src="${serverUrl}/screenshots/${item.screenshot}" alt="Screenshot of ${item.url || 'content'}">
+                        </div>
+                    `;
+                } else if (item.file_path) {
+                    // For uploaded files, display the original image itself
+                    console.log('File upload detected, showing image:', item.file_path);
+                    itemContent += `
+                        <div class="result-screenshot">
+                            <img src="${serverUrl}/screenshots/${item.file_path}" alt="Uploaded image" style="max-width: 100%; border: 1px solid #eee; border-radius: 4px;">
                         </div>
                     `;
                 }
@@ -690,37 +601,55 @@ document.addEventListener('DOMContentLoaded', function() {
             resultsContent.appendChild(resultItem);
         });
 
-        // Update report links - check both places where paths might be
+        // Set up the HTML and report links - check both places where paths might be
         const reportPath = result.report_path || (result.result && result.result.report_path);
+        const htmlPath = result.html_path || (result.result && result.result.html_path);
         
         // Store report path in a data attribute on the delete button for later use
         let storedReportPath = '';
         
+        // Check for report path (markdown)
         if (reportPath) {
             storedReportPath = reportPath;
             
-            // Update both top and bottom links
+            // Update only bottom link for raw report (hiding top one)
             reportLink.href = `${serverUrl}/reports/${reportPath}`;
             reportLink.style.display = 'inline-block';
             
-            reportLinkTop.href = `${serverUrl}/reports/${reportPath}`;
-            reportLinkTop.style.display = 'inline-block';
+            // Hide the raw report button at the top
+            reportLinkTop.style.display = 'none';
         } else {
             reportLink.style.display = 'none';
             reportLinkTop.style.display = 'none';
         }
-
-        const htmlPath = result.html_path || (result.result && result.result.html_path);
+        
+        // Check for HTML path (preferred if available)
         if (htmlPath) {
-            // Update both top and bottom links
+            // Update both top and bottom links for HTML view
             htmlLink.href = `${serverUrl}/reports/${htmlPath}`;
             htmlLink.style.display = 'inline-block';
             
             htmlLinkTop.href = `${serverUrl}/reports/${htmlPath}`;
-            htmlLinkTop.style.display = 'inline-block';
+            htmlLinkTop.style.display = 'inline-block'; // Always show HTML button at top
+            
+            // Force reportLinkTop to be hidden again in case it was enabled elsewhere
+            reportLinkTop.style.display = 'none';
         } else {
-            htmlLink.style.display = 'none';
-            htmlLinkTop.style.display = 'none';
+            // Even if no HTML path, try to use report path for HTML if available
+            if (reportPath) {
+                // Fallback to report path with .html extension
+                const possibleHtmlPath = reportPath.replace('.md', '.html');
+                htmlLink.href = `${serverUrl}/reports/${possibleHtmlPath}`;
+                htmlLink.style.display = 'inline-block';
+                
+                htmlLinkTop.href = `${serverUrl}/reports/${possibleHtmlPath}`;
+                htmlLinkTop.style.display = 'inline-block';
+            } else {
+                htmlLink.style.display = 'none';
+                // Still keep the HTML top link visible with a fallback path
+                htmlLinkTop.href = `${serverUrl}/reports/${result.id || 'latest'}.html`;
+                htmlLinkTop.style.display = 'inline-block';
+            }
         }
         
         // Set up delete button if we have a report path
@@ -829,6 +758,392 @@ document.addEventListener('DOMContentLoaded', function() {
         const starsElement = document.getElementById('github-stars');
         if (starsElement) {
             starsElement.textContent = count;
+        }
+    }
+    
+    // Function to toggle between file upload mode and URL mode
+    function toggleFileUploadMode(isFileMode) {
+        console.log(`Toggling to ${isFileMode ? 'file upload' : 'URL'} mode`);
+        
+        // Find all control cards by searching for their titles
+        let jsCard = null;
+        let contentProcessingCard = null;
+        let screenshotCard = null;
+        let ocrCard = null;
+        let reportTitleCard = null;
+        
+        // Find cards by their titles
+        const allCards = document.querySelectorAll('.ghost-control-card');
+        allCards.forEach(card => {
+            const titleEl = card.querySelector('.ghost-control-title');
+            if (titleEl) {
+                const title = titleEl.innerText.trim();
+                if (title === 'JavaScript') {
+                    jsCard = card;
+                } else if (title === 'Content Processing') {
+                    contentProcessingCard = card;
+                } else if (title === 'Screenshot Capture') {
+                    screenshotCard = card;
+                } else if (title === 'OCR Extraction') {
+                    ocrCard = card;
+                } else if (title === 'Custom Report Title') {
+                    reportTitleCard = card;
+                }
+            }
+        });
+        
+        // Toggle visibility based on mode
+        if (isFileMode) {
+            // Hide URL-specific options
+            if (jsCard) jsCard.style.display = 'none';
+            if (contentProcessingCard) contentProcessingCard.style.display = 'none';
+            if (screenshotCard) screenshotCard.style.display = 'none';
+            
+            // Show file-specific options
+            if (ocrCard) {
+                ocrCard.style.display = 'block';
+                
+                // For file uploads, automatically check the OCR toggle
+                const ocrToggle = document.getElementById('ocr-extraction-toggle');
+                if (ocrToggle) {
+                    ocrToggle.checked = true;
+                    
+                    // Also update the hidden select value
+                    const ocrSelect = document.getElementById('ocr-extraction');
+                    if (ocrSelect) {
+                        ocrSelect.value = 'true';
+                    }
+                }
+            }
+            
+            if (reportTitleCard) {
+                reportTitleCard.style.display = 'block';
+                
+                // For file uploads, also auto-enable custom report title
+                const titleToggle = document.getElementById('report-title-toggle');
+                if (titleToggle) {
+                    titleToggle.checked = true;
+                    
+                    // Trigger the change event to show the input field
+                    const event = new Event('change', { bubbles: true });
+                    titleToggle.dispatchEvent(event);
+                    
+                    // Set a default title based on the file
+                    const mainFileInput = document.getElementById('main-file-input');
+                    if (mainFileInput && mainFileInput.files && mainFileInput.files.length > 0) {
+                        const titleInput = document.getElementById('report-title');
+                        if (titleInput) {
+                            const fileName = mainFileInput.files[0].name;
+                            // Remove extension and convert to title case
+                            const baseFileName = fileName.split('.')[0].replace(/_/g, ' ');
+                            const titleCaseName = baseFileName.replace(/\w\S*/g, 
+                                txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+                            
+                            titleInput.value = `${titleCaseName} Analysis`;
+                        }
+                    }
+                }
+            }
+            
+            // Update submit button text
+            const crawlBtn = document.getElementById('crawl-btn');
+            if (crawlBtn) {
+                const iconSpan = crawlBtn.querySelector('i');
+                if (iconSpan) {
+                    iconSpan.className = 'fas fa-file-import pulse-animation';
+                }
+                
+                // Update text content keeping the icon
+                const buttonText = crawlBtn.innerHTML.split('</i>')[1];
+                crawlBtn.innerHTML = crawlBtn.innerHTML.replace(buttonText, ' Process File');
+            }
+            
+            // Disable screenshot related features in hidden fields
+            const screenshotSelect = document.getElementById('take-screenshot');
+            if (screenshotSelect) {
+                screenshotSelect.value = 'false';
+            }
+            
+            const screenshotToggle = document.getElementById('take-screenshot-toggle');
+            if (screenshotToggle) {
+                screenshotToggle.checked = false;
+            }
+            
+        } else {
+            // Show URL-specific options
+            if (jsCard) jsCard.style.display = 'block';
+            if (contentProcessingCard) contentProcessingCard.style.display = 'block';
+            if (screenshotCard) screenshotCard.style.display = 'block';
+            
+            // Show all options for URL mode
+            if (ocrCard) ocrCard.style.display = 'block';
+            if (reportTitleCard) reportTitleCard.style.display = 'block';
+            
+            // Reset submit button text
+            const crawlBtn = document.getElementById('crawl-btn');
+            if (crawlBtn) {
+                const iconSpan = crawlBtn.querySelector('i');
+                if (iconSpan) {
+                    iconSpan.className = 'fas fa-ghost pulse-animation';
+                }
+                
+                // Update text content keeping the icon
+                const buttonText = crawlBtn.innerHTML.split('</i>')[1];
+                crawlBtn.innerHTML = crawlBtn.innerHTML.replace(buttonText, ' Unleash the Wraith');
+            }
+            
+            // Reset screenshot settings to default
+            const screenshotSelect = document.getElementById('take-screenshot');
+            if (screenshotSelect) {
+                screenshotSelect.value = 'true';
+            }
+            
+            const screenshotToggle = document.getElementById('take-screenshot-toggle');
+            if (screenshotToggle) {
+                screenshotToggle.checked = true;
+            }
+        }
+    }
+    
+    // Function to handle search queries, predefined URLs, and file selection
+    function setupSearchHandler() {
+        const urlInput = document.getElementById('url');
+        if (!urlInput) return;
+        
+        // Set up file selection functionality
+        const mainFileSelectBtn = document.getElementById('main-file-select-btn');
+        const mainFileInput = document.getElementById('main-file-input');
+        const searchBox = document.querySelector('.ghost-search-box');
+        
+        if (mainFileSelectBtn && mainFileInput) {
+            console.log('Initializing file selection for main search box');
+            
+            mainFileSelectBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Main file select button clicked');
+                mainFileInput.click();
+            });
+            
+            mainFileInput.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    const fileName = this.files[0].name;
+                    const fileSize = this.files[0].size;
+                    const fileSizeFormatted = formatFileSize(fileSize);
+                    
+                    console.log('File selected in main search:', fileName, '(', fileSizeFormatted, ')');
+                    
+                    // Update URL input to show selected file
+                    urlInput.value = `File: ${fileName} (${fileSizeFormatted})`;
+                    urlInput.classList.add('file-selected');
+                    
+                    // Add a subtle animation to highlight the change
+                    urlInput.classList.add('highlight-input');
+                    setTimeout(() => {
+                        urlInput.classList.remove('highlight-input');
+                    }, 500);
+                    
+                    // Show clear button and hide file select button
+                    const clearFileBtn = document.getElementById('clear-file-btn');
+                    if (clearFileBtn) {
+                        clearFileBtn.style.display = 'inline-block';
+                        mainFileSelectBtn.style.display = 'none';
+                    }
+                    
+                    // Hide URL-specific options and only show file-relevant options
+                    toggleFileUploadMode(true);
+                    
+                    // Optional: auto-submit
+                    // document.getElementById('crawl-btn').click();
+                }
+            });
+            
+            // Set up clear file button functionality
+            const clearFileBtn = document.getElementById('clear-file-btn');
+            if (clearFileBtn) {
+                clearFileBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log('Clear file button clicked');
+                    
+                    // Clear the file input
+                    if (mainFileInput) {
+                        mainFileInput.value = '';
+                    }
+                    
+                    // Reset the URL input
+                    if (urlInput) {
+                        urlInput.value = '';
+                        urlInput.classList.remove('file-selected');
+                    }
+                    
+                    // Hide clear button and show file select button
+                    this.style.display = 'none';
+                    if (mainFileSelectBtn) {
+                        mainFileSelectBtn.style.display = 'inline-block';
+                    }
+                    
+                    // Switch back to URL mode
+                    toggleFileUploadMode(false);
+                });
+            }
+            
+            // Helper function to format file size
+            function formatFileSize(bytes) {
+                if (bytes < 1024) return bytes + ' bytes';
+                else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+                else if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' MB';
+                else return (bytes / 1073741824).toFixed(1) + ' GB';
+            }
+            
+            // Set up drag and drop functionality for the search box
+            if (searchBox) {
+                console.log('Setting up drag and drop for search box');
+                
+                // Prevent default behavior for all drag events
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    searchBox.addEventListener(eventName, function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+                
+                // Add visual feedback for drag events
+                searchBox.addEventListener('dragenter', function() {
+                    console.log('Drag enter on search box');
+                    searchBox.classList.add('highlight');
+                });
+                
+                searchBox.addEventListener('dragover', function() {
+                    searchBox.classList.add('highlight');
+                });
+                
+                searchBox.addEventListener('dragleave', function() {
+                    console.log('Drag leave from search box');
+                    searchBox.classList.remove('highlight');
+                });
+                
+                // Handle file drop
+                searchBox.addEventListener('drop', function(e) {
+                    console.log('File dropped on search box');
+                    searchBox.classList.remove('highlight');
+                    
+                    const dt = e.dataTransfer;
+                    if (dt.files && dt.files.length > 0) {
+                        // Assign the dropped file to the file input
+                        mainFileInput.files = dt.files;
+                        
+                        // Trigger the change event on the file input
+                        const event = new Event('change', { bubbles: true });
+                        mainFileInput.dispatchEvent(event);
+                    }
+                });
+            }
+        }
+        
+        // Only special case for tech news
+        const techNewsUrl = 'https://news.ycombinator.com/';
+        
+        // Handle input event to check for matches as the user types
+        urlInput.addEventListener('input', function() {
+            const searchTerm = this.value.trim().toLowerCase();
+            
+            // If input starts with http:// or https://, it's a URL, don't try to match
+            if (searchTerm.startsWith('http://') || searchTerm.startsWith('https://')) {
+                return;
+            }
+            
+            // Only handle tech news special case
+            if (searchTerm === 'tech news') {
+                // Add a small suggestion below the input field
+                showSuggestion(`Press Enter to load Hacker News`);
+            }
+        });
+        
+        // Handle key press to execute search on Enter
+        urlInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const searchTerm = this.value.trim().toLowerCase();
+                
+                // If it's already a URL, don't modify it
+                if (searchTerm.startsWith('http://') || searchTerm.startsWith('https://')) {
+                    document.getElementById('crawl-btn').click();
+                    return;
+                }
+                
+                // Only handle tech news special case
+                if (searchTerm === 'tech news') {
+                    // Replace the input with Hacker News URL
+                    this.value = techNewsUrl;
+                    document.getElementById('crawl-btn').click();
+                    return;
+                }
+                
+                // If it's not tech news and not a URL, just submit as is
+                document.getElementById('crawl-btn').click();
+                e.preventDefault();
+            }
+        });
+        
+        // Function to show a suggestion below the input field
+        function showSuggestion(text) {
+            let suggestionEl = document.getElementById('url-suggestion');
+            
+            if (!suggestionEl) {
+                suggestionEl = document.createElement('div');
+                suggestionEl.id = 'url-suggestion';
+                suggestionEl.style.color = '#6c63ff';
+                suggestionEl.style.fontSize = '12px';
+                suggestionEl.style.marginTop = '5px';
+                suggestionEl.style.fontStyle = 'italic';
+                
+                // Insert after the search box
+                const searchBox = document.querySelector('.ghost-search-box');
+                if (searchBox && searchBox.parentNode) {
+                    searchBox.parentNode.insertBefore(suggestionEl, searchBox.nextSibling);
+                }
+            }
+            
+            suggestionEl.textContent = text;
+            
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                if (suggestionEl.parentNode) {
+                    suggestionEl.textContent = '';
+                }
+            }, 3000);
+        }
+        
+        // Function to show a message in a temporary floating div
+        function showMessage(text) {
+            let messageEl = document.getElementById('url-message');
+            
+            if (!messageEl) {
+                messageEl = document.createElement('div');
+                messageEl.id = 'url-message';
+                messageEl.style.position = 'fixed';
+                messageEl.style.top = '50%';
+                messageEl.style.left = '50%';
+                messageEl.style.transform = 'translate(-50%, -50%)';
+                messageEl.style.padding = '15px 20px';
+                messageEl.style.backgroundColor = '#6c63ff';
+                messageEl.style.color = 'white';
+                messageEl.style.borderRadius = '8px';
+                messageEl.style.boxShadow = '0 4px 10px rgba(0,0,0,0.2)';
+                messageEl.style.zIndex = '1000';
+                messageEl.style.maxWidth = '80%';
+                messageEl.style.textAlign = 'center';
+                
+                document.body.appendChild(messageEl);
+            }
+            
+            messageEl.textContent = text;
+            messageEl.style.display = 'block';
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 3000);
         }
     }
 });

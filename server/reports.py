@@ -56,11 +56,19 @@ def generate_markdown_report(title: str, crawl_results: List[Dict[str, Any]]) ->
             md += f"This report contains analysis of {len(crawl_results)} URLs:\n\n"
             for result in crawl_results:
                 if isinstance(result, dict) and 'error' not in result:
-                    url_value = result.get('url', 'Unknown URL')
+                    # Check if this is an uploaded file or URL
+                    if 'original_filename' in result:
+                        url_value = f"Local File: {result.get('original_filename', 'Unknown File')}"
+                    else:
+                        url_value = result.get('url', 'Unknown URL')
+                    
                     # Ensure url_value is a string
                     if not isinstance(url_value, str):
                         url_value = str(url_value)
-                    md += f"- {result.get('title', 'Untitled Page')}: {url_value}\n"
+                    
+                    # Use original filename as title if available
+                    title_value = result.get('original_filename', result.get('title', 'Untitled'))
+                    md += f"- {title_value}: {url_value}\n"
             md += "\n"
         
         md += "---\n\n"
@@ -71,13 +79,20 @@ def generate_markdown_report(title: str, crawl_results: List[Dict[str, Any]]) ->
             logger.error(f"Result at index {i-1} is not a dictionary but {type(result)}")
             continue
             
-        md += f"## {i}. {result.get('title', 'Untitled Page')}\n\n"
+        # Use original filename as title if available
+        title_value = result.get('original_filename', result.get('title', 'Untitled'))
+        md += f"## {i}. {title_value}\n\n"
         
-        # Ensure URL is a string
-        url_value = result.get('url', 'Unknown URL')
-        if not isinstance(url_value, str):
-            url_value = str(url_value)
-        md += f"**URL**: {url_value}\n\n"
+        # Check if this is an uploaded file or URL
+        if 'original_filename' in result:
+            file_value = result.get('original_filename', 'Unknown File')
+            md += f"**File**: {file_value}\n\n"
+        else:
+            # Ensure URL is a string
+            url_value = result.get('url', 'Unknown URL')
+            if not isinstance(url_value, str):
+                url_value = str(url_value)
+            md += f"**URL**: {url_value}\n\n"
         
         # Add JavaScript setting information if available
         if 'javascript_enabled' in result:
@@ -180,7 +195,13 @@ def generate_markdown_report(title: str, crawl_results: List[Dict[str, Any]]) ->
                 if not isinstance(content, str):
                     logger.error(f"extracted_text is not a string but {type(content)}")
                     content = str(content)
-                md += f"**Extracted Text**:\n\n"
+                
+                # Check if OCR was enabled or disabled
+                ocr_status = ""
+                if 'ocr_enabled' in result:
+                    ocr_status = " (OCR Enabled)" if result.get('ocr_enabled') else " (OCR Disabled)"
+                
+                md += f"**Extracted Text{ocr_status}**:\n\n"
                 md += f"```\n{content}\n```\n\n"
         
         md += "---\n\n"
@@ -335,6 +356,22 @@ async def convert_markdown_to_html(markdown_file: str) -> str:
             padding: 20px;
             background-color: var(--bg-color);
             color: var(--text-color);
+        }}
+        
+        /* Improved link styling for better visibility against dark backgrounds */
+        a {{
+            color: #8CB4FF; /* Lighter blue for better contrast */
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }}
+        
+        a:visited {{
+            color: #C8A9FF; /* Lighter purple for visited links */
+        }}
+        
+        a:hover {{
+            color: #A9CBFF; /* Even lighter blue for hover state */
+            text-decoration: underline;
         }}
         
         img {{ max-width: 100%; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }}

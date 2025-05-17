@@ -38,10 +38,17 @@
       font-size: 14px;
       width: 100%;
       margin-bottom: 10px;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     
     .btn:hover {
       background-color: #2980b9;
+    }
+    
+    .btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
     
     .btn-secondary {
@@ -50,6 +57,22 @@
     
     .btn-secondary:hover {
       background-color: #7f8c8d;
+    }
+    
+    /* Custom checkbox styling */
+    input[type="checkbox"] {
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    
+    .checkbox-group {
+      transition: color 0.2s ease;
+      margin-bottom: 12px;
+    }
+    
+    .checkbox-group label {
+      cursor: pointer;
+      user-select: none;
     }
     
     .section-separator {
@@ -182,9 +205,24 @@
       <input type="text" id="server-url-input" class="input-field" placeholder="Server URL (e.g., localhost:5678)">
     </div>
     <button id="save-settings-btn" class="btn btn-secondary">Save Settings</button>
+    <div class="checkbox-group" style="margin-top: 10px;">
+      <a href="#" id="help-link" style="color: #3498db; text-decoration: none; font-size: 12px;">Help & Keyboard Shortcuts</a>
+    </div>
   </div>
   
-  <div class="version">v1.0.7</div>
+  <div id="help-section" style="display: none; margin-top: 15px; background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px;">
+    <h3 style="margin-top: 0; font-size: 14px;">Keyboard Shortcuts</h3>
+    <ul style="padding-left: 20px; margin: 5px 0;">
+      <li><strong>Alt+Shift+W</strong> - Capture visible screen (save)</li>
+      <li><strong>Alt+Shift+U</strong> - Capture visible screen (analyze)</li>
+      <li><strong>Alt+Shift+F</strong> - Capture full page (save)</li>
+      <li><strong>Alt+Shift+A</strong> - Capture full page (analyze)</li>
+    </ul>
+    <p style="margin: 5px 0;"><strong>Full page capture</strong> takes multiple screenshots while scrolling and stitches them together.</p>
+    <a href="#" id="close-help" style="color: #3498db; text-decoration: none; display: block; text-align: center; margin-top: 10px;">Close</a>
+  </div>
+  
+  <div class="version">v1.1.2</div>
   
   <script src="popup.js"></script>
 </body>

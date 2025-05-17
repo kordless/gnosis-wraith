@@ -1,13 +1,14 @@
 # Gnosis Wraith
 
+## Vision: The Adaptive Web Perception Engine
+
+Gnosis Wraith is a powerful web crawling and content analysis system that serves as the perception layer for AI systems. It captures, analyzes, and transforms content through multiple intelligence layers - from basic crawling and OCR to sophisticated AI analysis and integration.
+
+> *Gnosis is an AI oracle, and Wraith is the eye.*
+
 ## Try It Now!
 [Gnosis Wraith](https://gnosis-wraith-949870462453.us-central1.run.app)
 
-## Vision: The Adaptive Web Perception Engine
-
-Gnosis Wraith is a powerful web crawling and content analysis system that serves as the perception layer for AI systems. It captures, analyzes, and transforms web content through multiple intelligence layers - from basic crawling and OCR to sophisticated AI analysis and integration.
-
-> *Gnosis is an AI oracle, and Wraith is the eye.*
 
 ## Key Features
 
@@ -56,6 +57,27 @@ Then run:
 ```bash
 docker-compose up -d
 ```
+
+### Cloud Deployment
+
+Gnosis Wraith is deployable to Google Cloud Run out of the box, providing a serverless container execution environment:
+
+```bash
+# Deploy to Google Cloud Run
+gcloud run deploy gnosis-wraith --image kordless/gnosis-wraith:latest --platform managed
+```
+
+### Distributed Setup
+
+For high-volume crawling requirements:
+- Deploy multiple instances as on-demand crawlers in a distributed setup
+- Scale horizontally to increase performance for large crawling operations
+- Task system efficiently handles processing delays, making it suitable for asynchronous operation
+
+### Performance Considerations
+
+- While GPU acceleration is supported for OCR and AI processing tasks, the system's asynchronous task architecture efficiently handles processing delays even on CPU-only deployments
+- The job system effectively manages resource-intensive operations by queuing and processing them as resources become available
 
 ## Browser Extension
 

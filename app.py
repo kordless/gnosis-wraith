@@ -72,16 +72,32 @@ os.makedirs(os.path.join(os.path.dirname(__file__), 'gnosis_wraith/server/static
 # Web routes - These will be used if blueprints aren't registered
 # They'll be ignored if the route is already defined by a blueprint
 
-# Read version from manifest.json
+# Read version from manifest.json - THE SOURCE OF TRUTH for extension version
 manifest_path = os.path.join(os.path.dirname(__file__), 'gnosis_wraith', 'extension', 'manifest.json')
+
+# Always read from manifest.json to get the latest version
 try:
+    # Read directly from manifest.json - this is the source of truth
     with open(manifest_path, 'r') as f:
         manifest_data = json.load(f)
-        EXTENSION_VERSION = manifest_data.get('version', '1.0.7')  # Fallback to 1.0.7 if not found
-except (FileNotFoundError, json.JSONDecodeError) as e:
-    # Fallback in case the file can't be read
-    EXTENSION_VERSION = '1.0.7'
+        EXTENSION_VERSION = manifest_data.get('version')
+        if EXTENSION_VERSION:
+            logger.info(f"Found extension version {EXTENSION_VERSION} in manifest.json")
+        else:
+            raise ValueError("No version key found in manifest.json")
+except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
+    # Fallback only in case of emergency
+    EXTENSION_VERSION = '1.1.2'  # Updated fallback version
     logger.error(f"Could not read extension version from manifest.json: {e}")
+    logger.warning(f"Using fallback extension version: {EXTENSION_VERSION}")
+
+# Override with environment variable if set
+if os.environ.get('EXTENSION_VERSION'):
+    EXTENSION_VERSION = os.environ.get('EXTENSION_VERSION')
+    logger.info(f"Overriding with extension version {EXTENSION_VERSION} from environment")
+
+# Log the version being used
+logger.info(f"Extension version {EXTENSION_VERSION} will be used for all operations")
     
 # Then in the index route, pass the version to the template
 @app.route('/')
@@ -104,14 +120,22 @@ async def api_upload():
     try:
         file = files['image']
         title = form.get('title', 'Image Analysis Report')
+        original_filename = file.filename
         filename = f"{uuid.uuid4().hex}.png"
         file_path = os.path.join(SCREENSHOTS_DIR, filename)
         await file.save(file_path)
         
-        # Use ModelManager to extract text from the image
-        from ai.models import ModelManager
-        model_manager = ModelManager()
-        extracted_text = await model_manager.extract_text_from_image(file_path)
+        # Check if OCR is enabled or disabled
+        ocr_enabled = form.get('ocr_extraction', 'false').lower() == 'true'
+        
+        extracted_text = ""
+        if ocr_enabled:
+            # Use ModelManager to extract text from the image
+            from ai.models import ModelManager
+            model_manager = ModelManager()
+            extracted_text = await model_manager.extract_text_from_image(file_path)
+        else:
+            extracted_text = "OCR text extraction was not enabled for this image."
         
         # Copy the image to a predictable location relative to REPORTS_DIR
         # This ensures the screenshot can be properly referenced in the Markdown
@@ -127,8 +151,10 @@ async def api_upload():
         image_result = {
             'url': f"Uploaded Image: {os.path.basename(file_path)}",  # Descriptive URL
             'title': f"Image Analysis: {os.path.basename(file_path)}",
+            'original_filename': original_filename,  # Store the original filename
             'screenshot': report_image_path,  # Use the path in reports/images
-            'extracted_text': extracted_text
+            'extracted_text': extracted_text,
+            'ocr_enabled': ocr_enabled  # Store whether OCR was enabled
         }
         
         # Generate a report
@@ -194,6 +220,33 @@ async def list_reports():
 @app.route('/reports/<path:filename>')
 async def serve_report(filename):
     """Serve a report file."""
+    # Check if the file exists
+    file_path = os.path.join(REPORTS_DIR, filename)
+    if not os.path.exists(file_path):
+        # If HTML file doesn't exist, check if we need to convert from markdown
+        if filename.endswith('.html'):
+            # Try to find the corresponding markdown file
+            md_filename = filename.replace('.html', '.md')
+            md_file_path = os.path.join(REPORTS_DIR, md_filename)
+            
+            if os.path.exists(md_file_path):
+                # Convert markdown to HTML on-demand
+                try:
+                    from server.reports import convert_markdown_to_html
+                    html_file = await convert_markdown_to_html(md_file_path)
+                    logger.info(f"Generated HTML file on-demand: {html_file}")
+                    # Now try to serve the newly created file
+                    return await send_from_directory(REPORTS_DIR, filename)
+                except Exception as e:
+                    logger.error(f"Error generating HTML on-demand: {str(e)}")
+                    return f"Error generating HTML: {str(e)}", 500
+            else:
+                logger.error(f"Markdown file not found for HTML conversion: {md_file_path}")
+                return f"Report not found: {filename}", 404
+        else:
+            logger.error(f"Report file not found: {file_path}")
+            return f"Report not found: {filename}", 404
+    
     return await send_from_directory(REPORTS_DIR, filename)
 
 @app.route('/screenshots/<path:filename>')
@@ -204,10 +257,22 @@ async def serve_screenshot(filename):
 @app.route('/extension')
 async def serve_extension():
     """Generate and serve the extension zip file."""
-    downloads_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/server/static/downloads')
+    # Use absolute paths for better reliability
+    app_root = os.path.dirname(os.path.abspath(__file__))
+    static_dir = os.path.join(app_root, 'gnosis_wraith', 'server', 'static')
+    downloads_dir = os.path.join(static_dir, 'downloads')
+    
+    # Create downloads directory - ensure it exists with all parent directories
+    os.makedirs(downloads_dir, exist_ok=True)
+    
+    # Log the relevant paths
+    logger.info(f"App root: {app_root}")
+    logger.info(f"Static directory: {static_dir}")
+    logger.info(f"Downloads directory: {downloads_dir}")
     
     # Use the global version variable
     extension_version = EXTENSION_VERSION
+    logger.info(f"Creating extension bundle version {extension_version}")
     
     # Create versioned filenames to prevent browser caching
     gnosis_zip_filename = f'gnosis-wraith-extension-{extension_version}.zip'
@@ -217,11 +282,12 @@ async def serve_extension():
     webwraith_zip_path = os.path.join(downloads_dir, webwraith_zip_filename)
     
     # Create extension zips with version in filename
-    extension_dir = os.path.join(os.path.dirname(__file__), 'gnosis_wraith/extension')
+    extension_dir = os.path.join(app_root, 'gnosis_wraith', 'extension')
+    
+    logger.info(f"Extension directory: {extension_dir}")
+    logger.info(f"Extension directory exists: {os.path.exists(extension_dir)}")
+    
     if os.path.exists(extension_dir):
-        # Create downloads directory if it doesn't exist
-        os.makedirs(downloads_dir, exist_ok=True)
-        
         # Remove any old version zip files
         import glob
         old_zips = glob.glob(os.path.join(downloads_dir, 'gnosis-wraith-extension-*.zip'))
@@ -229,54 +295,85 @@ async def serve_extension():
         for old_zip in old_zips:
             try:
                 os.remove(old_zip)
+                logger.info(f"Removed old zip file: {old_zip}")
             except Exception as e:
                 logger.error(f"Error removing old zip: {str(e)}")
         
         # Create fresh zip files with version in filename
         import zipfile
         
-        # Create gnosis zip
-        with zipfile.ZipFile(gnosis_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for root, dirs, files in os.walk(extension_dir):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    arcname = os.path.relpath(file_path, os.path.join(extension_dir, '..'))
-                    zipf.write(file_path, arcname)
-        
-        # Create webwraith zip (copy of gnosis zip with different name)
-        import shutil
-        shutil.copy2(gnosis_zip_path, webwraith_zip_path)
+        try:
+            # Create gnosis zip
+            with zipfile.ZipFile(gnosis_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                files_added = 0
+                for root, dirs, files in os.walk(extension_dir):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, os.path.join(extension_dir, '..'))
+                        zipf.write(file_path, arcname)
+                        files_added += 1
+                        
+                logger.info(f"Added {files_added} files to extension zip")
+            
+            # Create webwraith zip (copy of gnosis zip with different name)
+            import shutil
+            shutil.copy2(gnosis_zip_path, webwraith_zip_path)
+            
+            logger.info(f"Extension zip created at: {gnosis_zip_path}")
+            logger.info(f"Extension zip file exists: {os.path.exists(gnosis_zip_path)}")
+            logger.info(f"Extension zip file size: {os.path.getsize(gnosis_zip_path)} bytes")
+        except Exception as zip_error:
+            logger.error(f"Error creating extension zip: {str(zip_error)}", exc_info=True)
+            return jsonify({
+                "success": False,
+                "error": f"Failed to create extension zip: {str(zip_error)}"
+            }), 500
+    else:
+        logger.error(f"Extension directory not found: {extension_dir}")
+        return jsonify({
+            "success": False,
+            "error": "Extension directory not found"
+        }), 500
     
     # Send file directly instead of redirecting to preserve filename
     from quart import send_file
     
-    # For Quart 0.18.0 and above
     try:
-        response = await send_file(
-            gnosis_zip_path, 
-            mimetype='application/zip',
-            as_attachment=True,
-            download_name=gnosis_zip_filename
-        )
-    except TypeError:
-        # Fallback for older Quart versions
-        response = await send_file(
-            gnosis_zip_path, 
-            mimetype='application/zip',
-            as_attachment=True,
-            attachment_filename=gnosis_zip_filename
-        )
+        # For Quart 0.18.0 and above
+        try:
+            response = await send_file(
+                gnosis_zip_path, 
+                mimetype='application/zip',
+                as_attachment=True,
+                download_name=gnosis_zip_filename
+            )
+        except TypeError:
+            # Fallback for older Quart versions
+            response = await send_file(
+                gnosis_zip_path, 
+                mimetype='application/zip',
+                as_attachment=True,
+                attachment_filename=gnosis_zip_filename
+            )
+        
+        # Force download headers
+        response.headers['Content-Disposition'] = f'attachment; filename="{gnosis_zip_filename}"'
+        response.headers['Content-Type'] = 'application/zip'
+        
+        # Add Cache-Control header to prevent caching
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        
+        logger.info(f"Extension download successful: {gnosis_zip_filename}")
+        return response
     
-    # Force download headers
-    response.headers['Content-Disposition'] = f'attachment; filename="{gnosis_zip_filename}"'
-    response.headers['Content-Type'] = 'application/zip'
-    
-    # Add Cache-Control header to prevent caching
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    
-    return response
+    except Exception as e:
+        logger.error(f"Error sending extension file: {str(e)}", exc_info=True)
+        return jsonify({
+            "success": False,
+            "error": f"Failed to send extension file: {str(e)}"
+        }), 500
 
 @app.route('/webwraith-extension')
 async def serve_webwraith_extension():

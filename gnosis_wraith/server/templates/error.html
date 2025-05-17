@@ -1,1 +1,173 @@
-<!-- Error page template -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ error_title }} - Gnosis Wraith</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}?v={{ range(10000, 99999) | random }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Favicon links -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="{{ url_for('static', filename='images/favicon.svg') }}"
+    />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{{ url_for('static', filename='images/favicon.ico') }}"
+    />
+    <!-- Additional custom styles for error page -->
+    <style>
+      .error-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px 20px;
+      }
+      
+      .error-icon {
+        font-size: 8rem;
+        margin-bottom: 30px;
+        animation: float 4s ease-in-out infinite;
+      }
+      
+      .error-icon.error {
+        color: var(--danger-color);
+      }
+      
+      .error-icon.not-found {
+        color: var(--danger-color);
+      }
+      
+      .error-title {
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+        color: var(--danger-color);
+      }
+      
+      .error-message {
+        font-size: 1.2rem;
+        max-width: 600px;
+        margin-bottom: 30px;
+        line-height: 1.6;
+      }
+      
+      .generative-seed {
+        background-color: rgba(255, 97, 97, 0.1);
+        border: 1px solid rgba(255, 97, 97, 0.3);
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 30px;
+        max-width: 800px;
+        font-style: italic;
+      }
+      
+      .actions {
+        margin-top: 30px;
+        display: flex;
+        gap: 15px;
+      }
+      
+      /* Floating animation for ghost */
+      @keyframes float {
+        0% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-20px);
+        }
+        100% {
+          transform: translateY(0px);
+        }
+      }
+      
+      /* Pulse animation for the button */
+      @keyframes pulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.05);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      
+      .pulse-btn {
+        animation: pulse 2s infinite;
+      }
+    </style>
+  </head>
+
+  <body>
+    <nav class="navbar">
+      <div class="logo">
+        <a href="{{ url_for('pages.index') }}">
+          <span>Gnosis Wraith 👻</span>
+        </a>
+      </div>
+      <ul class="nav-menu">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle">
+            <i class="fas fa-bars"></i>
+          </a>
+          <ul class="dropdown-menu">
+            <li><a href="{{ url_for('list_reports') }}">Reportage</a></li>
+            <li><a href="{{ url_for('settings') }}">Settings</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="container">
+      <div class="card error-container">
+        <div class="error-icon {{ error_type }}">
+          {% if error_type == 'not-found' %}
+            <i class="fas fa-ghost"></i>
+          {% else %}
+            <i class="fas fa-exclamation-triangle"></i>
+          {% endif %}
+        </div>
+        
+        <h1 class="error-title">{{ error_title }}</h1>
+        
+        <div class="error-message">
+          {{ error_message }}
+        </div>
+        
+        <!-- Generative Seed - A mysterious fragment about what the report might have been -->
+        <div class="generative-seed">
+          The spectral echoes of this report linger in the digital void. Its content - perhaps an illuminating analysis, 
+          a revelatory insight into the depths of the web, or a profound extraction of knowledge - now exists only as potential, 
+          a quantum state of information that might have been. What truths it would have revealed, what patterns it would have exposed, 
+          remain mysteries suspended in the datastream.
+        </div>
+        
+        <div class="actions">
+          <a href="{{ url_for('pages.list_reports') }}" class="btn primary">
+            <i class="fas fa-file-alt"></i> Browse Available Reports
+          </a>
+          
+          <a href="{{ url_for('pages.index') }}" class="btn secondary pulse-btn">
+            <i class="fas fa-search"></i> Start New Search
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>&copy; 2025 DeepBlue Dynamics</p>
+    </footer>
+  </body>
+</html>

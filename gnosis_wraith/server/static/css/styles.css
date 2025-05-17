@@ -1073,3 +1073,52 @@ footer .github-button {
         transform: translateY(0);
     }
 }
+
+/* File Button Circle Styling */
+.ghost-file-button {
+    position: relative;
+    background: transparent;
+    border: none;
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    cursor: pointer;
+    color: #5a52d5;
+}
+
+/* Drag and drop highlight styles */
+.ghost-search-box.highlight {
+    border-color: #6c63ff;
+    box-shadow: 0 0 10px rgba(108, 99, 255, 0.5);
+    background-color: rgba(108, 99, 255, 0.05);
+    transition: all 0.2s ease;
+}
+
+.ghost-file-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    background-color: rgba(108, 99, 255, 0.2);
+    border-radius: 50%;
+    z-index: -1;
+    transition: all 0.3s ease;
+}
+
+.ghost-file-button:hover::before {
+    background-color: rgba(108, 99, 255, 0.4);
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* "Active" style when file is selected */
+.ghost-file-button.file-active {
+    color: #6c63ff;
+}
+
+.ghost-file-button.file-active::before {
+    background-color: rgba(108, 99, 255, 0.6);
+    border: 2px solid #6c63ff;
+}

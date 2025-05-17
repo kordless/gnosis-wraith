@@ -6,7 +6,7 @@
     <title>Gnosis Wraith</title>
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/styles.css') }}"
+      href="{{ url_for('static', filename='css/styles.css') }}?v={{ range(10000, 99999) | random }}"
     />
     <link
       rel="stylesheet"
@@ -52,6 +52,70 @@
     <!-- Added inline script to handle dependent dropdowns and keyboard shortcuts -->
     <script type="text/javascript">
       document.addEventListener('DOMContentLoaded', function() {
+        // Check for URL fragment parameters (e.g., /#?q=tech+news&w=1)
+        function handleUrlParameters() {
+          // Get the URL hash (everything after #)
+          const hash = window.location.hash.substring(1);
+          
+          // If there are parameters after # (e.g. #?q=something)
+          if (hash && hash.includes('?')) {
+            // Extract the query string part
+            const queryString = hash.substring(hash.indexOf('?'));
+            const urlParams = new URLSearchParams(queryString);
+            
+            // Get the query parameter
+            const query = urlParams.get('q');
+            const shouldSubmit = urlParams.get('w') === '1';
+            
+            // If query is present, populate the URL input field
+            if (query) {
+              const urlInput = document.getElementById('url');
+              if (urlInput) {
+                // Only handle special case for 'tech news' with Ctrl+Y shortcut
+                let finalQuery = query;
+                if (query.toLowerCase() === 'tech news') {
+                  finalQuery = 'https://news.ycombinator.com/';
+                } else if (!query.startsWith('http://') && !query.startsWith('https://')) {
+                  // If not a URL, don't modify it - it could be a description
+                  if (query.includes('.') && !query.includes(' ')) {  // Only add https:// if it looks like a pure domain
+                    finalQuery = 'https://' + query;
+                    console.log(`Added https:// prefix to: ${query}`);
+                  }
+                }
+                
+                // Set the value in the input field
+                urlInput.value = finalQuery;
+                
+                // Highlight the input to show it was populated
+                urlInput.classList.add('highlight-input');
+                setTimeout(() => {
+                  urlInput.classList.remove('highlight-input');
+                }, 500);
+                
+                // If w=1, also submit the form
+                if (shouldSubmit) {
+                  // Click the crawl button after a short delay
+                  setTimeout(() => {
+                    const crawlBtn = document.getElementById('crawl-btn');
+                    if (crawlBtn) {
+                      crawlBtn.click();
+                    }
+                  }, 300);
+                }
+                
+                // Clear the URL fragment to avoid resubmission on refresh
+                // Use replaceState to modify the URL without adding to browser history
+                if (window.history && window.history.replaceState) {
+                  window.history.replaceState(null, document.title, window.location.pathname);
+                }
+              }
+            }
+          }
+        }
+        
+        // Run URL parameter handler on page load
+        handleUrlParameters();
+        
         // Setup the dependency between screenshot and OCR options
         const screenshotSelect = document.getElementById('take-screenshot');
         const ocrSelect = document.getElementById('ocr-extraction');
@@ -261,7 +325,7 @@
     <nav class="navbar">
       <div class="logo">
         <a href="{{ url_for('index') }}">
-          <span>Gnosis Wraith 👻</span>
+          <span>Gnosis Wraith <span id="flying-ghost" class="ghost-emoji" title="Click me or press Ctrl+G to make me fly!">👻</span></span>
         </a>
       </div>
       <ul class="nav-menu">
@@ -277,12 +341,301 @@
       </ul>
     </nav>
 
+    <!-- Ghost animation styles and script -->
+    <style>
+      .ghost-emoji {
+        display: inline-block;
+        position: relative;
+        transition: transform 0.2s ease;
+        z-index: 2;
+      }
+      
+      /* Multiple flight patterns */
+      @keyframes flyRight {
+        0% {
+          transform: translateX(0) translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        /* Move steadily first */
+        40% {
+          transform: translateX(calc(30vw)) translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        /* Accelerate and start fading */
+        80% {
+          transform: translateX(calc(70vw)) translateY(0) scale(0.9);
+          opacity: 0.7;
+        }
+        
+        /* Final acceleration and fade out */
+        100% {
+          transform: translateX(calc(110vw)) translateY(0) scale(0.7);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes flyUp {
+        0% {
+          transform: translateX(0) translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        /* Float up slowly first */
+        40% {
+          transform: translateX(20px) translateY(-20vh) scale(1);
+          opacity: 1;
+        }
+        
+        /* Continue rising and fading */
+        80% {
+          transform: translateX(40px) translateY(-60vh) scale(0.9);
+          opacity: 0.6;
+        }
+        
+        /* Final fade out off the top */
+        100% {
+          transform: translateX(60px) translateY(-110vh) scale(0.7);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes flyLeft {
+        0% {
+          transform: translateX(0) translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        /* Move steadily first */
+        40% {
+          transform: translateX(-30vw) translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        /* Accelerate and start fading */
+        80% {
+          transform: translateX(-70vw) translateY(0) scale(0.9);
+          opacity: 0.7;
+        }
+        
+        /* Final acceleration and fade out */
+        100% {
+          transform: translateX(-110vw) translateY(0) scale(0.7);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes fadeOut {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        
+        50% {
+          transform: scale(1.1);
+          opacity: 0.8;
+        }
+        
+        100% {
+          transform: scale(0.5);
+          opacity: 0;
+        }
+      }
+      
+      .ghost-flying {
+        position: fixed;
+        z-index: 999;
+      }
+      
+      .ghost-flying-right {
+        animation: flyRight 2.5s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+      }
+      
+      .ghost-flying-left {
+        animation: flyLeft 2.5s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+      }
+      
+      .ghost-flying-up {
+        animation: flyUp 3s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+      }
+      
+      .ghost-flying-fade {
+        animation: fadeOut 2s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+      }
+      
+      /* Prevent ghost animation from messing with layout */
+      .ghost-placeholder {
+        opacity: 0;
+        visibility: hidden;
+      }
+    </style>
+    
+    <script>
+      // Wait until DOM is loaded
+      document.addEventListener('DOMContentLoaded', function() {
+        const ghost = document.getElementById('flying-ghost');
+        if (!ghost) return;
+        
+        // Clean up any existing ghost clones (in case of page refresh during animation)
+        const existingClones = document.querySelectorAll('[id^="flying-ghost-clone"]');
+        existingClones.forEach(clone => {
+          try {
+            document.body.removeChild(clone);
+          } catch (e) {
+            console.log("Error removing clone:", e);
+          }
+        });
+        
+        // Function to make the ghost fly
+        function makeGhostFly() {
+          // Don't start a new animation if one is in progress
+          if (document.querySelector('[id^="flying-ghost-clone"]')) return;
+          
+          // Create a clone to animate (this prevents layout shifts)
+          const ghostClone = ghost.cloneNode(true);
+          const cloneId = 'flying-ghost-clone-' + Date.now();
+          ghostClone.id = cloneId;
+          document.body.appendChild(ghostClone);
+          
+          // Position the clone exactly where the original ghost is
+          const ghostRect = ghost.getBoundingClientRect();
+          ghostClone.style.position = 'fixed';
+          ghostClone.style.top = ghostRect.top + 'px';
+          ghostClone.style.left = ghostRect.left + 'px';
+          ghostClone.style.zIndex = '999';
+          
+          // Make the ghost temporarily invisible (but maintain space)
+          ghost.classList.add('ghost-placeholder');
+          
+          // Choose a random flight pattern
+          ghostClone.classList.add('ghost-flying');
+          const flightPatterns = ['ghost-flying-right', 'ghost-flying-left', 'ghost-flying-up', 'ghost-flying-fade'];
+          const randomPattern = flightPatterns[Math.floor(Math.random() * flightPatterns.length)];
+          ghostClone.classList.add(randomPattern);
+          
+          // Set animation duration based on the pattern
+          let animationDuration = 0;
+          switch(randomPattern) {
+            case 'ghost-flying-right':
+            case 'ghost-flying-left':
+              animationDuration = 2500; // 2.5 seconds
+              break;
+            case 'ghost-flying-up':
+              animationDuration = 3000; // 3 seconds
+              break;
+            case 'ghost-flying-fade':
+              animationDuration = 2000; // 2 seconds
+              break;
+            default:
+              animationDuration = 3000; // Default 3 seconds
+          }
+          
+          // Clean up after animation
+          ghostClone.addEventListener('animationend', () => cleanupGhost(cloneId, animationDuration));
+          
+          // Backup cleanup in case the animationend event doesn't fire
+          const cleanupTimeout = setTimeout(() => cleanupGhost(cloneId, animationDuration), animationDuration + 1000);
+          
+          function cleanupGhost(id, duration) {
+            // Prevent duplicate cleanup
+            const cloneElement = document.getElementById(id);
+            if (!cloneElement) return;
+            
+            clearTimeout(cleanupTimeout);
+            
+            // Remove the clone
+            try {
+              document.body.removeChild(cloneElement);
+            } catch (e) {
+              console.log("Error removing clone:", e);
+            }
+            
+            // Make the original ghost visible again, but after a short delay
+            // to prevent any visual "bounce back" effect
+            setTimeout(() => {
+              ghost.classList.remove('ghost-placeholder');
+              
+              // Add a small wiggle effect as the ghost "reappears"
+              ghost.style.animation = 'wiggle 0.5s ease';
+              setTimeout(() => {
+                ghost.style.animation = '';
+              }, 500);
+            }, 100);
+          }
+        }
+        
+        // Add a wiggle effect for when the ghost reappears
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes wiggle {
+            0% { transform: translateX(0) rotate(0); }
+            25% { transform: translateX(-3px) rotate(-5deg); }
+            50% { transform: translateX(3px) rotate(5deg); }
+            75% { transform: translateX(-2px) rotate(-3deg); }
+            100% { transform: translateX(0) rotate(0); }
+          }
+        `;
+        document.head.appendChild(style);
+        
+        // Start random ghost flights
+        function scheduleRandomFlight() {
+          // Random time between 3 and 8 minutes (180000 - 480000 ms)
+          // But occasionally (5% chance) appear quickly (3-10 seconds)
+          let randomDelay;
+          
+          if (Math.random() < 0.05) {
+            // Quick reappearance (5% chance)
+            randomDelay = Math.floor(Math.random() * 7000) + 3000; // 3-10 seconds
+            console.log("Ghost will reappear quickly in " + (randomDelay/1000) + " seconds");
+          } else {
+            // Normal long delay
+            randomDelay = Math.floor(Math.random() * 300000) + 180000; // 3-8 minutes
+            console.log("Ghost will hibernate for " + (randomDelay/60000).toFixed(1) + " minutes");
+          }
+          
+          setTimeout(() => {
+            makeGhostFly();
+            scheduleRandomFlight(); // Schedule the next flight
+          }, randomDelay);
+        }
+        
+        // Also trigger on clicking the ghost
+        ghost.addEventListener('click', function(e) {
+          // Don't navigate when clicking the ghost
+          e.preventDefault();
+          e.stopPropagation();
+          makeGhostFly();
+        });
+        
+        // Add keyboard shortcut: Ctrl+G to trigger ghost flight
+        document.addEventListener('keydown', function(e) {
+          // Check if Ctrl+G is pressed
+          if (e.ctrlKey && (e.key === 'g' || e.key === 'G')) {
+            // Prevent default browser behavior (which might be "find next")
+            e.preventDefault();
+            
+            // Log to console to verify shortcut is working
+            console.log("Ctrl+G shortcut detected - ghost should fly now!");
+            
+            // Force immediate ghost flight
+            makeGhostFly();
+            
+            // Return false to ensure the browser doesn't handle this key combination
+            return false;
+          }
+        });
+        
+        // Start the random flight scheduling
+        scheduleRandomFlight();
+      });
+    </script>
+
     <div class="container">
       <div class="tabs">
         <button class="tab-btn active" data-tab="single-crawl">
-          Single URL Crawl
+          Search & Crawl
         </button>
-        <button class="tab-btn" data-tab="image-upload">Upload Image</button>
         <button class="tab-btn" data-tab="extension">Browser Extension</button>
         <button class="tab-btn" data-tab="code-examples">Code Examples</button>
         <button class="tab-btn" data-tab="crawl-philosophy">
@@ -293,7 +646,6 @@
       <main>
         <!-- Single URL Crawl Tab with JavaScript Option -->
         <section id="single-crawl" class="tab-content card active">
-          <h2>Crawl Single URL</h2>
           <div class="author-quote">
             <blockquote>
               "The difference between ignorant and educated people is that the
@@ -310,288 +662,1264 @@
             </div>
           </div>
           
+          <!-- New Google-inspired UI with fun controls -->
+          <style>
+            /* Google-inspired search styling */
+            .ghost-search-container {
+              max-width: 750px;
+              margin: 0 auto;
+              padding: 20px 0;
+            }
+            
+            .ghost-search-box {
+              display: flex;
+              align-items: center;
+              border: 1px solid var(--border-color);
+              border-radius: 24px;
+              padding: 6px 8px 6px 16px;
+              box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+              background: var(--card-bg);
+              transition: all 0.3s ease;
+            }
+            
+            .ghost-search-box:focus-within,
+            .ghost-search-box.highlight {
+              box-shadow: 0 2px 10px rgba(108, 99, 255, 0.3);
+              border-color: #6c63ff;
+            }
+            
+            .ghost-search-box input {
+              flex-grow: 1;
+              border: none;
+              padding: 12px 0;
+              font-size: 16px;
+              background: transparent;
+              color: var(--text-color);
+              outline: none;
+            }
+            
+            .ghost-search-icon {
+              color: #6c63ff;
+              font-size: 20px;
+              margin-right: 10px;
+            }
+            
+            .ghost-search-button {
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 40px;
+              height: 40px;
+              border-radius: 50%;
+              background: #6c63ff;
+              color: white;
+              border: none;
+              cursor: pointer;
+              transition: all 0.2s;
+            }
+            
+            .ghost-search-button:hover {
+              background: #5a52d5;
+              transform: scale(1.05);
+            }
+            
+            .ghost-mic-button,
+            .ghost-file-button {
+              background: transparent;
+              border: none;
+              width: 24px;
+              height: 24px;
+              margin-right: 8px;
+              cursor: pointer;
+              color: #5a52d5;
+            }
+            
+            .ghost-file-button:hover {
+              color: #6c63ff;
+            }
+            
+            /* Style for file selected state */
+            .file-selected {
+              color: #6c63ff !important;
+              font-weight: 500;
+            }
+            
+            /* Custom toggles and controls */
+            .ghost-controls {
+              display: grid;
+              grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+              gap: 20px;
+              margin-top: 30px;
+            }
+            
+            .ghost-control-card {
+              background: var(--card-bg);
+              border-radius: 12px;
+              padding: 15px;
+              box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+              transition: all 0.3s;
+            }
+            
+            .ghost-control-card:hover {
+              box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+              transform: translateY(-2px);
+            }
+            
+            .ghost-control-header {
+              display: flex;
+              align-items: center;
+              margin-bottom: 10px;
+            }
+            
+            .ghost-control-icon {
+              width: 32px;
+              height: 32px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: #f0f4ff;
+              color: #6c63ff;
+              border-radius: 8px;
+              margin-right: 10px;
+            }
+            
+            .ghost-control-title {
+              font-size: 15px;
+              font-weight: 500;
+              color: var(--text-color);
+              margin: 0;
+            }
+            
+            /* Toggle Switch */
+            .ghost-toggle-switch {
+              position: relative;
+              display: inline-block;
+              width: 50px;
+              height: 24px;
+            }
+            
+            .ghost-toggle-switch input {
+              opacity: 0;
+              width: 0;
+              height: 0;
+            }
+            
+            .ghost-toggle-slider {
+              position: absolute;
+              cursor: pointer;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
+              background-color: #ccc;
+              transition: .4s;
+              border-radius: 34px;
+            }
+            
+            .ghost-toggle-slider:before {
+              position: absolute;
+              content: "";
+              height: 16px;
+              width: 16px;
+              left: 4px;
+              bottom: 4px;
+              background-color: white;
+              transition: .4s;
+              border-radius: 50%;
+            }
+            
+            input:checked + .ghost-toggle-slider {
+              background-color: #6c63ff;
+            }
+            
+            input:checked + .ghost-toggle-slider:before {
+              transform: translateX(26px);
+            }
+            
+            /* Radio Button Group */
+            .ghost-radio-group {
+              display: flex;
+              background: var(--card-bg);
+              border-radius: 20px;
+              padding: 4px;
+              margin-top: 10px;
+              border: 3px solid #ffffff; /* Thick white border for the entire group */
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+            
+            .ghost-radio-button {
+              flex: 1;
+              text-align: center;
+              padding: 8px 4px;
+              font-size: 13px;
+              cursor: pointer;
+              border-radius: 14px;
+              transition: all 0.2s;
+              user-select: none;
+              font-weight: 500; /* Medium weight for all states */
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              min-height: 45px; /* Ensure enough height for the two lines */
+              line-height: 1.3;
+              margin: 2px;
+              border: none; /* No border on individual buttons */
+            }
+            
+            .ghost-radio-active {
+              background: #6c63ff;
+              color: white;
+              font-weight: 600; /* Slightly bolder for the active state */
+              box-shadow: 0 2px 4px rgba(108, 99, 255, 0.3);
+            }
+
+            .ghost-radio-button:not(.ghost-radio-active) {
+              background: var(--card-bg);
+              color: #999; /* Much lighter text color for inactive buttons */
+            }
+            
+            .ghost-radio-button:hover:not(.ghost-radio-active) {
+              background: rgba(108, 99, 255, 0.1);
+              color: #666; /* Slightly darker on hover, but still light */
+            }
+            
+            /* Title Input Toggle styles have been removed */
+            
+            /* Submit button */
+            .ghost-submit {
+              display: flex;
+              justify-content: center;
+              margin-top: 30px;
+            }
+            
+            .ghost-crawl-btn {
+              background: linear-gradient(135deg, #6c63ff 0%, #5a52d5 100%);
+              color: white;
+              border: none;
+              border-radius: 24px;
+              padding: 12px 30px;
+              font-size: 16px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.3s;
+              box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+              display: flex;
+              align-items: center;
+            }
+            
+            .ghost-crawl-btn:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+            }
+            
+            .ghost-crawl-btn i {
+              margin-right: 10px;
+            }
+            
+            /* Report title input styling */
+            .ghost-input {
+              border: 1px solid var(--border-color);
+              border-radius: 8px;
+              padding: 12px;
+              background: var(--input-bg);
+              color: var(--text-color);
+              font-size: 14px;
+              transition: all 0.3s;
+              width: 100%;
+            }
+            
+            .ghost-input:focus {
+              border-color: #6c63ff;
+              box-shadow: 0 0 0 2px rgba(108, 99, 255, 0.2);
+              outline: none;
+            }
+            
+            .ghost-input::placeholder {
+              color: #999;
+            }
+            
+            /* Report title container animation */
+            #report-title-container {
+              max-height: 0;
+              overflow: hidden;
+              transition: max-height 0.4s ease-out, padding 0.4s ease-out, opacity 0.4s ease-out;
+              opacity: 0;
+              margin: 0;
+            }
+            
+            #report-title-container.visible,
+            #upload-report-title-container.visible {
+              max-height: 180px; /* Increased from 60px to allow more space */
+              padding: 15px 0;
+              margin-bottom: 10px;
+              opacity: 1;
+            }
+            
+            /* Add animation to upload section too */
+            #upload-report-title-container {
+              max-height: 0;
+              overflow: hidden;
+              transition: max-height 0.4s ease-out, padding 0.4s ease-out, opacity 0.4s ease-out;
+              opacity: 0;
+              margin: 0;
+            }
+            
+            /* Retro Google feeling */
+            .ghost-search-footer {
+              text-align: center;
+              margin-top: 30px;
+              color: #666;
+              font-size: 13px;
+            }
+            
+            /* Fancy animation effects */
+            @keyframes pulse {
+              0% { transform: scale(1); }
+              50% { transform: scale(1.05); }
+              100% { transform: scale(1); }
+            }
+            
+            .pulse-animation {
+              animation: pulse 1.5s infinite ease-in-out;
+            }
+            
+            /* Ghost link styling */
+            .ghost-link {
+              color: #8CB4FF; /* Lighter blue for better contrast on dark backgrounds */
+              text-decoration: none !important; /* Remove underline */
+              cursor: pointer;
+              transition: all 0.2s ease;
+              font-weight: 500;
+            }
+            
+            .ghost-link:hover {
+              color: #A9CBFF; /* Even lighter blue for hover state */
+              text-decoration: none !important;
+            }
+          </style>
+          
           <div class="crawl-form">
-            <div class="form-group">
-              <label for="url">URL:</label>
-              <input
-                type="url"
-                id="url"
-                placeholder="https://news.ycombinator.com"
-              />
-              <p class="help-text">
-                Press <kbd>Ctrl</kbd>+<kbd>Y</kbd> to quickly load Hacker News and start crawling
+            <!-- Google-style search input -->
+            <div class="ghost-search-container">
+              <div class="ghost-search-box">
+                <i class="fas fa-ghost ghost-search-icon"></i>
+                <input
+                  type="text"
+                  id="url"
+                  placeholder="Describe what you want to crawl, upload a file, or enter a URL..."
+                  autocomplete="off"
+                />
+                <button class="ghost-mic-button" title="Search by voice">
+                  <i class="fas fa-microphone"></i>
+                </button>
+                <!-- Add a file selection button here -->
+                <button class="ghost-file-button" title="Select file to analyze" id="main-file-select-btn" style="position: relative; z-index: 1;">
+                  <i class="fas fa-file-upload"></i>
+                  <span style="position: absolute; width: 32px; height: 32px; background-color: rgba(108, 99, 255, 0.2); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: -1;"></span>
+                </button>
+                <!-- Add X button to clear file selection, hidden by default -->
+                <button class="ghost-clear-button" title="Remove selected file" id="clear-file-btn" style="display: none; background: transparent; border: none; width: 24px; height: 24px; margin-right: 8px; cursor: pointer; color: #ff6161;">
+                  <i class="fas fa-times-circle"></i>
+                </button>
+                <button id="instant-crawl" class="ghost-search-button" title="Feeling Lucky">
+                  <i class="fas fa-bolt"></i>
+                </button>
+                <!-- Hidden file input for the file selection -->
+                <input type="file" id="main-file-input" style="display: none;" accept="image/png,image/jpeg,image/jpg,image/gif,image/bmp,application/pdf" />
+              </div>
+              
+              <p class="help-text" style="text-align: center; margin-top: 8px; line-height: 1.8;">
+                Press <kbd>Ctrl</kbd>+<kbd>Y</kbd> for tech news
               </p>
+              
+              <!-- Report title section has been removed -->
+              
+              <!-- Fun controls in cards -->
+              <div class="ghost-controls">
+                <!-- Screenshot Card -->
+                <div class="ghost-control-card">
+                  <div class="ghost-control-header">
+                    <div class="ghost-control-icon">
+                      <i class="fas fa-camera"></i>
+                    </div>
+                    <label class="ghost-toggle-switch" style="margin-left: 8px; margin-right: 12px;">
+                      <input type="checkbox" id="take-screenshot-toggle" checked>
+                      <span class="ghost-toggle-slider"></span>
+                    </label>
+                    <h3 class="ghost-control-title">Screenshot Capture</h3>
+                  </div>
+                  <!-- Removed help text -->
+                </div>
+                
+                <!-- OCR Card -->
+                <div class="ghost-control-card">
+                  <div class="ghost-control-header">
+                    <div class="ghost-control-icon">
+                      <i class="fas fa-eye"></i>
+                    </div>
+                    <label class="ghost-toggle-switch" style="margin-left: 8px; margin-right: 12px;">
+                      <input type="checkbox" id="ocr-extraction-toggle">
+                      <span class="ghost-toggle-slider"></span>
+                    </label>
+                    <h3 class="ghost-control-title">OCR Extraction</h3>
+                  </div>
+                  <!-- Removed help text -->
+                </div>
+                
+                <!-- Content Processing Card -->
+                <div class="ghost-control-card">
+                  <div class="ghost-control-header">
+                    <div class="ghost-control-icon">
+                      <i class="fas fa-cogs"></i>
+                    </div>
+                    <h3 class="ghost-control-title">Content Processing</h3>
+                  </div>
+                  <div class="ghost-radio-group" id="markdown-radio-group">
+                    <div class="ghost-radio-button ghost-radio-active" data-value="enhanced">
+                      <i class="fas fa-magic"></i> Enhanced
+                    </div>
+                    <div class="ghost-radio-button" data-value="basic">
+                      <i class="fas fa-file-alt" style="opacity: 0.6;"></i> Basic
+                    </div>
+                    <div class="ghost-radio-button" data-value="none">
+                      <i class="fas fa-code" style="opacity: 0.6;"></i> Raw Text<br>
+                      <span style="font-size: 10px; opacity: 0.6;">(from DOM)</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- JavaScript Card -->
+                <div class="ghost-control-card">
+                  <div class="ghost-control-header">
+                    <div class="ghost-control-icon">
+                      <i class="fas fa-code"></i>
+                    </div>
+                    <label class="ghost-toggle-switch" style="margin-left: 8px; margin-right: 12px;">
+                      <input type="checkbox" id="javascript-enabled-toggle">
+                      <span class="ghost-toggle-slider"></span>
+                    </label>
+                    <h3 class="ghost-control-title">JavaScript</h3>
+                  </div>
+                  <!-- Removed help text -->
+                </div>
+              </div>
+              
+              <!-- Custom report title toggle and input (hidden by default) -->
+              <div class="ghost-control-card" style="margin-bottom: 20px;">
+                <div class="ghost-control-header">
+                  <div class="ghost-control-icon">
+                    <i class="fas fa-heading"></i>
+                  </div>
+                  <label class="ghost-toggle-switch" style="margin-left: 8px; margin-right: 12px;">
+                    <input type="checkbox" id="report-title-toggle">
+                    <span class="ghost-toggle-slider"></span>
+                  </label>
+                  <h3 class="ghost-control-title">Custom Report Title</h3>
+                </div>
+                <!-- Report title input (hidden by default) -->
+                <div id="report-title-container" style="display: none;">
+                  <div style="background: #f0f4ff; border-radius: 8px; padding: 15px; margin-top: 10px; margin-bottom: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+                    <input
+                      type="text"
+                      id="report-title"
+                      placeholder="Web Crawl Report"
+                      class="ghost-input"
+                      style="display: block; width: 100%; margin-bottom: 10px;"
+                    />
+                    <p style="margin: 8px 0 0 0; font-size: 12px; color: #666; line-height: 1.4;">
+                      <i class="fas fa-info-circle"></i> 
+                      This title will appear at the top of generated reports
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Submit button -->
+              <div class="ghost-submit">
+                <button id="crawl-btn" class="ghost-crawl-btn">
+                  <i class="fas fa-ghost pulse-animation"></i>
+                  Unleash the Wraith
+                </button>
+              </div>
+              
+              <div class="ghost-search-footer">
+                Gnosis Wraith 👻
+              </div>
             </div>
-
-            <div class="form-group">
-              <label for="report-title">Report Title:</label>
-              <input type="text" id="report-title" placeholder="Crawl Report" />
-            </div>
-
-            <div class="form-group">
-              <label for="take-screenshot">Take Screenshot:</label>
-              <select id="take-screenshot">
-                <option value="true" selected>Yes - Take Screenshot</option>
-                <option value="false">No - Skip Screenshot</option>
-              </select>
-              <p class="help-text">
-                Screenshots will be automatically saved if taken
-              </p>
-              <!-- No debugging info here -->
-            </div>
-
-            <div class="form-group">
-              <label for="ocr-extraction">OCR Extraction:</label>
-              <select id="ocr-extraction">
-                <option value="true" selected>Yes - Extract Text via OCR</option>
-                <option value="false">No - Skip OCR</option>
-              </select>
-              <p class="help-text">
-                OCR will only be performed if screenshot is taken
-              </p>
-            </div>
-
-            <div class="form-group">
-              <label for="markdown-extraction">Extract Markdown:</label>
-              <select id="markdown-extraction">
-                <option value="enhanced" selected>Enhanced Markdown (with filtering)</option>
-                <option value="basic">Basic Markdown (no filtering)</option>
-                <option value="none">No Markdown Extraction</option>
-              </select>
-              <p class="help-text">
-                Determine how HTML content is processed and converted
-              </p>
-            </div>
-
-            <div class="form-group">
-              <label for="javascript-enabled-single">JavaScript:</label>
-              <select id="javascript-enabled-single">
-                <option value="false" selected>Disabled (safer)</option>
-                <option value="true">Enabled (better rendering)</option>
-              </select>
-              <p class="help-text">
-                Enable JavaScript when crawling this website
-              </p>
-            </div>
-
-            <div class="form-group">
-              <button id="crawl-btn" class="btn primary">Start Crawling</button>
-            </div>
+            
+            <!-- Hidden fields to store actual values for form submission -->
+            <select id="take-screenshot" style="display: none;">
+              <option value="true" selected>Yes</option>
+              <option value="false">No</option>
+            </select>
+            
+            <select id="ocr-extraction" style="display: none;">
+              <option value="true">Yes</option>
+              <option value="false" selected>No</option>
+            </select>
+            
+            <select id="markdown-extraction" style="display: none;">
+              <option value="enhanced" selected>Enhanced</option>
+              <option value="basic">Basic</option>
+              <option value="none">None</option>
+            </select>
+            
+            <select id="javascript-enabled-single" style="display: none;">
+              <option value="false" selected>Disabled</option>
+              <option value="true">Enabled</option>
+            </select>
+            
+            <input type="hidden" id="report-title-hidden" name="report-title" value="">
           </div>
+          
+          <!-- JavaScript to handle the new UI controls -->
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              // Toggle switches
+              document.getElementById('take-screenshot-toggle').addEventListener('change', function() {
+                document.getElementById('take-screenshot').value = this.checked ? 'true' : 'false';
+                
+                // If screenshots disabled, disable OCR too
+                if (!this.checked) {
+                  document.getElementById('ocr-extraction-toggle').checked = false;
+                  document.getElementById('ocr-extraction-toggle').disabled = true;
+                  document.getElementById('ocr-extraction').value = 'false';
+                } else {
+                  document.getElementById('ocr-extraction-toggle').disabled = false;
+                }
+              });
+              
+              document.getElementById('ocr-extraction-toggle').addEventListener('change', function() {
+                document.getElementById('ocr-extraction').value = this.checked ? 'true' : 'false';
+              });
+              
+              document.getElementById('javascript-enabled-toggle').addEventListener('change', function() {
+                document.getElementById('javascript-enabled-single').value = this.checked ? 'true' : 'false';
+              });
+              
+              // Report title toggle with animation
+              document.getElementById('report-title-toggle').addEventListener('change', function() {
+                const reportTitleContainer = document.getElementById('report-title-container');
+                if (this.checked) {
+                  // First make it display block, then add the visible class for animation
+                  reportTitleContainer.style.display = 'block';
+                  // Force a reflow to ensure the display change is processed before adding the class
+                  void reportTitleContainer.offsetWidth;
+                  reportTitleContainer.classList.add('visible');
+                } else {
+                  // First remove the visible class for animation
+                  reportTitleContainer.classList.remove('visible');
+                  // Then hide it after the animation completes
+                  setTimeout(() => {
+                    reportTitleContainer.style.display = 'none';
+                  }, 400); // Match the transition duration in CSS (0.4s)
+                }
+              });
+              
+              // Radio group for markdown extraction
+              document.querySelectorAll('#markdown-radio-group .ghost-radio-button').forEach(button => {
+                button.addEventListener('click', function() {
+                  // Remove active class from all buttons
+                  document.querySelectorAll('#markdown-radio-group .ghost-radio-button').forEach(b => {
+                    b.classList.remove('ghost-radio-active');
+                    // Make icons slightly transparent for inactive buttons
+                    b.querySelector('i').style.opacity = '0.6';
+                  });
+                  
+                  // Add active class to clicked button
+                  this.classList.add('ghost-radio-active');
+                  // Make icon fully opaque for active button
+                  this.querySelector('i').style.opacity = '1';
+                  
+                  // Set value in hidden select
+                  document.getElementById('markdown-extraction').value = this.getAttribute('data-value');
+                });
+              });
+              
+              // Handle hover effects for the radio buttons
+              document.querySelectorAll('#markdown-radio-group .ghost-radio-button').forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                  if (!this.classList.contains('ghost-radio-active')) {
+                    this.querySelector('i').style.opacity = '0.8';
+                  }
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                  if (!this.classList.contains('ghost-radio-active')) {
+                    this.querySelector('i').style.opacity = '0.6';
+                  }
+                });
+              });
+              
+              // Report title toggle removed (using the animated version below)
+              
+              // "Feeling Lucky" button
+              document.getElementById('instant-crawl').addEventListener('click', function() {
+                const urlInput = document.getElementById('url');
+                if (!urlInput.value) {
+                  urlInput.value = 'https://news.ycombinator.com/';
+                }
+                document.getElementById('crawl-btn').click();
+              });
+              
+              // Voice input effect (simulated)
+              document.querySelector('.ghost-mic-button').addEventListener('click', function() {
+                const urlInput = document.getElementById('url');
+                urlInput.placeholder = 'Listening...';
+                
+                // Simulate voice recognition after 2 seconds
+                setTimeout(() => {
+                  urlInput.value = 'https://news.ycombinator.com/';
+                  urlInput.placeholder = 'Enter a URL or describe what you want to crawl...';
+                }, 2000);
+              });
+              
+              // Ghost links handler - updated to work with predefined URLs
+              document.querySelectorAll('.ghost-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  
+                  // Get the query from the data attribute
+                  const query = this.getAttribute('data-query');
+                  const urlInput = document.getElementById('url');
+                  
+                  if (urlInput) {
+                    // Populate the URL input with the query
+                    urlInput.value = query;
+                    
+                    // Highlight the input to show it was populated
+                    urlInput.classList.add('highlight-input');
+                    setTimeout(() => {
+                      urlInput.classList.remove('highlight-input');
+                    }, 500);
+                    
+                    // Always submit immediately for these example links
+                    setTimeout(() => {
+                      const crawlBtn = document.getElementById('crawl-btn');
+                      if (crawlBtn) {
+                        crawlBtn.click();
+                      }
+                    }, 300);
+                  }
+                });
+              });
+              
+              // Image upload report title toggle with animation
+              const uploadReportTitleToggle = document.getElementById('upload-report-title-toggle');
+              if (uploadReportTitleToggle) {
+                uploadReportTitleToggle.addEventListener('change', function() {
+                  const container = document.getElementById('upload-report-title-container');
+                  if (container) {
+                    if (this.checked) {
+                      // First make it display block, then add the visible class for animation
+                      container.style.display = 'block';
+                      // Force a reflow to ensure the display change is processed before adding the class
+                      void container.offsetWidth;
+                      container.classList.add('visible');
+                    } else {
+                      // First remove the visible class for animation
+                      container.classList.remove('visible');
+                      // Then hide it after the animation completes
+                      setTimeout(() => {
+                        container.style.display = 'none';
+                      }, 400); // Match the transition duration in CSS
+                    }
+                  }
+                });
+              }
+            });
+          </script>
         </section>
 
-        <!-- Image Upload Tab -->
-        <section id="image-upload" class="tab-content card">
-          <h2>Upload Image</h2>
-          <div class="author-quote">
-            <blockquote>
-              "Reality is that which, when you stop believing in it, doesn't go
-              away."
-              <cite>—Philip K. Dick</cite>
-            </blockquote>
-          </div>
-          <div class="upload-form">
-            <div class="form-group">
-              <label for="image-file-input">Select Image:</label>
-              <input type="file" id="image-file-input" accept="image/*" />
-            </div>
+        <!-- Image Upload Tab removed -->
 
-            <div class="form-group">
-              <label for="image-report-title">Report Title:</label>
-              <input
-                type="text"
-                id="image-report-title"
-                placeholder="Image Analysis Report"
-              />
-            </div>
-
-            <div class="form-group">
-              <button id="upload-btn" class="btn primary">
-                Upload & Extract Text
-              </button>
-            </div>
-          </div>
-
-          <div id="upload-status" class="status-box" style="display: none">
-            <p>Status: <span id="upload-status-text">Idle</span></p>
-            <div class="progress-bar">
-              <div id="upload-progress-indicator"></div>
-            </div>
-          </div>
-
-          <div id="upload-result" class="result-box" style="display: none">
-            <h3>Uploaded Image</h3>
-            <div class="image-preview">
-              <img id="preview-image" src="" alt="Uploaded image" />
-            </div>
-
-            <h3>Extracted Text</h3>
-            <div class="extracted-text">
-              <pre id="extracted-text-content"></pre>
-            </div>
-          </div>
-        </section>
-
-        <!-- Code Examples Tab -->
+        <!-- Code Examples Tab with Ask Wraith section -->
         <section id="code-examples" class="tab-content card">
-          <h2>Code Examples</h2>
-
           <div class="author-quote">
             <blockquote>
               "I'm going to kill you with my teacup."
               <cite>—Richard B. Riddick, The Chronicles of Riddick</cite>
             </blockquote>
           </div>
-
-          <div class="code-section">
-            <h3>Python Code for Image Upload</h3>
-            <p class="code-explanation">
-              This function takes a local image file and uploads it to Gnosis
-              Wraith's API for text extraction. It handles file validation,
-              proper cleanup of resources, and returns the extracted text in
-              JSON format.
-            </p>
-            <div class="code-container">
-              <button class="copy-btn" title="Copy to clipboard">
-                <i class="fas fa-copy"></i>
-              </button>
-              <pre
-                class="language-python"
-                style="font-size: 0.75em"
-              ><code>
-import requests
-import os
-
-def upload_image_to_gnosis_wraith(image_path):
-    """
-    Upload an image to the Gnosis Wraith API and extract text.
-    
-    Args:
-        image_path (str): Path to the image file
-        
-    Returns:
-        dict: API response with extracted text
-    """
-    url = "http://localhost:5678/api/upload"
-    
-    if not os.path.exists(image_path):
-        raise FileNotFoundError(f"Image file not found: {image_path}")
-    
-    files = {
-        'image': (os.path.basename(image_path), open(image_path, 'rb'), 'image/png')
-    }
-    
-    try:
-        response = requests.post(url, files=files)
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Error uploading image: {e}")
-        return None
-    finally:
-        files['image'][1].close()
-
-# Example usage
-if __name__ == "__main__":
-    result = upload_image_to_gnosis_wraith("path/to/your/image.png")
-    if result and result.get("success"):
-        print(f"Extracted text: {result['extracted_text']}")
-    else:
-        print("Failed to extract text from image")</code></pre>
+          
+          <!-- Empty line to maintain structure but removing the original Ask Wraith content since it's moved -->
+          
+          <!-- OS detection script -->
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              // Try to detect OS
+              const userAgent = navigator.userAgent.toLowerCase();
+              const isMac = /macintosh|mac os x/i.test(userAgent);
+              const isWindows = /windows|win32|win64/i.test(userAgent);
+              
+              // Set default for unknown OS (show Linux/Mac)
+              let showWindows = false;
+              
+              if (isWindows) {
+                showWindows = true;
+              }
+              
+              // Get tab elements
+              const macTab = document.getElementById('mac-tab');
+              const winTab = document.getElementById('windows-tab');
+              const textInputTab = document.getElementById('text-input-tab');
+              const macExamples = document.getElementById('mac-examples');
+              const winExamples = document.getElementById('windows-examples');
+              const textInputExamples = document.getElementById('text-input-examples');
+              
+              // Initial state based on detected OS
+              if (showWindows) {
+                macTab.classList.remove('active');
+                winTab.classList.add('active');
+                textInputTab.classList.remove('active');
+                macExamples.style.display = 'none';
+                winExamples.style.display = 'block';
+                textInputExamples.style.display = 'none';
+              } else {
+                macTab.classList.add('active');
+                winTab.classList.remove('active');
+                textInputTab.classList.remove('active');
+                macExamples.style.display = 'block';
+                winExamples.style.display = 'none';
+                textInputExamples.style.display = 'none';
+              }
+              
+              // Tab switching logic
+              macTab.addEventListener('click', function() {
+                macTab.classList.add('active');
+                winTab.classList.remove('active');
+                textInputTab.classList.remove('active');
+                macExamples.style.display = 'block';
+                winExamples.style.display = 'none';
+                textInputExamples.style.display = 'none';
+              });
+              
+              winTab.addEventListener('click', function() {
+                macTab.classList.remove('active');
+                winTab.classList.add('active');
+                textInputTab.classList.remove('active');
+                macExamples.style.display = 'none';
+                winExamples.style.display = 'block';
+                textInputExamples.style.display = 'none';
+              });
+              
+              textInputTab.addEventListener('click', function() {
+                macTab.classList.remove('active');
+                winTab.classList.remove('active');
+                textInputTab.classList.add('active');
+                macExamples.style.display = 'none';
+                winExamples.style.display = 'none';
+                textInputExamples.style.display = 'block';
+              });
+              
+              // Text Input functionality
+              const codeTextInput = document.getElementById('code-text-input');
+              const clearTextBtn = document.getElementById('clear-text-btn');
+              const copyTextBtn = document.getElementById('copy-text-btn');
+              const saveTextBtn = document.getElementById('save-text-btn');
+              
+              if (clearTextBtn) {
+                clearTextBtn.addEventListener('click', function() {
+                  if (codeTextInput) {
+                    codeTextInput.value = '';
+                    codeTextInput.focus();
+                  }
+                });
+              }
+              
+              if (copyTextBtn) {
+                copyTextBtn.addEventListener('click', function() {
+                  if (codeTextInput && codeTextInput.value.trim()) {
+                    navigator.clipboard.writeText(codeTextInput.value).then(() => {
+                      // Provide visual feedback
+                      const originalText = copyTextBtn.innerHTML;
+                      copyTextBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                      setTimeout(() => {
+                        copyTextBtn.innerHTML = originalText;
+                      }, 2000);
+                    }).catch(err => {
+                      console.error('Failed to copy text:', err);
+                      const originalText = copyTextBtn.innerHTML;
+                      copyTextBtn.innerHTML = '<i class="fas fa-times"></i> Failed';
+                      setTimeout(() => {
+                        copyTextBtn.innerHTML = originalText;
+                      }, 2000);
+                    });
+                  }
+                });
+              }
+              
+              if (saveTextBtn) {
+                saveTextBtn.addEventListener('click', function() {
+                  if (codeTextInput && codeTextInput.value.trim()) {
+                    try {
+                      // Create a blob with the text content
+                      const blob = new Blob([codeTextInput.value], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      
+                      // Create a temporary link element to trigger download
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'gnosis_wraith_text_' + Date.now() + '.txt';
+                      document.body.appendChild(a);
+                      a.click();
+                      
+                      // Clean up
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      
+                      // Provide visual feedback
+                      const originalText = saveTextBtn.innerHTML;
+                      saveTextBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+                      setTimeout(() => {
+                        saveTextBtn.innerHTML = originalText;
+                      }, 2000);
+                    } catch (err) {
+                      console.error('Failed to save text:', err);
+                      const originalText = saveTextBtn.innerHTML;
+                      saveTextBtn.innerHTML = '<i class="fas fa-times"></i> Failed';
+                      setTimeout(() => {
+                        saveTextBtn.innerHTML = originalText;
+                      }, 2000);
+                    }
+                  }
+                });
+              }
+            });
+          </script>
+          
+          <!-- Styled OS tabs -->
+          <div class="os-tabs" style="display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+            <div id="mac-tab" class="os-tab active" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent;">
+              <i class="fab fa-apple"></i> macOS / Linux
+            </div>
+            <div id="windows-tab" class="os-tab" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent;">
+              <i class="fab fa-windows"></i> Windows PowerShell
+            </div>
+            <div id="text-input-tab" class="os-tab" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent;">
+              <i class="fas fa-wand-magic-sparkles"></i> Ask Wraith
             </div>
           </div>
-
-          <div class="code-section">
-            <h3>Python Code for Web Crawling</h3>
-            <p class="code-explanation">
-              This function sends a crawl request to Gnosis Wraith with
-              configurable options including JavaScript rendering and LLM
-              integration. It processes the response to extract titles and text
-              content from the crawled pages.
-            </p>
-            <div class="code-container">
+          
+          <!-- Add this right after the OS tabs section -->
+          <div id="text-input-examples" style="display: none;">
+  
+            <!-- Search box for code examples -->
+            <div class="ghost-search-box" style="max-width: 750px; margin: 0 auto 20px;">
+              <i class="fas fa-code ghost-search-icon"></i>
+              <input
+                type="text"
+                id="code-query"
+                placeholder="What code would you like to see? (e.g., 'python web scraper with BeautifulSoup')"
+                autocomplete="off"
+              />
+              <button id="ask-wraith-btn" class="ghost-search-button" title="Generate Code">
+                <i class="fas fa-wand-magic-sparkles"></i>
+              </button>
+            </div>
+            
+            <!-- Code output container with shimmer effect -->
+            <div id="code-output-container" class="code-container" style="position: relative; margin-top: 20px; border-radius: 8px; overflow: hidden;">
               <button class="copy-btn" title="Copy to clipboard">
                 <i class="fas fa-copy"></i>
               </button>
-              <pre
-                class="language-python"
-                style="font-size: 0.75em"
-              ><code>
+              
+              <pre class="code-block" id="code-output"><code class="language-python">#!/usr/bin/env python3
+"""
+Basic example of using the Gnosis Wraith API to crawl a website.
+"""
 import requests
 import json
 
-def crawl_url_with_gnosis_wraith(url, javascript_enabled=False, take_screenshot=True, ocr_extraction=True, 
-                               markdown_extraction="enhanced", llm_provider=None, llm_token=None):
+# URL of your Gnosis Wraith server
+SERVER_URL = "http://localhost:5678"  # Change this to match your server
+
+def crawl_website(url, take_screenshot=True, javascript_enabled=False):
     """
-    Crawl a URL with Gnosis Wraith and get the extracted text and optionally LLM summary.
+    Crawl a website using the Gnosis Wraith API.
     
     Args:
         url (str): The URL to crawl
-        javascript_enabled (bool): Whether to enable JavaScript for the crawl
-        take_screenshot (bool): Whether to capture a screenshot
-        ocr_extraction (bool): Whether to extract text using OCR
-        markdown_extraction (str): Markdown extraction mode - "enhanced", "basic", or "none"
-        llm_provider (str, optional): LLM provider to use for summarization
-        llm_token (str, optional): API token for the LLM provider
+        take_screenshot (bool): Whether to take a screenshot
+        javascript_enabled (bool): Whether to enable JavaScript during crawling
         
     Returns:
-        dict: API response with crawl results
+        dict: The API response
     """
-    api_url = "http://localhost:5678/api/crawl"
+    endpoint = f"{SERVER_URL}/api/crawl"
     
+    # Configure the request payload
     payload = {
         "url": url,
-        "javascript_enabled": javascript_enabled,
+        "title": f"Crawl Report: {url}",
         "take_screenshot": take_screenshot,
-        "ocr_extraction": ocr_extraction,
-        "markdown_extraction": markdown_extraction,
-        "output_format": "markdown"
+        "javascript_enabled": javascript_enabled,
+        "ocr_extraction": False,
+        "markdown_extraction": "enhanced"
     }
     
-    # Add LLM configuration if provided
-    if llm_provider and llm_token:
-        payload["llm_provider"] = llm_provider
-        payload["llm_token"] = llm_token
+    # Make the API request
+    response = requests.post(endpoint, json=payload)
     
-    try:
-        response = requests.post(
-            api_url,
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(payload)
-        )
-        response.raise_for_status()
+    # Check if the request was successful
+    if response.status_code == 200:
         return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Error during crawl: {e}")
-        return None
-
-# Example usage
-if __name__ == "__main__":
-    result = crawl_url_with_gnosis_wraith(
-        url="https://example.com",
-        javascript_enabled=True,
-        take_screenshot=True,
-        ocr_extraction=True,
-        markdown_extraction="enhanced"
-    )
-    
-    if result and result.get("success"):
-        print(f"Processed {len(result['results'])} URLs")
-        
-        # Print first result details
-        if result['results']:
-            first_result = result['results'][0]
-            print(f"Title: {first_result.get('title')}")
-            print(f"Extract: {first_result.get('markdown', first_result.get('extracted_text', ''))[:100]}...")
     else:
-        print("Crawl failed")</code></pre>
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return {"success": False, "error": f"API request failed with status code {response.status_code}"}
+
+def main():
+    # Example usage
+    url_to_crawl = "https://news.ycombinator.com/"
+    print(f"Crawling {url_to_crawl}...")
+    
+    # Call the API
+    result = crawl_website(url_to_crawl)
+    
+    # Check if the crawl was successful
+    if result.get("success"):
+        print("Crawl successful!")
+        
+        # Print details about the results
+        for item in result.get("results", []):
+            print(f"\nTitle: {item.get('title', 'No title')}")
+            
+            # Check if a screenshot was taken
+            if "screenshot" in item:
+                print(f"Screenshot: {SERVER_URL}/screenshots/{item['screenshot']}")
+            
+            # Print a snippet of the extracted text if available
+            if "extracted_text" in item:
+                text_preview = item["extracted_text"][:100] + "..." if len(item["extracted_text"]) > 100 else item["extracted_text"]
+                print(f"Text preview: {text_preview}")
+        
+        # Print the report URL if available
+        if "report_path" in result:
+            print(f"\nFull report: {SERVER_URL}/reports/{result['report_path']}")
+            print(f"HTML report: {SERVER_URL}/reports/{result['report_path'].replace('.md', '.html')}")
+    else:
+        print(f"Crawl failed: {result.get('error', 'Unknown error')}")
+
+if __name__ == "__main__":
+    main()</code></pre>
+            </div>
+            
+            <div class="text-input-controls" style="margin-top: 20px;">
+              <div>
+                <button class="text-input-btn clear" id="clear-text-btn">
+                  <i class="fas fa-trash-alt"></i> Clear
+                </button>
+              </div>
+              <div>
+                <button class="text-input-btn" id="copy-text-btn">
+                  <i class="fas fa-copy"></i> Copy
+                </button>
+                <button class="text-input-btn" id="save-text-btn" style="margin-left: 10px; width: auto;">
+                  <i class="fas fa-save"></i> Save
+                </button>
+              </div>
             </div>
           </div>
+          
+          <style>
+            .os-tab.active {
+              border-bottom-color: #6c63ff !important;
+              color: #6c63ff;
+              font-weight: bold;
+            }
+            
+            .text-input-container {
+              padding: 15px;
+              background-color: var(--card-bg);
+              border-radius: 8px;
+              margin-bottom: 20px;
+            }
+            
+            .text-input-container textarea {
+              width: 100%;
+              min-height: 200px;
+              font-family: 'Consolas', 'Monaco', monospace;
+              font-size: 14px;
+              line-height: 1.5;
+              padding: 15px;
+              border-radius: 5px;
+              border: 1px solid var(--border-color);
+              background-color: #1e1e1e;
+              color: #d4d4d4;
+              resize: vertical;
+            }
+            
+            .text-input-controls {
+              display: flex;
+              justify-content: space-between;
+              margin-top: 10px;
+            }
+            
+            .text-input-btn {
+              background-color: #6c63ff;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              padding: 8px 16px;
+              cursor: pointer;
+              font-weight: 500;
+              transition: all 0.2s;
+              width: auto;
+              max-width: 120px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            
+            .text-input-btn:hover {
+              background-color: #5a52d5;
+            }
+            
+            .text-input-btn.clear {
+              background-color: #f1f1f1;
+              color: #333;
+            }
+            
+            .text-input-btn.clear:hover {
+              background-color: #e0e0e0;
+            }
+            
+            .copy-btn {
+              position: absolute;
+              top: 5px;
+              right: 5px;
+              background-color: rgba(108, 99, 255, 0.1);
+              color: #6c63ff;
+              border: none;
+              border-radius: 4px;
+              padding: 5px 8px;
+              cursor: pointer;
+              z-index: 10;
+              transition: all 0.2s;
+            }
+            
+            .copy-btn:hover {
+              background-color: rgba(108, 99, 255, 0.2);
+            }
+            
+            .copy-btn.copied {
+              background-color: rgba(92, 184, 92, 0.2);
+              color: #5cb85c;
+            }
+            
+            pre.code-block {
+              background-color: #1e1e1e;
+              color: #d4d4d4;
+              padding: 15px;
+              border-radius: 5px;
+              overflow-x: auto;
+              position: relative;
+              margin: 15px 0;
+              font-family: 'Consolas', 'Monaco', monospace;
+              font-size: 14px;
+              line-height: 1.5;
+            }
+            
+            .example-section {
+              margin-bottom: 30px;
+            }
+            
+            .example-section h3 {
+              margin-bottom: 10px;
+            }
+            
+            .example-section p {
+              margin-bottom: 15px;
+            }
+            
+            .example-section .code-container {
+              position: relative;
+            }
+          </style>
+          
+          <!-- Mac/Linux Examples -->
+          <div id="mac-examples">
+            <div class="example-section">
+              <h3>Basic URL Crawl</h3>
+              <p>Crawl a webpage and retrieve the processed content in markdown format:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">curl -X POST http://localhost:5678/api/crawl \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "markdown_extraction": "enhanced",
+    "take_screenshot": true
+  }'</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Upload an Image for OCR</h3>
+              <p>Upload an image file and extract text using OCR:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">curl -X POST http://localhost:5678/api/upload \
+  -F "image=@/path/to/your/image.png" \
+  -F "title=My OCR Analysis"</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Advanced Crawl with JavaScript</h3>
+              <p>Crawl a page with JavaScript rendering enabled and OCR extraction:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">curl -X POST http://localhost:5678/api/crawl \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "javascript_enabled": true,
+    "take_screenshot": true,
+    "ocr_extraction": true,
+    "markdown_extraction": "enhanced",
+    "title": "JavaScript-Rendered Content Analysis"
+  }'</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Delete a Report</h3>
+              <p>Delete a previously generated report:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">curl -X DELETE http://localhost:5678/api/reports/report_filename.md</pre>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Windows PowerShell Examples -->
+          <div id="windows-examples" style="display: none;">
+            <div class="example-section">
+              <h3>Basic URL Crawl</h3>
+              <p>Crawl a webpage and retrieve the processed content in markdown format:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">$body = @{
+    url = "https://example.com"
+    markdown_extraction = "enhanced"
+    take_screenshot = $true
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:5678/api/crawl" -Method Post -Body $body -ContentType "application/json"</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Upload an Image for OCR</h3>
+              <p>Upload an image file and extract text using OCR:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">$filePath = "C:\path\to\your\image.png"
+$fileBytes = [System.IO.File]::ReadAllBytes($filePath)
+$fileEnc = [System.Text.Encoding]::GetEncoding('UTF-8').GetString($fileBytes)
+$boundary = [System.Guid]::NewGuid().ToString()
+$LF = "`r`n"
+
+$bodyLines = (
+    "--$boundary",
+    "Content-Disposition: form-data; name=`"image`"; filename=`"$(Split-Path $filePath -Leaf)`"",
+    "Content-Type: application/octet-stream$LF",
+    $fileEnc,
+    "--$boundary",
+    "Content-Disposition: form-data; name=`"title`"$LF",
+    "My OCR Analysis",
+    "--$boundary--$LF"
+) -join $LF
+
+Invoke-RestMethod -Uri "http://localhost:5678/api/upload" -Method Post -Body $bodyLines -ContentType "multipart/form-data; boundary=$boundary"</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Advanced Crawl with JavaScript</h3>
+              <p>Crawl a page with JavaScript rendering enabled and OCR extraction:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">$body = @{
+    url = "https://example.com"
+    javascript_enabled = $true
+    take_screenshot = $true
+    ocr_extraction = $true
+    markdown_extraction = "enhanced"
+    title = "JavaScript-Rendered Content Analysis"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:5678/api/crawl" -Method Post -Body $body -ContentType "application/json"</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Delete a Report</h3>
+              <p>Delete a previously generated report:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">Invoke-RestMethod -Uri "http://localhost:5678/api/reports/report_filename.md" -Method Delete</pre>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Copy button functionality -->
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              const copyButtons = document.querySelectorAll('.copy-btn');
+              copyButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                  const codeBlock = this.nextElementSibling;
+                  const codeText = codeBlock.textContent;
+                  
+                  navigator.clipboard.writeText(codeText).then(() => {
+                    // Visual feedback
+                    this.classList.add('copied');
+                    
+                    // Store original content
+                    const originalHTML = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    
+                    // Revert after timeout
+                    setTimeout(() => {
+                      this.innerHTML = originalHTML;
+                      this.classList.remove('copied');
+                    }, 2000);
+                  }).catch(err => {
+                    console.error('Failed to copy code:', err);
+                    this.innerHTML = '<i class="fas fa-times"></i> Failed';
+                    
+                    setTimeout(() => {
+                      this.innerHTML = '<i class="fas fa-copy"></i>';
+                    }, 2000);
+                  });
+                });
+              });
+            });
+          </script>
         </section>
 
         <!-- Browser Extension Tab - UPDATED -->
         <section id="extension" class="tab-content card">
-          <h2>Browser Extension</h2>
           <div class="author-quote">
             <blockquote>
               "The study of exobiology is indeed a worthwhile endeavor, but to
@@ -600,91 +1928,149 @@ if __name__ == "__main__":
             </blockquote>
           </div>
           
-          <!-- New Feature Highlight Box -->
-          <div class="message info" style="margin-bottom: 30px;">
-            <h3 style="color: inherit; margin-top: 0;"><i class="fas fa-rocket"></i> New! DOM Capture Technology</h3>
-            <p style="margin-bottom: 0;">
-              Our extension now captures the complete DOM content directly from your browser, 
-              ensuring what you see is exactly what gets processed - including all JavaScript-generated content!
-            </p>
-          </div>
-          
-          <!-- Download button with improved styling - moved to top -->
-          <div class="download-container">
-            <!-- Extension Version Debug: {{ extension_version|default('Version not set') }} -->
-            <a
-              href="{{ url_for('serve_extension') }}"
-              class="btn primary download-btn"
-              download="gnosis-wraith-extension-{{ extension_version|default('unknown') }}.zip"
-            >
-              <i class="fas fa-download"></i> Download Extension v{{ extension_version|default('1.1.0') }}
-            </a>
-            <p class="download-version-info">Latest version with DOM capture technology</p>
-          </div>
+          <!-- Ghost-style feature highlight -->
+          <div class="ghost-search-container" style="max-width: 750px; margin: 0 auto; padding: 20px 0;">
+            <!-- Ghost-style feature card -->
+            <div class="ghost-control-card" style="margin-bottom: 25px; background: linear-gradient(135deg, rgba(108, 99, 255, 0.1) 0%, rgba(108, 99, 255, 0.05) 100%);">
+              <div class="ghost-control-header">
+                <div class="ghost-control-icon">
+                  <i class="fas fa-rocket"></i>
+                </div>
+                <h3 class="ghost-control-title">New! DOM Capture Technology</h3>
+              </div>
+              <p style="margin: 15px 0 5px 0; line-height: 1.5;">
+                Our extension now captures the complete DOM content directly from your browser, 
+                ensuring what you see is exactly what gets processed - including all JavaScript-generated content!
+              </p>
+              
+              <!-- Download button styled like the main crawl button -->
+              <div style="text-align: center; margin-top: 20px;">
+                <a
+                  href="{{ url_for('static', filename='downloads/gnosis-wraith-extension-' + extension_version + '.zip') }}?v={{ extension_version }}"
+                  class="ghost-crawl-btn"
+                  download="gnosis-wraith-extension-{{ extension_version }}.zip"
+                  style="text-decoration: none;"
+                >
+                  <i class="fas fa-download pulse-animation"></i>
+                  Download Extension v{{ extension_version }}
+                </a>
+                <p style="margin-top: 10px; font-size: 13px; color: #666;">Latest version with DOM capture technology</p>
+              </div>
+            </div>
 
-          <!-- Main Description with better styling -->
-          <div class="extension-container">
-            <p class="extension-description">
-              The Gnosis Wraith browser extension enhances your data collection capabilities with:
+          <!-- Main Description with ghost-styled controls -->
+          <div class="ghost-search-container" style="max-width: 850px; margin: 0 auto; padding: 20px 0;">
+            <p style="text-align: center; margin-bottom: 25px; font-size: 16px;">
+              The Gnosis Wraith browser extension enhances your data collection capabilities:
             </p>
             
-            <div class="feature-grid">
-              <div class="result-item">
-                <i class="fas fa-camera"></i>
-                <h4>Screenshot Capture</h4>
-                <p>Capture full pages or visible areas with a single click or keyboard shortcut</p>
+            <!-- Ghost-style feature grid -->
+            <div class="ghost-controls">
+              <!-- Feature 1 -->
+              <div class="ghost-control-card">
+                <div class="ghost-control-header">
+                  <div class="ghost-control-icon">
+                    <i class="fas fa-camera"></i>
+                  </div>
+                  <h3 class="ghost-control-title">Screenshot Capture</h3>
+                </div>
+                <p style="margin-top: 10px; font-size: 14px;">
+                  Capture full pages or visible areas with a single click or keyboard shortcut
+                </p>
               </div>
               
-              <div class="result-item">
-                <i class="fas fa-file-alt"></i>
-                <h4>Content Extraction</h4>
-                <p>Extract structured content from any webpage, preserving formatting and links</p>
+              <!-- Feature 2 -->
+              <div class="ghost-control-card">
+                <div class="ghost-control-header">
+                  <div class="ghost-control-icon">
+                    <i class="fas fa-file-alt"></i>
+                  </div>
+                  <h3 class="ghost-control-title">Content Extraction</h3>
+                </div>
+                <p style="margin-top: 10px; font-size: 14px;">
+                  Extract structured content from any webpage, preserving formatting and links
+                </p>
               </div>
               
-              <div class="result-item" style="text-align: center; margin-bottom: 0; background-color: var(--card-bg); color: var(--text-color);">
-                <i class="fas fa-brain" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 10px;"></i>
-                <h4>Intelligent Processing</h4>
-                <p>Auto-filter content to focus on what matters most in the page</p>
+              <!-- Feature 3 -->
+              <div class="ghost-control-card">
+                <div class="ghost-control-header">
+                  <div class="ghost-control-icon">
+                    <i class="fas fa-brain"></i>
+                  </div>
+                  <h3 class="ghost-control-title">Intelligent Processing</h3>
+                </div>
+                <p style="margin-top: 10px; font-size: 14px;">
+                  Auto-filter content to focus on what matters most in the page
+                </p>
               </div>
               
-              <div class="result-item" style="text-align: center; margin-bottom: 0; background-color: var(--card-bg); color: var(--text-color);">
-                <i class="fas fa-chart-line" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 10px;"></i>
-                <h4>Data Analysis</h4>
-                <p>Generate comprehensive reports with extracted text and metadata</p>
+              <!-- Feature 4 -->
+              <div class="ghost-control-card">
+                <div class="ghost-control-header">
+                  <div class="ghost-control-icon">
+                    <i class="fas fa-chart-line"></i>
+                  </div>
+                  <h3 class="ghost-control-title">Data Analysis</h3>
+                </div>
+                <p style="margin-top: 10px; font-size: 14px;">
+                  Generate comprehensive reports with extracted text and metadata
+                </p>
               </div>
               
-              <div class="result-item" style="text-align: center; margin-bottom: 0; background-color: var(--card-bg); color: var(--text-color);">
-                <i class="fas fa-search-plus" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 10px;"></i>
-                <h4>Search & Discussion</h4>
-                <p>Save pages for later search or use in collaborative discussions</p>
+              <!-- Feature 5 -->
+              <div class="ghost-control-card">
+                <div class="ghost-control-header">
+                  <div class="ghost-control-icon">
+                    <i class="fas fa-search-plus"></i>
+                  </div>
+                  <h3 class="ghost-control-title">Search & Discussion</h3>
+                </div>
+                <p style="margin-top: 10px; font-size: 14px;">
+                  Save pages for later search or use in collaborative discussions
+                </p>
               </div>
               
-              <div class="result-item" style="text-align: center; margin-bottom: 0; background-color: var(--card-bg); color: var(--text-color);">
-                <i class="fas fa-robot" style="font-size: 2rem; color: var(--primary-color); margin-bottom: 10px;"></i>
-                <h4>Intelligent Crawls</h4>
-                <p>Generate LLM summaries and insights from website content</p>
+              <!-- Feature 6 -->
+              <div class="ghost-control-card">
+                <div class="ghost-control-header">
+                  <div class="ghost-control-icon">
+                    <i class="fas fa-robot"></i>
+                  </div>
+                  <h3 class="ghost-control-title">Intelligent Crawls</h3>
+                </div>
+                <p style="margin-top: 10px; font-size: 14px;">
+                  Generate LLM summaries and insights from website content
+                </p>
               </div>
             </div>
           </div>
           
-          <!-- Improved Browser Tabs -->
-          <div class="result-item" style="padding: 25px 25px 15px 25px; background-color: var(--card-bg); color: var(--text-color);">
-            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">Installation Instructions</h3>
-            
-            <div class="browser-tabs">
-              <div class="browser-tab active" data-browser="chrome">
-                <i class="fab fa-chrome"></i> Chrome
+          <!-- Ghost-style browser instructions -->
+          <div class="ghost-search-container" style="max-width: 850px; margin: 0 auto; padding: 20px 0;">
+            <div class="ghost-control-card" style="margin-bottom: 25px;">
+              <div class="ghost-control-header">
+                <div class="ghost-control-icon">
+                  <i class="fas fa-download"></i>
+                </div>
+                <h3 class="ghost-control-title">Installation Instructions</h3>
               </div>
-              <div class="browser-tab" data-browser="firefox">
-                <i class="fab fa-firefox"></i> Firefox
+              
+              <!-- Ghost-styled browser tabs -->
+              <div class="ghost-radio-group" id="browser-radio-group" style="margin-top: 20px;">
+                <div class="ghost-radio-button ghost-radio-active" data-browser="chrome">
+                  <i class="fab fa-chrome"></i> Chrome
+                </div>
+                <div class="ghost-radio-button" data-browser="firefox">
+                  <i class="fab fa-firefox"></i> Firefox
+                </div>
+                <div class="ghost-radio-button" data-browser="edge">
+                  <i class="fab fa-edge"></i> Edge
+                </div>
+                <div class="ghost-radio-button" data-browser="safari">
+                  <i class="fab fa-safari"></i> Safari
+                </div>
               </div>
-              <div class="browser-tab" data-browser="edge">
-                <i class="fab fa-edge"></i> Edge
-              </div>
-              <div class="browser-tab" data-browser="safari">
-                <i class="fab fa-safari"></i> Safari
-              </div>
-            </div>
             
             <!-- Chrome Instructions -->
             <div class="browser-content active" id="chrome-instructions">
@@ -750,37 +2136,78 @@ if __name__ == "__main__":
             </div>
           </div>
           
-          <!-- Keyboard Shortcuts improved -->
-          <div class="result-item" style="padding: 25px; margin: 20px 0; background-color: var(--card-bg); color: var(--text-color);">
-            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">Keyboard Shortcuts</h3>
-            <p style="margin-bottom: 15px;">Once installed, you can use these keyboard shortcuts:</p>
-            <ul style="list-style-type: none; padding-left: 5px;">
-              <li style="margin-bottom: 10px; display: flex; align-items: center;"><i class="fas fa-keyboard" style="margin-right: 10px;"></i> <span class="shortcut-key">Alt</span> + <span class="shortcut-key">Shift</span> + <span class="shortcut-key">W</span> - Capture screenshot and save locally</li>
-              <li style="margin-bottom: 10px; display: flex; align-items: center;"><i class="fas fa-keyboard" style="color: var(--primary-color); margin-right: 10px;"></i> <span class="shortcut-key">Alt</span> + <span class="shortcut-key">Shift</span> + <span class="shortcut-key">U</span> - Capture screenshot and upload for processing</li>
-              <li style="margin-bottom: 10px; display: flex; align-items: center;"><i class="fas fa-keyboard" style="color: var(--primary-color); margin-right: 10px;"></i> <span class="shortcut-key">Alt</span> + <span class="shortcut-key">Shift</span> + <span class="shortcut-key">F</span> - Capture full page screenshot and save locally</li>
-              <li style="margin-bottom: 10px; display: flex; align-items: center;"><i class="fas fa-keyboard" style="color: var(--primary-color); margin-right: 10px;"></i> <span class="shortcut-key">Alt</span> + <span class="shortcut-key">Shift</span> + <span class="shortcut-key">A</span> - Capture full page screenshot and upload for processing</li>
-              <li style="margin-bottom: 10px; display: flex; align-items: center;"><i class="fas fa-keyboard" style="color: var(--primary-color); margin-right: 10px;"></i> <span class="shortcut-key">Alt</span> + <span class="shortcut-key">Shift</span> + <span class="shortcut-key">D</span> - Capture DOM content and process on server</li>
-            </ul>
-            <p style="margin-top: 15px; color: var(--text-color);">You can also right-click on any page or link and select options from the context menu.</p>
+          <!-- Ghost-style keyboard shortcuts -->
+          <div class="ghost-search-container" style="max-width: 850px; margin: 0 auto; padding: 20px 0;">
+            <div class="ghost-control-card" style="margin-bottom: 25px;">
+              <div class="ghost-control-header">
+                <div class="ghost-control-icon">
+                  <i class="fas fa-keyboard"></i>
+                </div>
+                <h3 class="ghost-control-title">Keyboard Shortcuts</h3>
+              </div>
+              
+              <p style="margin: 15px 0 10px 0; font-size: 14px;">Once installed, you can use these keyboard shortcuts:</p>
+              
+              <div style="background: var(--card-bg); border-radius: 8px; padding: 15px; margin-top: 10px; margin-bottom: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+                <ul style="list-style-type: none; padding-left: 5px; margin: 0;">
+                  <li style="margin-bottom: 12px; display: flex; align-items: center;">
+                    <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>W</kbd> 
+                    <span style="margin-left: 10px;">Capture screenshot and save locally</span>
+                  </li>
+                  <li style="margin-bottom: 12px; display: flex; align-items: center;">
+                    <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>U</kbd>
+                    <span style="margin-left: 10px;">Capture screenshot and upload for processing</span>
+                  </li>
+                  <li style="margin-bottom: 12px; display: flex; align-items: center;">
+                    <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd>
+                    <span style="margin-left: 10px;">Capture full page screenshot and save locally</span>
+                  </li>
+                  <li style="margin-bottom: 12px; display: flex; align-items: center;">
+                    <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>A</kbd>
+                    <span style="margin-left: 10px;">Capture full page screenshot and upload for processing</span>
+                  </li>
+                  <li style="margin-bottom: 0; display: flex; align-items: center;">
+                    <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>
+                    <span style="margin-left: 10px;">Capture DOM content and process on server</span>
+                  </li>
+                </ul>
+              </div>
+              
+              <p style="margin: 15px 0 5px 0; font-size: 13px; color: #666;">
+                <i class="fas fa-info-circle"></i> You can also right-click on any page or link and select options from the context menu.
+              </p>
+            </div>
           </div>
           
-          <!-- Server Configuration in proper container -->
-          <div class="result-item" style="padding: 25px; margin: 20px 0; background-color: var(--card-bg); color: var(--text-color);">
-            <h3 style="border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 20px;">Server Configuration</h3>
-            <p style="margin-bottom: 15px;">The extension connects to the Gnosis Wraith server running at <code>http://localhost:5678</code> by default.</p>
-            <p style="margin-bottom: 15px;">To change the server URL:</p>
-            <ol style="padding-left: 25px;">
-              <li>Click on the extension icon in your browser toolbar</li>
-              <li>Click on the <strong>"Settings"</strong> tab</li>
-              <li>Enter the new server URL</li>
-              <li>Click <strong>"Save Settings"</strong></li>
-            </ol>
+          <!-- Ghost-style server configuration -->
+          <div class="ghost-search-container" style="max-width: 850px; margin: 0 auto; padding: 0 0 20px 0;">
+            <div class="ghost-control-card">
+              <div class="ghost-control-header">
+                <div class="ghost-control-icon">
+                  <i class="fas fa-server"></i>
+                </div>
+                <h3 class="ghost-control-title">Server Configuration</h3>
+              </div>
+              
+              <p style="margin: 15px 0 10px 0; font-size: 14px;">
+                The extension connects to the Gnosis Wraith server running at <code style="background-color: rgba(108, 99, 255, 0.1); color: #6c63ff; padding: 2px 6px; border-radius: 4px;">http://localhost:5678</code> by default.
+              </p>
+              
+              <div style="background: var(--card-bg); border-radius: 8px; padding: 15px; margin-top: 10px; margin-bottom: 5px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+                <p style="margin-top: 0; font-weight: 500;">To change the server URL:</p>
+                <ol style="padding-left: 25px; margin-bottom: 0;">
+                  <li>Click on the extension icon in your browser toolbar</li>
+                  <li>Click on the <strong>"Settings"</strong> tab</li>
+                  <li>Enter the new server URL</li>
+                  <li>Click <strong>"Save Settings"</strong></li>
+                </ol>
+              </div>
+            </div>
           </div>
         </section>
 
         <!-- Crawl Philosophy Tab -->
         <section id="crawl-philosophy" class="tab-content card">
-          <h2>Seeing Philosophy</h2>
           <div class="author-quote">
             <blockquote>
               "Not everything that can be counted counts, and not everything
@@ -841,28 +2268,29 @@ if __name__ == "__main__":
 
         <!-- Crawl Results Section (Shared between tabs) -->
         <section id="crawl-results" class="card" style="display: none">
-          <h2>Crawl Results</h2>
-          <div id="results-summary"></div>
+          <div id="results-summary" style="font-size: 1.2em; margin-bottom: 15px; font-weight: bold;"></div>
           
           <!-- Add action buttons at the top -->
           <div id="results-actions-top" class="action-buttons" style="margin: 10px 0 15px 0; text-align: right;">
+            <a
+              id="html-link-top"
+              href="#"
+              class="btn primary"
+              style="margin-right: 5px;"
+              target="_blank"
+              title="View formatted HTML report with full styling"
+              >
+              <i class="fas fa-file-alt"></i> View HTML Report</a
+            >
             <a
               id="report-link-top"
               href="#"
               class="btn secondary"
               style="display: none; margin-right: 5px;"
               target="_blank"
+              title="View raw markdown report"
               >
-              <i class="fas fa-file-alt"></i> View Report</a
-            >
-            <a
-              id="html-link-top"
-              href="#"
-              class="btn primary"
-              style="display: none; margin-right: 5px;"
-              target="_blank"
-              >
-              <i class="fas fa-code"></i> View HTML</a
+              <i class="fas fa-code"></i> View Raw Report</a
             >
             <button
               id="delete-report-btn"
@@ -878,59 +2306,212 @@ if __name__ == "__main__":
           <!-- Keep the bottom actions too for convenience -->
           <div id="results-actions" style="margin-top: 20px;">
             <a
-              id="report-link"
+              id="html-link"
               href="#"
-              class="btn secondary"
+              class="btn primary"
               style="display: none"
               target="_blank"
               >View Report</a
             >
             <a
-              id="html-link"
+              id="report-link"
               href="#"
               class="btn secondary"
               style="display: none"
               target="_blank"
-              >View HTML</a
+              >View Raw Report</a
             >
           </div>
         </section>
       </main>
 
-      <footer>
-        <p>&copy; 2025 DeepBlue Dynamics. All rights reserved.</p>
-        <div class="nav-links">
-          <button
-            onclick="window.open('https://github.com/kordless/webwraith', '_blank')"
-            class="github-button"
-            title="GitHub Repository"
-          >
-            <i class="fab fa-github"></i>
-            <span class="star-count"
-              ><i class="fas fa-star"></i>
-              <span id="github-stars">178</span></span
-            >
-          </button>
+      <!-- Simple footer -->
+      <footer class="corporate-footer">
+        <div class="footer-container">
+          <!-- Logo and project description -->
+          <div class="footer-brand">
+            <div class="footer-logo">
+              <i class="fas fa-ghost"></i>
+              <span>Gnosis Wraith 👻</span>
+            </div>
+            <p class="copyright">&copy; 2025 Gnosis</p>
+          </div>
+          
+          <!-- Simplified navigation links -->
+          <div class="footer-links">
+            <div class="footer-col">
+              <h4>Product</h4>
+              <ul>
+                <li><a href="{{ url_for('pages.wraith') }}">Wraith</a></li>
+                <li><a href="#">Docs</a></li>
+                <li><a href="#">API</a></li>
+                <li><a href="#">Open on GitHub</a></li>
+              </ul>
+            </div>
+            
+            <div class="footer-col">
+              <h4>Company</h4>
+              <ul>
+                <li><a href="#">Home</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">License</a></li>
+                <li><a href="#">Terms</a></li>
+              </ul>
+            </div>
+          </div>
         </div>
       </footer>
+      
+      <!-- Simplified footer styles -->
+      <style>
+        .corporate-footer {
+          background-color: transparent;
+          color: var(--text-muted);
+          padding: 20px 0 15px;
+          margin-top: 30px;
+          border-top: 1px solid var(--border-color);
+        }
+        
+        .footer-container {
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 0 20px;
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+        }
+        
+        .footer-brand {
+          flex: 0 0 260px;
+          margin-bottom: 20px;
+        }
+        
+        .footer-logo {
+          display: flex;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+        
+        .footer-logo i {
+          font-size: 1.8rem;
+          color: #6c63ff;
+          margin-right: 10px;
+        }
+        
+        .footer-logo span {
+          font-size: 1.4rem;
+          font-weight: bold;
+          color: var(--text-color);
+        }
+        
+        .copyright {
+          font-size: 0.75rem;
+          color: var(--text-muted);
+        }
+        
+        .footer-links {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 30px;
+        }
+        
+        .footer-col {
+          flex: 0 0 120px;
+        }
+        
+        .footer-col h4 {
+          color: var(--text-color);
+          margin-bottom: 6px;
+          font-size: 1rem;
+          font-weight: 500;
+        }
+        
+        .footer-col ul {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+        
+        .footer-col ul li {
+          margin-bottom: 3px;
+        }
+        
+        .footer-col ul li a {
+          color: var(--text-muted);
+          text-decoration: none;
+          transition: color 0.2s ease;
+          font-size: 0.85rem;
+        }
+        
+        .footer-col ul li a:hover {
+          color: #6c63ff;
+        }
+        
+        /* Mobile responsive footer */
+        @media (max-width: 768px) {
+          .footer-container {
+            flex-direction: column;
+          }
+          
+          .footer-brand {
+            flex: 0 0 100%;
+            margin-bottom: 25px;
+            text-align: center;
+          }
+          
+          .footer-logo {
+            justify-content: center;
+          }
+          
+          .footer-links {
+            justify-content: center;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .footer-links {
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+          }
+          
+          .footer-col {
+            text-align: center;
+            flex: 0 0 100%;
+          }
+        }
+      </style>
     </div>
 
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}?v={{ range(10000, 99999) | random }}"></script>
+    <script src="{{ url_for('static', filename='js/upload.js') }}?v={{ range(10000, 99999) | random }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     
-    <!-- Script for browser tabs -->
+    <!-- Script for browser tabs with ghost-style -->
     <script>
       document.addEventListener('DOMContentLoaded', function() {
-        const browserTabs = document.querySelectorAll('.browser-tab');
+        // Set up browser tab radio buttons
+        const browserRadioButtons = document.querySelectorAll('#browser-radio-group .ghost-radio-button');
         const browserContents = document.querySelectorAll('.browser-content');
         
-        browserTabs.forEach(tab => {
-          tab.addEventListener('click', function() {
-            // Remove active class from all tabs
-            browserTabs.forEach(t => t.classList.remove('active'));
-            // Add active class to clicked tab
-            this.classList.add('active');
+        browserRadioButtons.forEach(button => {
+          button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            browserRadioButtons.forEach(b => {
+              b.classList.remove('ghost-radio-active');
+              // Make icons slightly transparent for inactive buttons
+              if (b.querySelector('i')) {
+                b.querySelector('i').style.opacity = '0.6';
+              }
+            });
+            
+            // Add active class to clicked button
+            this.classList.add('ghost-radio-active');
+            // Make icon fully opaque for active button
+            if (this.querySelector('i')) {
+              this.querySelector('i').style.opacity = '1';
+            }
             
             // Hide all content sections
             browserContents.forEach(content => content.classList.remove('active'));
@@ -938,6 +2519,19 @@ if __name__ == "__main__":
             // Show the selected content
             const browser = this.getAttribute('data-browser');
             document.getElementById(`${browser}-instructions`).classList.add('active');
+          });
+          
+          // Handle hover effects 
+          button.addEventListener('mouseenter', function() {
+            if (!this.classList.contains('ghost-radio-active') && this.querySelector('i')) {
+              this.querySelector('i').style.opacity = '0.8';
+            }
+          });
+          
+          button.addEventListener('mouseleave', function() {
+            if (!this.classList.contains('ghost-radio-active') && this.querySelector('i')) {
+              this.querySelector('i').style.opacity = '0.6';
+            }
           });
         });
       });

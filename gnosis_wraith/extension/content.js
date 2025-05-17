@@ -482,7 +482,7 @@ if (document.readyState === 'loading') {
   initialize();
 }
 
-// Function to capture full page (scrolling) - Simplified for brevity
+// Function to capture full page (scrolling)
 async function captureFullPage(sendToApi = false) {
   // Prevent multiple captures from running simultaneously
   if (isCapturing) {
@@ -499,8 +499,135 @@ async function captureFullPage(sendToApi = false) {
     // Hide UI elements first
     await hideUIElementsForCapture();
     
-    // [Rest of full page capture logic]
-    // Note: Full implementation omitted for brevity
+    // Get original scroll position to restore later
+    const originalScrollTop = window.scrollY || document.documentElement.scrollTop;
+    const originalScrollLeft = window.scrollX || document.documentElement.scrollLeft;
+    
+    // Get the full page dimensions
+    const fullHeight = Math.max(
+      document.body.scrollHeight,
+      document.body.offsetHeight,
+      document.documentElement.clientHeight,
+      document.documentElement.scrollHeight,
+      document.documentElement.offsetHeight
+    );
+    
+    const fullWidth = Math.max(
+      document.body.scrollWidth,
+      document.body.offsetWidth,
+      document.documentElement.clientWidth,
+      document.documentElement.scrollWidth,
+      document.documentElement.offsetWidth
+    );
+    
+    // Get viewport dimensions
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    
+    // Calculate the number of screenshots needed
+    const numRows = Math.ceil(fullHeight / viewportHeight);
+    const numCols = Math.ceil(fullWidth / viewportWidth);
+    const totalScreenshots = numRows * numCols;
+    
+    updateCapturingIndicator(`Preparing to capture full page (${numRows}x${numCols})...`, 5);
+    
+    // Notify background script to begin the process
+    chrome.runtime.sendMessage({
+      action: 'beginFullPageCapture',
+      dimensions: {
+        fullWidth,
+        fullHeight,
+        viewportWidth,
+        viewportHeight,
+        numCols,
+        numRows
+      },
+      url: window.location.href,
+      title: document.title,
+      sendToApi
+    });
+    
+    // Wait for a short timeout to ensure background script is ready
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Array to store screenshots
+    const screenshots = [];
+    let screenshotCount = 0;
+    
+    // Take screenshots by scrolling through the page
+    for (let row = 0; row < numRows; row++) {
+      for (let col = 0; col < numCols; col++) {
+        // Calculate scroll position
+        const scrollTop = row * viewportHeight;
+        const scrollLeft = col * viewportWidth;
+        
+        // Scroll to position
+        window.scrollTo(scrollLeft, scrollTop);
+        
+        // Wait for rendering
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Calculate progress
+        screenshotCount++;
+        const progress = Math.floor((screenshotCount / totalScreenshots) * 70) + 5; // 5-75% progress
+        updateCapturingIndicator(`Capturing screen ${screenshotCount}/${totalScreenshots}...`, progress);
+        
+        // Take screenshot of visible area
+        chrome.runtime.sendMessage({
+          action: 'captureVisibleArea',
+          position: { row, col, scrollTop, scrollLeft },
+          sendToApi
+        }, (response) => {
+          if (response && response.success) {
+            screenshots.push({
+              dataUrl: response.dataUrl,
+              position: { row, col, scrollTop, scrollLeft }
+            });
+          }
+        });
+        
+        // Wait a bit to ensure screenshot is processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    // Restore original scroll position
+    window.scrollTo(originalScrollLeft, originalScrollTop);
+    
+    updateCapturingIndicator('Processing full page screenshot...', 80);
+    
+    // Send the completed message to background script for stitching
+    chrome.runtime.sendMessage({
+      action: 'finishFullPageCapture',
+      url: window.location.href,
+      title: document.title,
+      dimensions: {
+        fullWidth,
+        fullHeight,
+        viewportWidth,
+        viewportHeight,
+        numCols,
+        numRows
+      },
+      sendToApi
+    }, (response) => {
+      if (response && response.success) {
+        updateCapturingIndicator('Full page screenshot complete!', 100);
+        // Restore UI elements
+        restoreUIElements();
+        
+        // Show success message
+        const statusMessage = sendToApi ? 
+          'Full page screenshot sent for processing!' : 
+          'Full page screenshot saved!';
+        
+        showSuccessAndHide(statusMessage);
+      } else {
+        // Show error message
+        restoreUIElements();
+        showErrorAndHide(`Error: ${response?.error || 'Failed to process full page screenshot'}`);
+      }
+    });
     
   } catch (error) {
     console.error('Error in full page capture process:', error);

@@ -6,13 +6,13 @@
     <title>Gnosis Wraith - Reportage</title>
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/styles.css') }}"
+      href="{{ url_for('static', filename='css/styles.css') }}?v={{ range(10000, 99999) | random }}"
     />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
-    
+
     <!-- Favicon links -->
     <link
       rel="icon"
@@ -35,6 +35,11 @@
       type="image/x-icon"
     />
     <link
+      rel="icon"
+      type="image/svg+xml"
+      href="{{ url_for('static', filename='images/favicon.svg') }}"
+    />
+    <link
       rel="apple-touch-icon"
       sizes="180x180"
       href="{{ url_for('static', filename='images/favicon-128x128.png') }}"
@@ -44,7 +49,7 @@
     <nav class="navbar">
       <div class="logo">
         <a href="{{ url_for('index') }}">
-          <span>Gnosis Wraith 👻</span>
+          <span>Gnosis Wraith <span id="flying-ghost" class="ghost-emoji" title="Click me or press Ctrl+G to make me fly!">👻</span></span>
         </a>
       </div>
       <ul class="nav-menu">
@@ -59,6 +64,296 @@
         </li>
       </ul>
     </nav>
+    
+    <!-- Ghost animation styles and script -->
+    <style>
+      .ghost-emoji {
+        display: inline-block;
+        position: relative;
+        transition: transform 0.2s ease;
+        z-index: 2;
+      }
+      
+      /* Multiple flight patterns */
+      @keyframes flyRight {
+        0% {
+          transform: translateX(0) translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        /* Move steadily first */
+        40% {
+          transform: translateX(calc(30vw)) translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        /* Accelerate and start fading */
+        80% {
+          transform: translateX(calc(70vw)) translateY(0) scale(0.9);
+          opacity: 0.7;
+        }
+        
+        /* Final acceleration and fade out */
+        100% {
+          transform: translateX(calc(110vw)) translateY(0) scale(0.7);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes flyUp {
+        0% {
+          transform: translateX(0) translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        /* Float up slowly first */
+        40% {
+          transform: translateX(20px) translateY(-20vh) scale(1);
+          opacity: 1;
+        }
+        
+        /* Continue rising and fading */
+        80% {
+          transform: translateX(40px) translateY(-60vh) scale(0.9);
+          opacity: 0.6;
+        }
+        
+        /* Final fade out off the top */
+        100% {
+          transform: translateX(60px) translateY(-110vh) scale(0.7);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes flyLeft {
+        0% {
+          transform: translateX(0) translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        /* Move steadily first */
+        40% {
+          transform: translateX(-30vw) translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        /* Accelerate and start fading */
+        80% {
+          transform: translateX(-70vw) translateY(0) scale(0.9);
+          opacity: 0.7;
+        }
+        
+        /* Final acceleration and fade out */
+        100% {
+          transform: translateX(-110vw) translateY(0) scale(0.7);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes fadeOut {
+        0% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        
+        50% {
+          transform: scale(1.1);
+          opacity: 0.8;
+        }
+        
+        100% {
+          transform: scale(0.5);
+          opacity: 0;
+        }
+      }
+      
+      .ghost-flying {
+        position: fixed;
+        z-index: 999;
+      }
+      
+      .ghost-flying-right {
+        animation: flyRight 2.5s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+      }
+      
+      .ghost-flying-left {
+        animation: flyLeft 2.5s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+      }
+      
+      .ghost-flying-up {
+        animation: flyUp 3s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+      }
+      
+      .ghost-flying-fade {
+        animation: fadeOut 2s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+      }
+      
+      /* Prevent ghost animation from messing with layout */
+      .ghost-placeholder {
+        opacity: 0;
+        visibility: hidden;
+      }
+    </style>
+    
+    <script>
+      // Wait until DOM is loaded
+      document.addEventListener('DOMContentLoaded', function() {
+        const ghost = document.getElementById('flying-ghost');
+        if (!ghost) return;
+        
+        // Clean up any existing ghost clones (in case of page refresh during animation)
+        const existingClones = document.querySelectorAll('[id^="flying-ghost-clone"]');
+        existingClones.forEach(clone => {
+          try {
+            document.body.removeChild(clone);
+          } catch (e) {
+            console.log("Error removing clone:", e);
+          }
+        });
+        
+        // Function to make the ghost fly
+        function makeGhostFly() {
+          // Don't start a new animation if one is in progress
+          if (document.querySelector('[id^="flying-ghost-clone"]')) return;
+          
+          // Create a clone to animate (this prevents layout shifts)
+          const ghostClone = ghost.cloneNode(true);
+          const cloneId = 'flying-ghost-clone-' + Date.now();
+          ghostClone.id = cloneId;
+          document.body.appendChild(ghostClone);
+          
+          // Position the clone exactly where the original ghost is
+          const ghostRect = ghost.getBoundingClientRect();
+          ghostClone.style.position = 'fixed';
+          ghostClone.style.top = ghostRect.top + 'px';
+          ghostClone.style.left = ghostRect.left + 'px';
+          ghostClone.style.zIndex = '999';
+          
+          // Make the ghost temporarily invisible (but maintain space)
+          ghost.classList.add('ghost-placeholder');
+          
+          // Choose a random flight pattern
+          ghostClone.classList.add('ghost-flying');
+          const flightPatterns = ['ghost-flying-right', 'ghost-flying-left', 'ghost-flying-up', 'ghost-flying-fade'];
+          const randomPattern = flightPatterns[Math.floor(Math.random() * flightPatterns.length)];
+          ghostClone.classList.add(randomPattern);
+          
+          // Set animation duration based on the pattern
+          let animationDuration = 0;
+          switch(randomPattern) {
+            case 'ghost-flying-right':
+            case 'ghost-flying-left':
+              animationDuration = 2500; // 2.5 seconds
+              break;
+            case 'ghost-flying-up':
+              animationDuration = 3000; // 3 seconds
+              break;
+            case 'ghost-flying-fade':
+              animationDuration = 2000; // 2 seconds
+              break;
+            default:
+              animationDuration = 3000; // Default 3 seconds
+          }
+          
+          // Clean up after animation
+          ghostClone.addEventListener('animationend', () => cleanupGhost(cloneId, animationDuration));
+          
+          // Backup cleanup in case the animationend event doesn't fire
+          const cleanupTimeout = setTimeout(() => cleanupGhost(cloneId, animationDuration), animationDuration + 1000);
+          
+          function cleanupGhost(id, duration) {
+            // Prevent duplicate cleanup
+            const cloneElement = document.getElementById(id);
+            if (!cloneElement) return;
+            
+            clearTimeout(cleanupTimeout);
+            
+            // Remove the clone
+            try {
+              document.body.removeChild(cloneElement);
+            } catch (e) {
+              console.log("Error removing clone:", e);
+            }
+            
+            // Make the original ghost visible again, but after a short delay
+            // to prevent any visual "bounce back" effect
+            setTimeout(() => {
+              ghost.classList.remove('ghost-placeholder');
+              
+              // Add a small wiggle effect as the ghost "reappears"
+              ghost.style.animation = 'wiggle 0.5s ease';
+              setTimeout(() => {
+                ghost.style.animation = '';
+              }, 500);
+            }, 100);
+          }
+        }
+        
+        // Add a wiggle effect for when the ghost reappears
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes wiggle {
+            0% { transform: translateX(0) rotate(0); }
+            25% { transform: translateX(-3px) rotate(-5deg); }
+            50% { transform: translateX(3px) rotate(5deg); }
+            75% { transform: translateX(-2px) rotate(-3deg); }
+            100% { transform: translateX(0) rotate(0); }
+          }
+        `;
+        document.head.appendChild(style);
+        
+        // Start random ghost flights
+        function scheduleRandomFlight() {
+          // Random time between 3 and 8 minutes (180000 - 480000 ms)
+          // But occasionally (5% chance) appear quickly (3-10 seconds)
+          let randomDelay;
+          
+          if (Math.random() < 0.05) {
+            // Quick reappearance (5% chance)
+            randomDelay = Math.floor(Math.random() * 7000) + 3000; // 3-10 seconds
+            console.log("Ghost will reappear quickly in " + (randomDelay/1000) + " seconds");
+          } else {
+            // Normal long delay
+            randomDelay = Math.floor(Math.random() * 300000) + 180000; // 3-8 minutes
+            console.log("Ghost will hibernate for " + (randomDelay/60000).toFixed(1) + " minutes");
+          }
+          
+          setTimeout(() => {
+            makeGhostFly();
+            scheduleRandomFlight(); // Schedule the next flight
+          }, randomDelay);
+        }
+        
+        // Also trigger on clicking the ghost
+        ghost.addEventListener('click', function(e) {
+          // Don't navigate when clicking the ghost
+          e.preventDefault();
+          e.stopPropagation();
+          makeGhostFly();
+        });
+        
+        // Add keyboard shortcut: Ctrl+G to trigger ghost flight
+        document.addEventListener('keydown', function(e) {
+          // Check if Ctrl+G is pressed
+          if (e.ctrlKey && (e.key === 'g' || e.key === 'G')) {
+            // Prevent default browser behavior (which might be "find next")
+            e.preventDefault();
+            
+            // Log to console to verify shortcut is working
+            console.log("Ctrl+G shortcut detected - ghost should fly now!");
+            
+            // Force immediate ghost flight
+            makeGhostFly();
+            
+            // Return false to ensure the browser doesn't handle this key combination
+            return false;
+          }
+        });
+        
+        // Start the random flight scheduling
+        scheduleRandomFlight();
+      });
+    </script>
 
     <div class="container">
       <div class="card">
@@ -147,9 +442,162 @@
       </div>
     </div>
 
-    <footer>
-      <p>&copy; 2025 DeepBlue Dynamics. All rights reserved.</p>
+    <!-- Simple footer -->
+    <footer class="corporate-footer">
+      <div class="footer-container">
+        <!-- Logo and project description -->
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <i class="fas fa-ghost"></i>
+            <span>Gnosis Wraith 👻</span>
+          </div>
+          <p class="copyright">&copy; 2025 Gnosis</p>
+        </div>
+        
+        <!-- Simplified navigation links -->
+        <div class="footer-links">
+          <div class="footer-col">
+            <h4>Product</h4>
+            <ul>
+              <li><a href="{{ url_for('wraith') }}">Wraith</a></li>
+              <li><a href="#">Docs</a></li>
+              <li><a href="#">API</a></li>
+              <li><a href="#">Open on GitHub</a></li>
+            </ul>
+          </div>
+          
+          <div class="footer-col">
+            <h4>Company</h4>
+            <ul>
+              <li><a href="#">Home</a></li>
+              <li><a href="#">About</a></li>
+              <li><a href="#">License</a></li>
+              <li><a href="#">Terms</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </footer>
+    
+    <!-- Simplified footer styles -->
+    <style>
+      .corporate-footer {
+        background-color: transparent;
+        color: var(--text-muted);
+        padding: 20px 0 15px;
+        margin-top: 30px;
+        border-top: 1px solid var(--border-color);
+      }
+      
+      .footer-container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 0 20px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+      }
+      
+      .footer-brand {
+        flex: 0 0 260px;
+        margin-bottom: 20px;
+      }
+      
+      .footer-logo {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      
+      .footer-logo i {
+        font-size: 1.8rem;
+        color: #6c63ff;
+        margin-right: 10px;
+      }
+      
+      .footer-logo span {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: var(--text-color);
+      }
+      
+      .copyright {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
+      
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+      }
+      
+      .footer-col {
+        flex: 0 0 120px;
+      }
+      
+      .footer-col h4 {
+        color: var(--text-color);
+        margin-bottom: 6px;
+        font-size: 1rem;
+        font-weight: 500;
+      }
+      
+      .footer-col ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      
+      .footer-col ul li {
+        margin-bottom: 3px;
+      }
+      
+      .footer-col ul li a {
+        color: var(--text-muted);
+        text-decoration: none;
+        transition: color 0.2s ease;
+        font-size: 0.85rem;
+      }
+      
+      .footer-col ul li a:hover {
+        color: #6c63ff;
+      }
+      
+      /* Mobile responsive footer */
+      @media (max-width: 768px) {
+        .footer-container {
+          flex-direction: column;
+        }
+        
+        .footer-brand {
+          flex: 0 0 100%;
+          margin-bottom: 25px;
+          text-align: center;
+        }
+        
+        .footer-logo {
+          justify-content: center;
+        }
+        
+        .footer-links {
+          justify-content: center;
+        }
+      }
+      
+      @media (max-width: 480px) {
+        .footer-links {
+          flex-direction: column;
+          align-items: center;
+          gap: 20px;
+        }
+        
+        .footer-col {
+          text-align: center;
+          flex: 0 0 100%;
+        }
+      }
+    </style>
 
     <script src="{{ url_for('static', filename='js/reports.js') }}"></script>
   </body>

@@ -348,3 +348,83 @@ async def update_settings():
             "success": False,
             "error": str(e)
         }), 500
+
+
+@api_bp.route('/suggest', methods=['POST'])
+async def suggest_url():
+    """Suggest a URL based on a query.
+    
+    This is a stub endpoint that will be expanded to use AI-based suggestions.
+    Currently, it:
+    1. Validates and returns URLs directly if they're already in the query
+    2. Matches text queries against a predefined list of topics
+    3. Returns a random source if no match is found
+    
+    Future implementation will integrate with ai/anthropic.py for Claude-assisted matching.
+    """
+    try:
+        # Dictionary mapping topics to URLs
+        news_sources = {
+            "tech news": "https://techcrunch.com",
+            "ai news": "https://www.theregister.com/ai/",
+            "cybersecurity": "https://krebsonsecurity.com",
+            "programming": "https://dev.to",
+            "opensource": "https://opensource.com",
+            "hardware": "https://tomshardware.com",
+            "startup": "https://www.crunchbase.com/news",
+        }
+        
+        # Get query from request
+        data = await request.get_json()
+        query = data.get('query', '').strip()
+        query_lower = query.lower()
+        
+        logger.info(f"URL suggestion requested for query: {query}")
+        
+        # First, check if the query is already a URL
+        import re
+        url_pattern = re.compile(
+            r'^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$'
+        )
+        
+        if url_pattern.match(query):
+            # It's a URL - validate it has a scheme
+            suggested_url = query
+            if not suggested_url.startswith('http'):
+                suggested_url = 'https://' + suggested_url
+            match_type = "url"
+            logger.info(f"Query is a URL: {suggested_url}")
+        
+        # Check if query matches any predefined sources
+        elif query_lower in news_sources:
+            suggested_url = news_sources[query_lower]
+            match_type = "exact"
+            logger.info(f"Exact match found for '{query_lower}': {suggested_url}")
+        
+        else:
+            # For now, just return a random source if no match
+            # In the future, this will use Claude to analyze the query and suggest the best match
+            import random
+            suggested_url = random.choice(list(news_sources.values()))
+            match_type = "random"
+            logger.info(f"No match found, returning random URL: {suggested_url}")
+            
+            # TODO: Future implementation will use Claude like this:
+            # from ai.anthropic import process_with_anthropic
+            # AI analysis would go here to determine the best match
+            
+        return jsonify({
+            "success": True,
+            "query": query,
+            "suggested_url": suggested_url,
+            "match_type": match_type,
+            "source": "static-mapping" if match_type != "url" else "direct-url",  # Will change to "ai-assisted" in the future
+            "validated": True
+        })
+    
+    except Exception as e:
+        logger.error(f"Suggestion API error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500

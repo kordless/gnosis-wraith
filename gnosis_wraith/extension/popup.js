@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const fullPageCheckbox = document.getElementById('full-page-checkbox');
     const serverUrlInput = document.getElementById('server-url-input');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
+    const sendToApiCheckbox = document.getElementById('send-to-api-checkbox');
+    const urlSendToApiCheckbox = document.getElementById('url-send-to-api-checkbox');
+    const urlUseBrowserCheckbox = document.getElementById('url-use-browser-checkbox');
     
     // Set focus on input
     urlInput.focus();
@@ -23,6 +26,50 @@ document.addEventListener('DOMContentLoaded', function() {
     urlInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
         captureUrlBtn.click();
+      }
+    });
+    
+    // Add visual feedback on button hover
+    const allButtons = document.querySelectorAll('.btn');
+    allButtons.forEach(button => {
+      button.addEventListener('mouseover', function() {
+        this.style.transform = 'scale(1.02)';
+        this.style.transition = 'transform 0.1s ease-in-out';
+      });
+      
+      button.addEventListener('mouseout', function() {
+        this.style.transform = 'scale(1)';
+      });
+      
+      // Add active state
+      button.addEventListener('mousedown', function() {
+        this.style.transform = 'scale(0.98)';
+      });
+      
+      button.addEventListener('mouseup', function() {
+        this.style.transform = 'scale(1.02)';
+      });
+    });
+    
+    // Add checkbox styling improvement
+    const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+    allCheckboxes.forEach(checkbox => {
+      const label = checkbox.parentElement;
+      
+      checkbox.addEventListener('change', function() {
+        if (this.checked) {
+          label.style.fontWeight = 'bold';
+          label.style.color = '#3498db';
+        } else {
+          label.style.fontWeight = 'normal';
+          label.style.color = '';
+        }
+      });
+      
+      // Set initial state
+      if (checkbox.checked) {
+        label.style.fontWeight = 'bold';
+        label.style.color = '#3498db';
       }
     });
     
@@ -292,6 +339,23 @@ document.addEventListener('DOMContentLoaded', function() {
       console.error('Error sending URL to server:', error);
     }
   }
+  
+  // Add help section toggle
+  const helpLink = document.getElementById('help-link');
+  const helpSection = document.getElementById('help-section');
+  const closeHelpBtn = document.getElementById('close-help');
+  
+  helpLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    helpSection.style.display = 'block';
+    helpLink.style.display = 'none';
+  });
+  
+  closeHelpBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    helpSection.style.display = 'none';
+    helpLink.style.display = 'block';
+  });
   
   // Listen for content script messages
   chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {

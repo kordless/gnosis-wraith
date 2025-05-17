@@ -84,3 +84,5 @@ The system uses Docker for containerization and can be deployed to environments 
 **Important for Claude:** When starting a session with this project, first ask which directory you're in and use the `evolve_status` tool to check available capabilities. Don't automatically inspect individual files unless specifically requested. Wait for user instructions on which aspects of the project to focus on or which files to analyze.
 
 Remember that your role is to assist with the Gnosis Wraith project based on user requests, not to autonomously explore all files immediately. This approach ensures you can provide targeted, relevant help as needed.
+
+SEE NOTES.md
