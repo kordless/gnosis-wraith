@@ -1,5 +1,6 @@
 // background.js
 // Background script for Gnosis Wraith extension
+// Version 1.2.1
 
 // Global API settings that can be configured from the options page
 let apiSettings = {
@@ -50,31 +51,111 @@ async function stitchFullPageScreenshot() {
     
     const { fullWidth, fullHeight, viewportWidth, viewportHeight, numCols, numRows } = fullPageCaptureState.dimensions;
     
+    console.log(`Starting stitching with dimensions: ${fullWidth}x${fullHeight}, viewportSize: ${viewportWidth}x${viewportHeight}, grid: ${numCols}x${numRows}, screenshots: ${fullPageCaptureState.screenshots.length}`);
+    
+    // Validate screenshot count
+    const expectedScreenshots = numCols * numRows;
+    if (fullPageCaptureState.screenshots.length < expectedScreenshots) {
+      console.warn(`Warning: Received ${fullPageCaptureState.screenshots.length} screenshots, expected ${expectedScreenshots}`);
+    }
+    
     // Create a canvas to stitch the screenshots together
-    const canvas = new OffscreenCanvas(fullWidth, fullHeight);
-    const ctx = canvas.getContext('2d');
+    let canvas;
+    let ctx;
+    
+    try {
+      // Try using OffscreenCanvas (more efficient)
+      canvas = new OffscreenCanvas(fullWidth, fullHeight);
+      ctx = canvas.getContext('2d');
+    } catch (e) {
+      // Fallback to regular canvas if OffscreenCanvas not supported
+      console.log('Falling back to regular canvas');
+      canvas = document.createElement('canvas');
+      canvas.width = fullWidth;
+      canvas.height = fullHeight;
+      ctx = canvas.getContext('2d');
+    }
+    
+    // Set white background to avoid transparent areas
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(0, 0, fullWidth, fullHeight);
+    
+    // Sort screenshots by position to ensure correct order
+    const sortedScreenshots = [...fullPageCaptureState.screenshots].sort((a, b) => {
+      if (a.position.row !== b.position.row) {
+        return a.position.row - b.position.row;
+      }
+      return a.position.col - b.position.col;
+    });
+    
+    console.log(`Screenshots sorted, processing ${sortedScreenshots.length} images`);
+    
+    // Track successful/failed screenshots
+    let successCount = 0;
+    let errorCount = 0;
     
     // Draw each screenshot onto the canvas
-    for (const screenshot of fullPageCaptureState.screenshots) {
-      // Create an image from the dataUrl
-      const img = await createImageBitmap(await (await fetch(screenshot.dataUrl)).blob());
-      
-      // Calculate position
-      const x = screenshot.position.col * viewportWidth;
-      const y = screenshot.position.row * viewportHeight;
-      
-      // Draw the image at the correct position
-      ctx.drawImage(img, x, y);
+    for (const screenshot of sortedScreenshots) {
+      try {
+        if (!screenshot.dataUrl) {
+          console.warn(`Skipping screenshot with missing dataUrl at position row:${screenshot.position.row}, col:${screenshot.position.col}`);
+          errorCount++;
+          continue;
+        }
+        
+        // Create an image from the dataUrl
+        const imgBlob = await (await fetch(screenshot.dataUrl)).blob();
+        const img = await createImageBitmap(imgBlob);
+        
+        // Calculate position
+        const x = screenshot.position.col * viewportWidth;
+        const y = screenshot.position.row * viewportHeight;
+        
+        // Verify position is valid
+        if (x < 0 || y < 0 || x >= fullWidth || y >= fullHeight) {
+          console.warn(`Invalid position for screenshot: ${x},${y}`);
+          errorCount++;
+          continue;
+        }
+        
+        // Draw the image at the correct position
+        ctx.drawImage(img, x, y);
+        successCount++;
+      } catch (imgError) {
+        console.error(`Error processing screenshot at row ${screenshot.position.row}, col ${screenshot.position.col}:`, imgError);
+        errorCount++;
+      }
+    }
+    
+    console.log(`Stitching status: ${successCount} successful, ${errorCount} failed`);
+    
+    if (successCount === 0) {
+      throw new Error(`Failed to process any screenshots for stitching`);
     }
     
     // Convert canvas to dataURL
-    const blob = await canvas.convertToBlob({type: 'image/png'});
-    const reader = new FileReader();
+    let dataUrl;
     
-    return new Promise((resolve) => {
-      reader.onloadend = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    });
+    if (canvas instanceof OffscreenCanvas) {
+      // For OffscreenCanvas
+      const blob = await canvas.convertToBlob({type: 'image/png'});
+      dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Failed to convert blob to data URL'));
+        reader.readAsDataURL(blob);
+      });
+    } else {
+      // For regular canvas
+      dataUrl = canvas.toDataURL('image/png');
+    }
+    
+    if (!dataUrl || dataUrl === 'data:,') {
+      throw new Error('Failed to generate data URL from canvas');
+    }
+    
+    console.log('Stitching complete, data URL created');
+    return dataUrl;
   } catch (error) {
     console.error('Error stitching full page screenshot:', error);
     throw error;
@@ -84,7 +165,25 @@ async function stitchFullPageScreenshot() {
 // Send captured data to the server
 async function sendToServer(capturedData) {
   try {
-    const response = await fetch(`${apiSettings.serverUrl}/api/extension-capture`, {
+    // Make sure we're using the correct API endpoint
+    const apiEndpoint = '/api/extension-capture';
+    
+    // Ensure server URL is properly formatted
+    let serverUrl = apiSettings.serverUrl;
+    if (!serverUrl.startsWith('http://') && !serverUrl.startsWith('https://')) {
+      serverUrl = 'http://' + serverUrl;
+    }
+    serverUrl = serverUrl.replace(/\/$/, ''); // Remove trailing slash if present
+    
+    // Log the request for debugging
+    console.log(`Sending data to ${serverUrl}${apiEndpoint}`, {
+      url: capturedData.url,
+      title: capturedData.title,
+      hasScreenshot: !!capturedData.screenshot,
+      processingOptions: apiSettings.captureOptions
+    });
+    
+    const response = await fetch(`${serverUrl}${apiEndpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -100,7 +199,9 @@ async function sendToServer(capturedData) {
       throw new Error(`Server returned ${response.status}: ${errorText}`);
     }
     
-    return await response.json();
+    const jsonResponse = await response.json();
+    console.log('Server response:', jsonResponse);
+    return jsonResponse;
   } catch (error) {
     console.error('Error sending data to server:', error);
     return {

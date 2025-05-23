@@ -1,0 +1,682 @@
+<!-- header.html - Common header with navigation for Gnosis Wraith -->
+<style>
+  /* Navigation Slider Styles */
+  .main-nav {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+    margin-right: 30px;
+  }
+  
+  .nav-tabs {
+    display: flex;
+    background: rgba(78, 99, 132, 0.1);
+    border-radius: 24px;
+    padding: 4px;
+    position: relative;
+    margin-right: 15px;
+  }
+  
+  .nav-tabs .nav-item {
+    position: relative;
+    z-index: 1;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+    text-decoration: none;
+    border-radius: 20px;
+    transition: color 0.3s ease;
+    white-space: nowrap;
+  }
+  
+  .nav-tabs .slider {
+    position: absolute;
+    height: calc(100% - 8px);
+    border-radius: 20px;
+    transition: 0.3s ease-out;
+    background: var(--primary-color);
+    top: 4px;
+    left: 4px;
+    z-index: 0;
+  }
+  
+  .nav-tabs .nav-item.active {
+    color: white;
+  }
+  
+  /* Additional mobile styling */
+  @media (max-width: 768px) {
+    .main-nav {
+      margin-right: 10px;
+    }
+    
+    .nav-tabs {
+      padding: 3px;
+    }
+    
+    .nav-tabs .nav-item {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+  }
+  
+  /* Utility classes for navbar flexibility */
+  .navbar {
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+  }
+  
+  .navbar-spacer {
+    flex-grow: 1;
+  }
+  
+  /* Button styles for all control buttons */
+  .control-button {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    margin: 0 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  .control-button:hover {
+    background: rgba(108, 99, 255, 0.1);
+    border-color: rgba(108, 99, 255, 0.3);
+    box-shadow: 0 0 8px rgba(108, 99, 255, 0.2);
+  }
+  
+  .control-button:hover i {
+    color: #6c63ff;
+  }
+  
+  .control-button i {
+    color: #999;
+    font-size: 14px;
+    transition: color 0.3s ease;
+  }
+  
+  @keyframes flicker {
+    0% { opacity: 1; }
+    49% { opacity: 1; }
+    50% { opacity: 0.7; }
+    51% { opacity: 1; }
+    60% { opacity: 1; }
+    61% { opacity: 0.7; }
+    62% { opacity: 1; }
+    75% { opacity: 1; }
+    76% { opacity: 0.8; }
+    77% { opacity: 1; }
+    100% { opacity: 1; }
+  }
+  
+  /* Terminal button active state */
+  .terminal-button.active {
+    background: rgba(108, 99, 255, 0.15);
+    border-color: rgba(108, 99, 255, 0.4);
+    box-shadow: 0 0 10px rgba(108, 99, 255, 0.3);
+  }
+  
+  .terminal-button.active i,
+  .settings-button.active-orange i {
+    color: #6c63ff;
+  }
+  
+  /* Orange active state for settings button */
+  .settings-button.active-orange {
+    background: rgba(255, 136, 0, 0.15);
+    border-color: rgba(255, 136, 0, 0.4);
+    box-shadow: 0 0 10px rgba(255, 136, 0, 0.3);
+  }
+  
+  .settings-button.active-orange i {
+    color: #FF8800;
+    filter: drop-shadow(0 0 5px rgba(255, 136, 0, 0.5));
+  }
+  
+  /* Navbar center container for better centering */
+  .navbar-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+  }
+  
+  /* Control buttons group for better alignment */
+  .control-buttons {
+    display: flex;
+    align-items: center;
+  }
+  
+  /* Style overrides to ensure no visited styles */
+  .control-buttons a, 
+  .control-buttons a:visited, 
+  .control-buttons a:hover, 
+  .control-buttons a:active {
+    text-decoration: none !important;
+    border-bottom: none !important;
+    outline: none !important;
+  }
+</style>
+
+<nav class="navbar">
+  <div class="logo">
+    <a href="{{ url_for('pages.crawl') }}">
+      <span>Gnosis Wraith <span id="flying-ghost" class="ghost-emoji" title="Click me or press Ctrl+G to make me fly!">👻</span></span>
+    </a>
+  </div>
+  
+  <div class="navbar-spacer"></div>
+  
+  <div class="navbar-center" style="display: flex; align-items: center; justify-content: center; flex-grow: 1; position: relative;">
+    <!-- Main Navigation Tabs (centered with random offset) -->
+    <div class="main-nav" style="margin-left: {{ range(-50, 50) | random }}px; transition: margin-left 0.5s ease; margin-top: 1px;">
+      <div class="nav-tabs" id="main-nav-tabs">
+        <a href="{{ url_for('pages.wraith') }}" class="nav-item {% if active_page == 'crawl' %}active{% endif %}" data-page="crawl">Crawl</a>
+        <a href="{{ url_for('pages.code') }}" class="nav-item {% if active_page == 'code' %}active{% endif %}" data-page="code">Code</a>
+        <a href="{{ url_for('pages.list_reports') }}" class="nav-item {% if active_page == 'reports' %}active{% endif %}" data-page="reports">Report</a>
+        <div class="slider" id="main-nav-slider"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Control Buttons Group (fixed position right side) -->
+  <div class="control-buttons" style="display: flex; align-items: center; position: absolute; right: 15px; top: 11px;">
+    <a href="{{ url_for('pages.terminal') }}" class="control-button terminal-button" title="Terminal (Alt+T)" style="display: none;">
+      <i class="fas fa-terminal" style="font-size: 14px;"></i>
+    </a>
+    
+    <a href="{{ url_for('pages.settings') }}" class="control-button settings-button {% if active_page == 'settings' %}active-orange{% endif %}" title="Settings" style="display: none;">
+      <i class="fas fa-cog" style="font-size: 14px;"></i>
+    </a>
+    
+    <div class="control-button power-button" id="power-button" title="Power Login/Logout (Alt+P)">
+      <i class="fas fa-power-off" style="font-size: 14px;"></i>
+    </div>
+  </div>
+</nav>
+
+<script>
+  // Initialize slider position
+  // Add login state variable to track user login status
+  var logged_in_state = false;
+  // Add a debounce flag to prevent rapid login/logout
+  var isLoginLogoutDebouncing = false;
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    const navTabs = document.getElementById('main-nav-tabs');
+    const slider = document.getElementById('main-nav-slider');
+    const activeItem = navTabs.querySelector('.nav-item.active');
+    const mainNav = document.querySelector('.main-nav');
+    const ghostEmoji = document.getElementById('flying-ghost');
+    let originalNavPosition = 0;
+    let ghostTimerID = null;
+    
+    if (activeItem && slider) {
+      // Set the slider directly to the active item without animation
+      // For initial page load, no transition
+      slider.style.transition = 'none';
+      slider.style.width = `${activeItem.offsetWidth}px`;
+      slider.style.left = `${activeItem.offsetLeft}px`;
+      
+      // Force a reflow to apply the no-transition state
+      void slider.offsetWidth;
+      
+      // Re-enable transitions for future interactions
+      setTimeout(() => {
+        slider.style.transition = '0.3s ease-out';
+      }, 50);
+      
+      // Store the original margin
+      originalNavPosition = parseInt(mainNav.style.marginLeft) || 0;
+      
+      // Setup keyboard shortcut for terminal (Alt+T)
+      document.addEventListener('keydown', function(e) {
+        if (e.altKey && e.key === 't' && logged_in_state) {
+          window.location.href = "{{ url_for('pages.terminal') }}";
+        }
+      });
+      
+      // Setup power button functionality
+      const powerButton = document.getElementById('power-button');
+      if (powerButton) {
+        // Check for saved login state
+        try {
+          const savedState = localStorage.getItem('logged_in_state');
+          // Check if we're on the settings page
+          const isSettingsPage = document.querySelector('body').classList.contains('settings-page') || 
+                                 '{{ active_page }}' === 'settings';
+          
+          if (savedState === 'true' || isSettingsPage) {
+            // Restore previous logged-in state or force logged-in for settings page
+            logged_in_state = true;
+            const powerIcon = powerButton.querySelector('i');
+            
+            powerIcon.style.color = '#6c63ff';
+            powerButton.style.boxShadow = '0 0 10px rgba(108, 99, 255, 0.3)';
+            powerButton.style.borderColor = 'rgba(108, 99, 255, 0.4)';
+            powerButton.style.background = 'rgba(108, 99, 255, 0.1)';
+            
+            // Show the settings and terminal buttons
+            document.querySelectorAll('.terminal-button, .settings-button').forEach(el => {
+              if (el) el.style.display = 'flex';
+            });
+            
+            // If we're on settings page, make sure to highlight the settings button
+            if (isSettingsPage) {
+              const settingsButton = document.querySelector('.settings-button');
+              if (settingsButton) {
+                settingsButton.style.display = 'flex';
+                if (!settingsButton.classList.contains('active-orange')) {
+                  settingsButton.classList.add('active-orange');
+                }
+              }
+              
+              // Always save logged in state on settings page
+              localStorage.setItem('logged_in_state', 'true');
+            }
+          } else {
+            // Hide settings and terminal by default
+            document.querySelectorAll('.terminal-button, .settings-button').forEach(el => {
+              if (el) el.style.display = 'none';
+            });
+          }
+        } catch (e) {
+          console.log("Error checking login state", e);
+        }
+        
+        // Variables for tracking power button press
+        let powerButtonTimer = null;
+        let powerButtonPressed = false;
+        
+        // Event listeners for power button hold behavior
+        powerButton.addEventListener('mousedown', function(e) {
+          // If we're in a debounce state, don't allow new actions
+          if (isLoginLogoutDebouncing) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+          
+          const powerIcon = this.querySelector('i');
+          
+          // Only start timer if currently logged in
+          if (logged_in_state) {
+            powerButtonPressed = true;
+            
+            // Create and show progress indicator
+            const progressRing = document.createElement('div');
+            progressRing.className = 'power-button-progress';
+            progressRing.style.position = 'absolute';
+            progressRing.style.top = '0';
+            progressRing.style.left = '0';
+            progressRing.style.width = '100%';
+            progressRing.style.height = '100%';
+            progressRing.style.borderRadius = '50%';
+            progressRing.style.border = '2px solid #e74c3c';
+            progressRing.style.borderTopColor = 'transparent';
+            progressRing.style.animation = 'rotate-progress 3s linear forwards';
+            progressRing.style.opacity = '0';
+            progressRing.style.transition = 'opacity 0.2s';
+            powerButton.appendChild(progressRing);
+            
+            // Show the progress ring after a small delay
+            setTimeout(() => {
+              if (powerButtonPressed) {
+                progressRing.style.opacity = '1';
+              }
+            }, 100);
+            
+            // Add rotation animation
+            const style = document.createElement('style');
+            style.textContent = `
+              @keyframes rotate-progress {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+              }
+            `;
+            document.head.appendChild(style);
+            
+            // Start timer for 3 seconds
+            powerButtonTimer = setTimeout(() => {
+              if (powerButtonPressed) {
+                // Set debouncing flag to prevent immediate login
+                isLoginLogoutDebouncing = true;
+                
+                // Power off / Logout
+                logged_in_state = false;
+                powerIcon.style.color = '#999';
+                powerButton.style.boxShadow = '';
+                powerButton.style.borderColor = 'rgba(128, 128, 128, 0.3)';
+                powerButton.style.background = 'transparent';
+                
+                // Hide the terminal and settings buttons
+                document.querySelectorAll('.terminal-button, .settings-button').forEach(el => {
+                  if (el) {
+                    el.style.opacity = '0';
+                    setTimeout(() => {
+                      el.style.display = 'none';
+                    }, 300);
+                  }
+                });
+                
+                // Visual feedback
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.textContent = 'Logged out';
+                feedbackDiv.style.position = 'fixed';
+                feedbackDiv.style.top = '70px';
+                feedbackDiv.style.right = '20px';
+                feedbackDiv.style.padding = '10px 20px';
+                feedbackDiv.style.background = '#e74c3c';
+                feedbackDiv.style.color = 'white';
+                feedbackDiv.style.borderRadius = '4px';
+                feedbackDiv.style.zIndex = '9999';
+                feedbackDiv.style.opacity = '0';
+                feedbackDiv.style.transition = 'opacity 0.3s';
+                document.body.appendChild(feedbackDiv);
+                
+                setTimeout(() => {
+                  feedbackDiv.style.opacity = '1';
+                }, 10);
+                
+                setTimeout(() => {
+                  feedbackDiv.style.opacity = '0';
+                  setTimeout(() => {
+                    document.body.removeChild(feedbackDiv);
+                  }, 300);
+                }, 2000);
+                
+                localStorage.setItem('logged_in_state', 'false');
+                
+                // Release debounce after a delay to prevent immediate login
+                setTimeout(() => {
+                  isLoginLogoutDebouncing = false;
+                }, 2000);
+              }
+              
+              // Clean up
+              if (progressRing.parentNode === powerButton) {
+                powerButton.removeChild(progressRing);
+              }
+              powerButtonPressed = false;
+              powerButtonTimer = null;
+            }, 3000); // 3 second hold required
+          }
+        });
+        
+        // Cancel the logout if mouse is released before 3 seconds
+        powerButton.addEventListener('mouseup', function(e) {
+          // If the button was being held for the logout timer
+          // prevent click events from firing immediately after
+          if (powerButtonTimer) {
+            clearTimeout(powerButtonTimer);
+            powerButtonTimer = null;
+            
+            // Prevent immediate click after mouseup by delaying reset
+            setTimeout(() => {
+              powerButtonPressed = false;
+            }, 100);
+            
+            // Prevent any click events that might be queued
+            e.preventDefault();
+            e.stopPropagation();
+          } else {
+            powerButtonPressed = false;
+          }
+          
+          // Remove progress ring if it exists
+          const progressRing = powerButton.querySelector('.power-button-progress');
+          if (progressRing) {
+            progressRing.style.opacity = '0';
+            setTimeout(() => {
+              if (progressRing.parentNode === powerButton) {
+                powerButton.removeChild(progressRing);
+              }
+            }, 200);
+          }
+        });
+        
+        // Also cancel on mouse leave
+        powerButton.addEventListener('mouseleave', function(e) {
+          if (powerButtonTimer) {
+            clearTimeout(powerButtonTimer);
+            powerButtonTimer = null;
+            
+            // Prevent immediate click after mouseleave by delaying reset
+            setTimeout(() => {
+              powerButtonPressed = false;
+            }, 100);
+            
+            // Prevent any click events that might be queued
+            e.preventDefault();
+            e.stopPropagation();
+          } else {
+            powerButtonPressed = false;
+          }
+          
+          // Remove progress ring if it exists
+          const progressRing = powerButton.querySelector('.power-button-progress');
+          if (progressRing) {
+            progressRing.style.opacity = '0';
+            setTimeout(() => {
+              if (progressRing.parentNode === powerButton) {
+                powerButton.removeChild(progressRing);
+              }
+            }, 200);
+          }
+        });
+        
+        // Power button click handler for login/logout functionality
+        powerButton.addEventListener('click', function(e) {
+          // If we're in a mousedown state (holding the button) or debouncing, don't trigger click
+          if (powerButtonPressed || isLoginLogoutDebouncing) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+          
+          const powerIcon = this.querySelector('i');
+          
+          if (!logged_in_state) {
+            // Set debounce flag to prevent rapid state changes
+            isLoginLogoutDebouncing = true;
+            
+            // Power on / Login
+            logged_in_state = true;
+            powerIcon.style.color = '#6c63ff';
+            powerButton.style.boxShadow = '0 0 10px rgba(108, 99, 255, 0.3)';
+            powerButton.style.borderColor = 'rgba(108, 99, 255, 0.4)';
+            powerButton.style.background = 'rgba(108, 99, 255, 0.1)';
+            
+            // Show the terminal and settings buttons with animation
+            document.querySelectorAll('.terminal-button, .settings-button').forEach(el => {
+              if (el) {
+                el.style.display = 'flex';
+                el.style.opacity = '0';
+                setTimeout(() => {
+                  el.style.opacity = '1';
+                }, 10);
+              }
+            });
+            
+            // Visual feedback
+            const feedbackDiv = document.createElement('div');
+            feedbackDiv.textContent = 'Logged in';
+            feedbackDiv.style.position = 'fixed';
+            feedbackDiv.style.top = '70px';
+            feedbackDiv.style.right = '20px';
+            feedbackDiv.style.padding = '10px 20px';
+            feedbackDiv.style.background = '#2ecc71';
+            feedbackDiv.style.color = 'white';
+            feedbackDiv.style.borderRadius = '4px';
+            feedbackDiv.style.zIndex = '9999';
+            feedbackDiv.style.opacity = '0';
+            feedbackDiv.style.transition = 'opacity 0.3s';
+            document.body.appendChild(feedbackDiv);
+            
+            setTimeout(() => {
+              feedbackDiv.style.opacity = '1';
+            }, 10);
+            
+            setTimeout(() => {
+              feedbackDiv.style.opacity = '0';
+              setTimeout(() => {
+                document.body.removeChild(feedbackDiv);
+              }, 300);
+            }, 2000);
+            
+            localStorage.setItem('logged_in_state', 'true');
+            
+            // Release debounce after a delay
+            setTimeout(() => {
+              isLoginLogoutDebouncing = false;
+            }, 1000);
+          } else {
+            // Click does nothing for logout - use press and hold instead
+            console.log('To log out, press and hold the power button for 3 seconds');
+          }
+        });
+        
+        // Setup Alt+P shortcut for power toggle
+        document.addEventListener('keydown', function(e) {
+          if (e.altKey && e.key === 'p') {
+            powerButton.click();
+          }
+        });
+      }
+      
+      // Add click handler to nav items to disable transition when navigating
+      const navItems = navTabs.querySelectorAll('.nav-item');
+      navItems.forEach(item => {
+        item.addEventListener('click', function(e) {
+          // Don't apply this for the currently active item
+          if (!this.classList.contains('active')) {
+            // Store the clicked item so we can check it on the next page
+            try {
+              localStorage.setItem('last_nav_click', this.dataset.page);
+            } catch (e) {
+              console.log('Could not store navigation state', e);
+            }
+          }
+        });
+      });
+      
+      // Check if we need to disable transitions (if we just navigated from another page)
+      try {
+        const lastNavClick = localStorage.getItem('last_nav_click');
+        if (lastNavClick && activeItem && activeItem.dataset.page === lastNavClick) {
+          // We just navigated to this page, so no animations
+          slider.style.transition = 'none';
+          
+          // Clear the stored value so hover animations work normally going forward
+          localStorage.removeItem('last_nav_click');
+        }
+      } catch (e) {
+        console.log('Could not read navigation state', e);
+      }
+      
+      // Add hover effect for nav items with gradual movement
+      let hoverTimer = null;
+      let hoverStartTime = 0;
+      let currentMovement = 0;
+      const MAX_MOVEMENT = 40; // Maximum pixels to move in either direction
+      
+      navItems.forEach((item, index) => {
+        item.addEventListener('mouseenter', function() {
+          // Only move on hover if we're not on a small screen
+          if (window.innerWidth > 768) {
+            // Move the slider
+            slider.style.transition = '0.3s ease-out';
+            slider.style.width = `${this.offsetWidth}px`;
+            slider.style.left = `${this.offsetLeft}px`;
+            
+            // Clear any existing hover timer
+            if (hoverTimer) clearInterval(hoverTimer);
+            
+            // Reset movement tracking
+            currentMovement = 0;
+            hoverStartTime = Date.now();
+            
+            // Determine direction based on which tab is hovered
+            const moveDirection = item.dataset.page === 'crawl' ? -1 : 
+                               item.dataset.page === 'reports' ? 1 : 0;
+            
+            // Start gradual movement animation
+            if (moveDirection !== 0) {
+              hoverTimer = setInterval(() => {
+                // Calculate how long we've been hovering (in ms)
+                const hoverDuration = Date.now() - hoverStartTime;
+                
+                // Calculate movement based on hover duration (accelerate gradually)
+                // Start slow, accelerate based on time, then slow down again after reaching soft limit
+                const acceleration = Math.min(hoverDuration / 2000, 1);
+                
+                // Movement speed calculation
+                let step;
+                
+                if (Math.abs(currentMovement) < MAX_MOVEMENT) {
+                  // Normal acceleration phase
+                  step = 0.5 + (acceleration * 1.5); // Starts at 0.5px, increases to 2px
+                } else {
+                  // Slow continued movement phase after reaching soft limit
+                  step = 0.3; // Continues movement at a slower rate
+                }
+                
+                // Apply the movement
+                currentMovement += step * moveDirection;
+                
+                // Apply the movement with a smooth transition
+                mainNav.style.transition = 'margin-left 0.1s linear';
+                mainNav.style.marginLeft = `${originalNavPosition + currentMovement}px`;
+              }, 50); // Update every 50ms for smooth animation
+            }
+          }
+        });
+        
+        item.addEventListener('mouseleave', function() {
+          // Reset to active tab position
+          if (window.innerWidth > 768) {
+            // Ensure transitions are enabled for hover effects
+            slider.style.transition = '0.3s ease-out';
+            slider.style.width = `${activeItem.offsetWidth}px`;
+            slider.style.left = `${activeItem.offsetLeft}px`;
+            
+            // Clear the hover timer
+            if (hoverTimer) {
+              clearInterval(hoverTimer);
+              hoverTimer = null;
+            }
+            
+            // Return the nav to its original position with a smooth transition
+            mainNav.style.transition = 'margin-left 0.5s ease-out';
+            mainNav.style.marginLeft = `${originalNavPosition}px`;
+          }
+        });
+      });
+    }
+    
+    // Setup flying ghost animation
+    if (ghostEmoji) {
+      // Ghost click handler
+      ghostEmoji.addEventListener('click', function() {
+        // Create flying ghost animation logic
+        console.log("Ghost clicked!");
+      });
+      
+      // Also setup Ctrl+G keyboard shortcut
+      document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'g') {
+          ghostEmoji.click();
+        }
+      });
+    }
+  });
+</script>

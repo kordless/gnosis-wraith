@@ -1,0 +1,71 @@
+<!-- footer.html - Common footer for Gnosis Wraith -->
+<footer>
+  <div class="footer-content" style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; gap: 20px;">
+    <!-- System status indicator -->
+    <div class="system-status" style="display: flex; align-items: center; margin-right: 20px;">
+      <div style="width: 8px; height: 8px; background-color: #48bb78; border-radius: 50%; margin-right: 8px; box-shadow: 0 0 5px #48bb78;"></div>
+      <span style="font-size: 14px; color: #999;">System Online</span>
+    </div>
+    
+    <!-- Copyright -->
+    <div class="copyright" style="font-size: 14px; color: #999; white-space: nowrap;">
+      &copy;2025 Gnosis Wraith
+    </div>
+    
+    <!-- Quick links -->
+    <div class="quick-links" style="display: flex; gap: 15px;">
+      <a href="{{ url_for('pages.wraith') }}" title="Crawl" class="footer-link {% if active_page == 'crawl' %}active{% endif %}">
+        <i class="fas fa-spider"></i>
+      </a>
+      <a href="{{ url_for('pages.code') }}" title="Code" class="footer-link {% if active_page == 'code' %}active{% endif %}">
+        <i class="fas fa-code"></i>
+      </a>
+      <a href="{{ url_for('pages.list_reports') }}" title="Reports" class="footer-link {% if active_page == 'reports' %}active{% endif %}">
+        <i class="fas fa-file-alt"></i>
+      </a>
+      <a href="{{ url_for('pages.terminal') }}" title="Terminal" class="footer-link {% if active_page == 'terminal' %}active{% endif %}">
+        <i class="fas fa-terminal"></i>
+      </a>
+      <a href="https://github.com/kordless/gnosis-wraith" target="_blank" title="GitHub" class="footer-link">
+        <i class="fab fa-github"></i>
+      </a>
+      <a href="/legal" title="Legal" class="footer-link">
+        <i class="fas fa-gavel"></i>
+      </a>
+      <a href="/" title="Company" class="footer-link">
+        <i class="fas fa-building"></i>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<style>
+  /* Footer quick links hover styles */
+  .quick-links a:hover {
+    color: #6c63ff !important;
+    transform: translateY(-2px);
+  }
+  
+  .quick-links a {
+    display: inline-block;
+    transition: all 0.2s ease;
+  }
+  
+  /* Footer link styling */
+  .footer-link {
+    font-size: 14px;
+    text-decoration: none;
+    transition: color 0.2s, transform 0.2s;
+    color: #999;
+  }
+  
+  .footer-link.active {
+    color: #6c63ff;
+  }
+  
+  /* For proper spacing in Firefox */
+  .quick-links {
+    padding: 0;
+    margin: 0;
+  }
+</style>

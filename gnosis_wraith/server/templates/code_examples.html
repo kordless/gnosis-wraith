@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gnosis Wraith | Code</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}?v={{ range(10000, 99999) | random }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
+    />
+    <!-- Add Prism language components -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Favicon links -->
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="{{ url_for('static', filename='images/favicon.svg') }}"
+    />
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="{{ url_for('static', filename='images/favicon.ico') }}"
+    />
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='images/favicon.ico') }}"
+      type="image/x-icon"
+    />
+    <link
+      rel="shortcut icon"
+      href="{{ url_for('static', filename='images/favicon.ico') }}"
+      type="image/x-icon"
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="{{ url_for('static', filename='images/favicon.svg') }}"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="{{ url_for('static', filename='images/favicon-128x128.png') }}"
+    />
+    
+    <style>
+      /* Ghost flying animations */
+      @keyframes flyAcross {
+        0% { transform: translateX(0) translateY(0) rotate(0deg); opacity: 1; }
+        25% { transform: translateX(100px) translateY(-10px) rotate(20deg); opacity: 1; }
+        50% { transform: translateX(200px) translateY(10px) rotate(-15deg); opacity: 1; }
+        75% { transform: translateX(300px) translateY(-15px) rotate(10deg); opacity: 0.7; }
+        100% { transform: translateX(1500px) translateY(-50px) rotate(45deg); opacity: 0; }
+      }
+      
+      @keyframes flyBack {
+        0% { transform: translateX(-1500px) translateY(-50px) rotate(-45deg); opacity: 0; }
+        50% { transform: translateX(-200px) translateY(20px) rotate(15deg); opacity: 0.7; }
+        75% { transform: translateX(-100px) translateY(-10px) rotate(-10deg); opacity: 0.9; }
+        100% { transform: translateX(0) translateY(0) rotate(0deg); opacity: 1; }
+      }
+    
+      .os-tab.active {
+        border-bottom-color: #6c63ff !important;
+        color: #6c63ff;
+        font-weight: bold;
+      }
+      
+      .text-input-container {
+        padding: 15px;
+        background-color: var(--card-bg);
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      
+      .text-input-container textarea {
+        width: 100%;
+        min-height: 200px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        padding: 15px;
+        border-radius: 5px;
+        border: 1px solid var(--border-color);
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        resize: vertical;
+      }
+      
+      /* Code container styles */
+      .code-container {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        margin: 15px 0;
+        position: relative;
+      }
+      
+      /* Code header with language badge */
+      .code-language-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+        letter-spacing: 0.5px;
+      }
+      
+      /* Language color mapping */
+      .lang-python { background-color: #3572A5 !important; }
+      .lang-javascript { background-color: #f7df1e !important; color: #000 !important; }
+      .lang-html { background-color: #e34c26 !important; }
+      .lang-css { background-color: #563d7c !important; }
+      .lang-bash { background-color: #2f3136 !important; }
+      .lang-json { background-color: #1e88e5 !important; }
+      .lang-csharp { background-color: #00ADD8 !important; }
+      .lang-java { background-color: #b07219 !important; }
+      .lang-ruby { background-color: #CC342D !important; }
+      .lang-php { background-color: #4F5D95 !important; }
+      .lang-golang { background-color: #00ADD8 !important; }
+      .lang-typescript { background-color: #007acc !important; }
+      
+      /* Action buttons */
+      .action-btn {
+        font-size: 13px;
+        padding: 4px 10px;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      
+      .action-btn:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+      
+      /* Code block */
+      pre.code-block {
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        padding: 15px;
+        border-radius: 0 0 8px 8px;
+        overflow-x: auto;
+        position: relative;
+        margin: 0;
+        font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        max-height: 600px;
+        overflow-y: auto;
+      }
+      
+      /* Example sections */
+      .example-section {
+        margin-bottom: 30px;
+      }
+      
+      .example-section h3 {
+        margin-bottom: 10px;
+      }
+      
+      .example-section p {
+        margin-bottom: 15px;
+      }
+      
+      .example-section .code-container {
+        position: relative;
+      }
+      
+      /* Copy button */
+      .copy-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #d4d4d4;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        cursor: pointer;
+        z-index: 1;
+        font-size: 12px;
+        transition: all 0.2s;
+      }
+      
+      .copy-btn:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: white;
+      }
+      
+      .copy-btn.copied {
+        background-color: rgba(76, 175, 80, 0.3);
+        color: white;
+      }
+      
+      /* Ghost search box styles */
+      .ghost-search-box {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--border-color);
+        border-radius: 24px;
+        padding: 6px 8px 6px 16px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background: var(--card-bg);
+        transition: all 0.3s ease;
+      }
+      
+      .ghost-search-box:focus-within,
+      .ghost-search-box.highlight {
+        box-shadow: 0 2px 10px rgba(108, 99, 255, 0.3);
+        border-color: #6c63ff;
+      }
+      
+      .ghost-search-icon {
+        color: #6c63ff;
+        font-size: 20px;
+        margin-right: 10px;
+      }
+      
+      .ghost-search-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #6c63ff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .ghost-search-button:hover {
+        background: #5a52d5;
+        transform: scale(1.05);
+      }
+      
+      /* Ghost control card styles */
+      .ghost-control-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        transition: all 0.3s;
+      }
+      
+      .ghost-control-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      
+      .ghost-control-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f0f4ff;
+        color: #6c63ff;
+        border-radius: 8px;
+        margin-right: 10px;
+      }
+      
+      .ghost-control-title {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--text-color);
+        margin: 0;
+      }
+      
+      /* Download button styling */
+      .ghost-crawl-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #6c63ff 0%, #5a52d5 100%);
+        color: white;
+        border: none;
+        border-radius: 24px;
+        padding: 12px 30px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(108, 99, 255, 0.3);
+      }
+      
+      .ghost-crawl-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+      }
+      
+      .ghost-crawl-btn i {
+        margin-right: 10px;
+      }
+      
+      /* Animation for the pulse effect */
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+      
+      .pulse-animation {
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+    </style>
+  </head>
+
+  <body>
+    <style>
+      /* Navigation Slider Styles */
+      .main-nav {
+        display: flex;
+        align-items: center;
+        margin-left: auto;
+        margin-right: 30px;
+      }
+      
+      .nav-tabs {
+        display: flex;
+        background: rgba(78, 99, 132, 0.1);
+        border-radius: 24px;
+        padding: 4px;
+        position: relative;
+        margin-right: 15px;
+      }
+      
+      .nav-tabs .nav-item {
+        position: relative;
+        z-index: 1;
+        padding: 6px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-color);
+        text-decoration: none;
+        border-radius: 20px;
+        transition: color 0.3s ease;
+        white-space: nowrap;
+      }
+      
+      .nav-tabs .slider {
+        position: absolute;
+        height: calc(100% - 8px);
+        border-radius: 20px;
+        transition: 0.3s ease-out;
+        background: var(--primary-color);
+        top: 4px;
+        left: 4px;
+        z-index: 0;
+      }
+      
+      .nav-tabs .nav-item.active {
+        color: white;
+      }
+      
+      /* Additional mobile styling */
+      @media (max-width: 768px) {
+        .main-nav {
+          margin-right: 10px;
+        }
+        
+        .nav-tabs {
+          padding: 3px;
+        }
+        
+        .nav-tabs .nav-item {
+          padding: 6px 12px;
+          font-size: 12px;
+        }
+      }
+      
+      /* Utility classes for navbar flexibility */
+      .navbar {
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+      }
+      
+      .navbar-spacer {
+        flex-grow: 1;
+      }
+      
+      /* Button styles for all control buttons */
+      .control-button {
+        position: relative;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: transparent;
+        border: 1px solid rgba(128, 128, 128, 0.3);
+        margin: 0 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+      }
+      
+      .control-button:hover {
+        background: rgba(108, 99, 255, 0.1);
+        border-color: rgba(108, 99, 255, 0.3);
+        box-shadow: 0 0 8px rgba(108, 99, 255, 0.2);
+      }
+      
+      .control-button:hover i {
+        color: #6c63ff;
+      }
+      
+      .control-button i {
+        color: #999;
+        font-size: 16px;
+        transition: color 0.3s ease;
+      }
+      
+      @keyframes flicker {
+        0% { opacity: 1; }
+        49% { opacity: 1; }
+        50% { opacity: 0.7; }
+        51% { opacity: 1; }
+        60% { opacity: 1; }
+        61% { opacity: 0.7; }
+        62% { opacity: 1; }
+        75% { opacity: 1; }
+        76% { opacity: 0.8; }
+        77% { opacity: 1; }
+        100% { opacity: 1; }
+      }
+      
+      /* Legacy button styles kept for compatibility - using control-button class instead */
+      
+      /* Terminal button active state */
+      .terminal-button.active {
+        background: rgba(108, 99, 255, 0.15);
+        border-color: rgba(108, 99, 255, 0.4);
+        box-shadow: 0 0 10px rgba(108, 99, 255, 0.3);
+      }
+      
+      .terminal-button.active i {
+        color: #6c63ff;
+      }
+      
+      /* Navbar center container for better centering */
+      .navbar-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-grow: 1;
+      }
+      
+      /* Control buttons group for better alignment */
+      .control-buttons {
+        display: flex;
+        align-items: center;
+      }
+      
+      /* Pulsing animation for the status indicator */
+      @keyframes status-pulse {
+        0% { box-shadow: 0 0 5px #48bb78; }
+        50% { box-shadow: 0 0 10px #48bb78; }
+        100% { box-shadow: 0 0 5px #48bb78; }
+      }
+      
+      /* Footer quick links hover styles */
+      .quick-links a:hover {
+        color: #6c63ff !important;
+        transform: translateY(-2px);
+      }
+      
+      .quick-links a {
+        display: inline-block;
+        transition: all 0.2s ease;
+      }
+      
+      /* Hide visited link underlines for terminal and settings buttons */
+      .terminal-button:visited,
+      .settings-button:visited {
+        text-decoration: none !important;
+        border-bottom: none !important;
+        box-shadow: none !important;
+      }
+      
+      /* Style overrides to ensure no visited styles */
+      .control-buttons a, 
+      .control-buttons a:visited, 
+      .control-buttons a:hover, 
+      .control-buttons a:active {
+        text-decoration: none !important;
+        border-bottom: none !important;
+        outline: none !important;
+      }
+    </style>
+  
+    <!-- Include the common header -->
+    {% include 'includes/header.html' %}
+
+    <div class="container">
+      <main>
+        <section class="tab-content card active">
+          <div class="author-quote">
+            <blockquote>
+              "I'm going to kill you with my teacup."
+              <cite>—Richard B. Riddick, The Chronicles of Riddick</cite>
+            </blockquote>
+          </div>
+          
+          <!-- OS detection script -->
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              // Try to detect OS
+              const userAgent = navigator.userAgent.toLowerCase();
+              const isMac = /macintosh|mac os x/i.test(userAgent);
+              const isWindows = /windows|win32|win64/i.test(userAgent);
+              
+              // Set default for unknown OS (show Linux/Mac)
+              let showWindows = false;
+              
+              if (isWindows) {
+                showWindows = true;
+              }
+              
+              // Get tab elements
+              const macTab = document.getElementById('mac-tab');
+              const winTab = document.getElementById('windows-tab');
+              const textInputTab = document.getElementById('text-input-tab');
+              const claudeMcpTab = document.getElementById('claude-mcp-tab');
+              const macExamples = document.getElementById('mac-examples');
+              const winExamples = document.getElementById('windows-examples');
+              const textInputExamples = document.getElementById('text-input-examples');
+              const claudeMcpExamples = document.getElementById('claude-mcp-examples');
+              
+              // Initial state based on detected OS
+              if (showWindows) {
+                macTab.classList.remove('active');
+                winTab.classList.add('active');
+                textInputTab.classList.remove('active');
+                claudeMcpTab.classList.remove('active');
+                macExamples.style.display = 'none';
+                winExamples.style.display = 'block';
+                textInputExamples.style.display = 'none';
+                claudeMcpExamples.style.display = 'none';
+              } else {
+                macTab.classList.add('active');
+                winTab.classList.remove('active');
+                textInputTab.classList.remove('active');
+                claudeMcpTab.classList.remove('active');
+                macExamples.style.display = 'block';
+                winExamples.style.display = 'none';
+                textInputExamples.style.display = 'none';
+                claudeMcpExamples.style.display = 'none';
+              }
+              
+              // Tab switching logic
+              macTab.addEventListener('click', function() {
+                macTab.classList.add('active');
+                winTab.classList.remove('active');
+                textInputTab.classList.remove('active');
+                claudeMcpTab.classList.remove('active');
+                macExamples.style.display = 'block';
+                winExamples.style.display = 'none';
+                textInputExamples.style.display = 'none';
+                claudeMcpExamples.style.display = 'none';
+              });
+              
+              winTab.addEventListener('click', function() {
+                macTab.classList.remove('active');
+                winTab.classList.add('active');
+                textInputTab.classList.remove('active');
+                claudeMcpTab.classList.remove('active');
+                macExamples.style.display = 'none';
+                winExamples.style.display = 'block';
+                textInputExamples.style.display = 'none';
+                claudeMcpExamples.style.display = 'none';
+              });
+              
+              textInputTab.addEventListener('click', function() {
+                macTab.classList.remove('active');
+                winTab.classList.remove('active');
+                textInputTab.classList.add('active');
+                claudeMcpTab.classList.remove('active');
+                macExamples.style.display = 'none';
+                winExamples.style.display = 'none';
+                textInputExamples.style.display = 'block';
+                claudeMcpExamples.style.display = 'none';
+              });
+              
+              claudeMcpTab.addEventListener('click', function() {
+                macTab.classList.remove('active');
+                winTab.classList.remove('active');
+                textInputTab.classList.remove('active');
+                claudeMcpTab.classList.add('active');
+                macExamples.style.display = 'none';
+                winExamples.style.display = 'none';
+                textInputExamples.style.display = 'none';
+                claudeMcpExamples.style.display = 'block';
+              });
+              
+              // Code panel functionality
+              const codeOutput = document.getElementById('code-output');
+              const copyTextBtn = document.getElementById('copy-text-btn');
+              const saveTextBtn = document.getElementById('save-text-btn');
+              
+              // Copy button functionality
+              if (copyTextBtn) {
+                copyTextBtn.addEventListener('click', function() {
+                  if (codeOutput) {
+                    const codeText = codeOutput.textContent || '';
+                    
+                    navigator.clipboard.writeText(codeText).then(() => {
+                      // Provide visual feedback
+                      const originalText = copyTextBtn.innerHTML;
+                      copyTextBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                      copyTextBtn.style.color = '#4caf50'; // Green color for success
+                      
+                      setTimeout(() => {
+                        copyTextBtn.innerHTML = originalText;
+                        copyTextBtn.style.color = '';
+                      }, 2000);
+                    }).catch(err => {
+                      console.error('Failed to copy code:', err);
+                      const originalText = copyTextBtn.innerHTML;
+                      copyTextBtn.innerHTML = '<i class="fas fa-times"></i> Failed';
+                      copyTextBtn.style.color = '#f44336'; // Red color for error
+                      
+                      setTimeout(() => {
+                        copyTextBtn.innerHTML = originalText;
+                        copyTextBtn.style.color = '';
+                      }, 2000);
+                    });
+                  }
+                });
+              }
+              
+              // Save/Download button functionality
+              if (saveTextBtn) {
+                saveTextBtn.addEventListener('click', function() {
+                  if (codeOutput) {
+                    const codeText = codeOutput.textContent || '';
+                    let fileExtension = '.py';  // Default to .py instead of .txt
+                    let fileName = 'wraith_example';
+                    let mimeType = 'text/plain';
+                    
+                    // Get file info from data attributes (set by updateCodeDisplay)
+                    if (codeOutput.dataset.extension) {
+                      // Use the '.' prefix for extension if not already present
+                      fileExtension = codeOutput.dataset.extension.startsWith('.') ? 
+                        codeOutput.dataset.extension : `.${codeOutput.dataset.extension}`;
+                    }
+                    
+                    if (codeOutput.dataset.filename) {
+                      fileName = codeOutput.dataset.filename;
+                    }
+                    
+                    if (codeOutput.dataset.mimeType) {
+                      mimeType = codeOutput.dataset.mimeType;
+                    }
+                    
+                    // Use suggested name if available, otherwise build from components
+                    const downloadName = codeOutput.dataset.suggestedName || 
+                                        `${fileName}${fileExtension}`;
+                    
+                    try {
+                      // Create a blob with the text content and proper MIME type
+                      const blob = new Blob([codeText], { type: mimeType });
+                      const url = URL.createObjectURL(blob);
+                      
+                      // Create a temporary link element to trigger download
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = downloadName;
+                      document.body.appendChild(a);
+                      a.click();
+                      
+                      // Clean up
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                      
+                      // Provide visual feedback
+                      const originalText = saveTextBtn.innerHTML;
+                      saveTextBtn.innerHTML = '<i class="fas fa-check"></i> Downloaded';
+                      saveTextBtn.style.color = '#4caf50'; // Green color for success
+                      
+                      setTimeout(() => {
+                        saveTextBtn.innerHTML = originalText;
+                        saveTextBtn.style.color = '';
+                      }, 2000);
+                    } catch (err) {
+                      console.error('Failed to save code:', err);
+                      const originalText = saveTextBtn.innerHTML;
+                      saveTextBtn.innerHTML = '<i class="fas fa-times"></i> Failed';
+                      saveTextBtn.style.color = '#f44336'; // Red color for error
+                      
+                      setTimeout(() => {
+                        saveTextBtn.innerHTML = originalText;
+                        saveTextBtn.style.color = '';
+                      }, 2000);
+                    }
+                  }
+                });
+              }
+              
+              // Add hover effects to the action buttons
+              const actionButtons = document.querySelectorAll('.action-btn');
+              actionButtons.forEach(button => {
+                button.addEventListener('mouseenter', function() {
+                  this.style.color = '#ffffff';
+                });
+                
+                button.addEventListener('mouseleave', function() {
+                  if (!this.classList.contains('active-btn')) {
+                    this.style.color = '#aaa';
+                  }
+                });
+              });
+            });
+          </script>
+          
+          <!-- Styled OS tabs -->
+          <div class="os-tabs" style="display: flex; margin-bottom: 20px; border-bottom: 1px solid var(--border-color);">
+            <div id="mac-tab" class="os-tab active" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent;">
+              <i class="fab fa-apple"></i> macOS / Linux
+            </div>
+            <div id="windows-tab" class="os-tab" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent;">
+              <i class="fab fa-windows"></i> Windows PowerShell
+            </div>
+            <div id="text-input-tab" class="os-tab" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent;">
+              <i class="fas fa-wand-magic-sparkles"></i> Code Assistant
+            </div>
+            <div id="claude-mcp-tab" class="os-tab" style="padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent;">
+              <i class="fas fa-robot"></i> Claude MCP
+            </div>
+          </div>
+          
+          <!-- Claude MCP Tab Content -->
+          <div id="claude-mcp-examples" style="display: none;">
+            <div class="example-section">
+              <h3>Gnosis Wraith MCP for Claude Desktop</h3>
+              <p>Use Gnosis Wraith directly from Claude Desktop with this MCP server integration:</p>
+              
+              <div class="ghost-control-card" style="margin-bottom: 25px; background: linear-gradient(135deg, rgba(108, 99, 255, 0.1) 0%, rgba(108, 99, 255, 0.05) 100%);">
+                <div class="ghost-control-header">
+                  <div class="ghost-control-icon">
+                    <i class="fas fa-download"></i>
+                  </div>
+                  <h3 class="ghost-control-title">MCP Server for Claude Desktop</h3>
+                </div>
+                
+                <p style="margin: 15px 0 5px 0; line-height: 1.5;">
+                  The Gnosis Wraith MCP server allows Claude to directly interact with our web crawling system, enabling
+                  powerful content extraction and analysis capabilities right in your conversations.
+                </p>
+                
+                <!-- Download button styled like the main crawl button -->
+                <div style="text-align: center; margin-top: 20px;">
+                  <a
+                    href="#" 
+                    class="ghost-crawl-btn"
+                    style="text-decoration: none;"
+                  >
+                    <i class="fas fa-download pulse-animation"></i>
+                    Download Gnosis Evolve MCP
+                  </a>
+                  <p style="margin-top: 10px; font-size: 13px; color: #666;">For Claude Desktop v1.0 and above</p>
+                </div>
+              </div>
+              
+              <div class="code-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; background-color: #2d2d2d; padding: 8px 15px; border-bottom: 1px solid #444;">
+                  <div class="code-language-badge" style="background-color: #3572A5; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">
+                    <i class="fas fa-code"></i> Installation Instructions
+                  </div>
+                  <button class="copy-btn" title="Copy to clipboard">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <pre class="code-block">
+# Installing Gnosis Wraith MCP for Claude Desktop
+
+## Option 1: For Claude Desktop Users (Recommended)
+
+1. Download the Gnosis Evolve tool from the download button above
+2. Open Claude Desktop
+3. Navigate to the tools menu (⚙️ icon)
+4. Click "Install Tool" 
+5. Select the downloaded file
+6. Restart Claude Desktop
+
+## Option 2: Manual Installation
+
+1. Locate your Claude Desktop tool directory:
+   - Windows: %LOCALAPPDATA%\Claude\tools
+   - macOS: ~/Library/Application Support/Claude/tools
+   - Linux: ~/.config/Claude/tools
+
+2. Create a new file called `gnosis_wraith_mcp.py` in this directory
+3. Copy the Python code below
+4. Restart Claude Desktop
+
+## Usage
+
+Once installed, you can use commands like:
+- "Crawl this website: https://example.com"
+- "Extract content from this page: https://news.ycombinator.com"
+- "Analyze the text content of this URL: https://example.org/article"
+
+The MCP server connects to your local Gnosis Wraith instance (http://localhost:5678)
+                </pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Python MCP Implementation</h3>
+              <p>Here's the Python code for the Gnosis Wraith MCP server for Claude Desktop:</p>
+              
+              <div class="code-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; background-color: #2d2d2d; padding: 8px 15px; border-bottom: 1px solid #444;">
+                  <div class="code-language-badge lang-python" style="color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">
+                    <i class="fab fa-python"></i> Python
+                  </div>
+                  <button class="copy-btn" title="Copy to clipboard">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <pre class="code-block">
+#!/usr/bin/env python3
+"""
+Gnosis Wraith MCP Server for Claude Desktop
+Connects Claude to Gnosis Wraith for web crawling and content extraction
+"""
+
+import requests
+import json
+from urllib.parse import urlparse
+
+# Configuration
+WRAITH_SERVER_URL = "http://localhost:5678"
+TOOL_NAME = "gnosis_wraith_mcp"
+TOOL_DESCRIPTION = """
+    Connects to Gnosis Wraith for web crawling and content extraction.
+    This tool allows you to fetch and analyze web content directly from Claude.
+    
+    Args:
+        url: The URL to crawl or analyze
+        take_screenshot: Whether to take a screenshot of the page
+        javascript_enabled: Whether to enable JavaScript during crawling
+        ocr_extraction: Whether to extract text using OCR on screenshots
+        markdown_extraction: Type of markdown extraction ("basic", "enhanced")
+        
+    Returns:
+        Dictionary with crawl results including markdown content and screenshots
+"""
+
+def main(url, take_screenshot=True, javascript_enabled=False, 
+         ocr_extraction=False, markdown_extraction="enhanced", 
+         server_url=None, title=None, ctx=None):
+    """
+    Main function to process URL with Gnosis Wraith
+    
+    Args:
+        url: The URL to crawl
+        take_screenshot: Whether to take a screenshot
+        javascript_enabled: Whether to enable JavaScript during crawling
+        ocr_extraction: Whether to extract text using OCR
+        markdown_extraction: Type of markdown extraction ("basic", "enhanced")
+        server_url: URL of the Gnosis Wraith server (default: http://localhost:5678)
+        title: Custom title for the report (default: auto-generated from URL)
+        ctx: Context object for logging and progress
+        
+    Returns:
+        Dictionary with crawl results including markdown content and screenshots
+    """
+    try:
+        # Progress reporting
+        if ctx:
+            ctx.progress(0, "Initializing Gnosis Wraith connection...")
+        
+        # Validate URL
+        if not url:
+            return {"error": "URL is required"}
+        
+        # Add http:// prefix if missing
+        if not url.startswith(("http://", "https://")):
+            url = "https://" + url
+        
+        # Validate URL format
+        try:
+            result = urlparse(url)
+            if not all([result.scheme, result.netloc]):
+                return {"error": f"Invalid URL format: {url}"}
+        except Exception as e:
+            return {"error": f"URL parsing error: {str(e)}"}
+        
+        # Use default server URL if not provided
+        server_url = server_url or WRAITH_SERVER_URL
+        
+        # Auto-generate title if not provided
+        if not title:
+            domain = urlparse(url).netloc
+            title = f"Crawl: {domain}"
+        
+        # Progress reporting
+        if ctx:
+            ctx.progress(20, f"Connecting to Gnosis Wraith at {server_url}...")
+        
+        # Request payload
+        payload = {
+            "url": url,
+            "title": title,
+            "take_screenshot": take_screenshot,
+            "javascript_enabled": javascript_enabled,
+            "ocr_extraction": ocr_extraction,
+            "markdown_extraction": markdown_extraction
+        }
+        
+        # Make API request
+        response = requests.post(
+            f"{server_url}/api/crawl",
+            json=payload,
+            timeout=60  # 60-second timeout
+        )
+        
+        # Progress reporting
+        if ctx:
+            ctx.progress(70, "Processing response...")
+        
+        # Check response
+        if response.status_code != 200:
+            return {
+                "error": f"Gnosis Wraith server error: {response.status_code}",
+                "details": response.text
+            }
+        
+        # Parse response
+        data = response.json()
+        
+        # Progress reporting
+        if ctx:
+            ctx.progress(100, "Completed!")
+            
+        # Return formatted results for Claude
+        if data.get("success"):
+            result = {
+                "success": True,
+                "markdown": "",
+                "screenshot_url": None,
+                "report_url": None
+            }
+            
+            # Process results
+            for item in data.get("results", []):
+                # Include markdown content if available
+                if "extracted_text" in item:
+                    result["markdown"] += item["extracted_text"]
+                
+                # Include screenshot URL if available
+                if "screenshot" in item:
+                    result["screenshot_url"] = f"{server_url}/screenshots/{item['screenshot']}"
+            
+            # Include report URLs
+            if "report_path" in data:
+                result["report_url"] = f"{server_url}/reports/{data['report_path']}"
+                result["html_report_url"] = result["report_url"].replace('.md', '.html')
+            
+            return result
+        else:
+            return {
+                "error": data.get("error", "Unknown error"),
+                "details": data
+            }
+            
+    except requests.RequestException as e:
+        return {
+            "error": f"Connection error: {str(e)}",
+            "details": "Could not connect to Gnosis Wraith server. Make sure it's running."
+        }
+    except Exception as e:
+        return {
+            "error": f"Error: {str(e)}",
+            "details": "An unexpected error occurred."
+        }
+                </pre>
+              </div>
+            </div>
+          </div>
+          
+          <div id="text-input-examples" style="display: none;">
+  
+            <!-- Search box for code examples - same width as code box below -->
+            <div class="ghost-search-box" style="width: 100%; margin: 0 auto 20px;">
+              <i class="fas fa-code ghost-search-icon" style="color: #6c63ff; margin-right: 10px;"></i>
+              <input
+                type="text"
+                id="code-query"
+                placeholder="What code are you working on? Tell us your language, libraries, and specific needs in detail..."
+                autocomplete="off"
+                style="flex-grow: 1; border: none; padding: 12px 0; font-size: 16px; background: transparent; color: var(--text-color); outline: none;"
+              />
+              <button id="ask-wraith-btn" class="ghost-search-button" title="Generate Code" style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #6c63ff; color: white; border: none; cursor: pointer; transition: all 0.2s;">
+                <i class="fas fa-wand-magic-sparkles"></i>
+              </button>
+            </div>
+            
+            <!-- Code output container with language badge and action buttons at the top -->
+            <div id="code-output-container" class="code-container" style="position: relative; margin-top: 20px; border-radius: 8px; overflow: hidden;">
+              <!-- Code header with language badge and action buttons -->
+              <div style="display: flex; justify-content: space-between; align-items: center; background-color: #2d2d2d; padding: 8px 15px; border-bottom: 1px solid #444;">
+                <div class="code-language-badge lang-python" style="background-color: #3572A5; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">
+                  <i class="fab fa-python"></i> Python
+                </div>
+                <div class="code-actions">
+                  <button class="action-btn" id="copy-text-btn" title="Copy to clipboard" style="background-color: transparent; border: none; color: #aaa; margin-right: 10px; cursor: pointer; padding: 4px 8px; transition: all 0.2s;">
+                    <i class="fas fa-copy"></i> Copy
+                  </button>
+                  <button class="action-btn" id="save-text-btn" title="Save as file" style="background-color: transparent; border: none; color: #aaa; cursor: pointer; padding: 4px 8px; transition: all 0.2s;">
+                    <i class="fas fa-download"></i> Download
+                  </button>
+                </div>
+              </div>
+              
+              <pre class="code-block line-numbers" style="margin-top: 0; border-top-left-radius: 0; border-top-right-radius: 0;"><code id="code-output" class="language-python no-underline"></code></pre>
+            </div>
+          </div>
+          
+          <!-- Mac/Linux Examples -->
+          <div id="mac-examples">
+            <div class="example-section">
+              <h3>Basic URL Crawl</h3>
+              <p>Crawl a webpage and retrieve the processed content in markdown format:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">curl -X POST http://localhost:5678/api/crawl \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "markdown_extraction": "enhanced",
+    "take_screenshot": true
+  }'</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Upload an Image for OCR</h3>
+              <p>Upload an image file and extract text using OCR:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">curl -X POST http://localhost:5678/api/upload \
+  -F "image=@/path/to/your/image.png" \
+  -F "title=My OCR Analysis"</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Advanced Crawl with JavaScript</h3>
+              <p>Crawl a page with JavaScript rendering enabled and OCR extraction:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">curl -X POST http://localhost:5678/api/crawl \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "javascript_enabled": true,
+    "take_screenshot": true,
+    "ocr_extraction": true,
+    "markdown_extraction": "enhanced",
+    "title": "JavaScript-Rendered Content Analysis"
+  }'</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Delete a Report</h3>
+              <p>Delete a previously generated report:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">curl -X DELETE http://localhost:5678/api/reports/report_filename.md</pre>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Windows PowerShell Examples -->
+          <div id="windows-examples" style="display: none;">
+            <div class="example-section">
+              <h3>Basic URL Crawl</h3>
+              <p>Crawl a webpage and retrieve the processed content in markdown format:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">$body = @{
+    url = "https://example.com"
+    markdown_extraction = "enhanced"
+    take_screenshot = $true
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:5678/api/crawl" -Method Post -Body $body -ContentType "application/json"</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Upload an Image for OCR</h3>
+              <p>Upload an image file and extract text using OCR:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">$filePath = "C:\path\to\your\image.png"
+$fileBytes = [System.IO.File]::ReadAllBytes($filePath)
+$fileEnc = [System.Text.Encoding]::GetEncoding('UTF-8').GetString($fileBytes)
+$boundary = [System.Guid]::NewGuid().ToString()
+$LF = "`r`n"
+
+$bodyLines = (
+    "--$boundary",
+    "Content-Disposition: form-data; name=`"image`"; filename=`"$(Split-Path $filePath -Leaf)`"",
+    "Content-Type: application/octet-stream$LF",
+    $fileEnc,
+    "--$boundary",
+    "Content-Disposition: form-data; name=`"title`"$LF",
+    "My OCR Analysis",
+    "--$boundary--$LF"
+) -join $LF
+
+Invoke-RestMethod -Uri "http://localhost:5678/api/upload" -Method Post -Body $bodyLines -ContentType "multipart/form-data; boundary=$boundary"</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Advanced Crawl with JavaScript</h3>
+              <p>Crawl a page with JavaScript rendering enabled and OCR extraction:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">$body = @{
+    url = "https://example.com"
+    javascript_enabled = $true
+    take_screenshot = $true
+    ocr_extraction = $true
+    markdown_extraction = "enhanced"
+    title = "JavaScript-Rendered Content Analysis"
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:5678/api/crawl" -Method Post -Body $body -ContentType "application/json"</pre>
+              </div>
+            </div>
+            
+            <div class="example-section">
+              <h3>Delete a Report</h3>
+              <p>Delete a previously generated report:</p>
+              <div class="code-container">
+                <button class="copy-btn" title="Copy to clipboard">
+                  <i class="fas fa-copy"></i>
+                </button>
+                <pre class="code-block">Invoke-RestMethod -Uri "http://localhost:5678/api/reports/report_filename.md" -Method Delete</pre>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Copy button functionality -->
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              const copyButtons = document.querySelectorAll('.copy-btn');
+              copyButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                  const codeBlock = this.nextElementSibling;
+                  const codeText = codeBlock.textContent;
+                  
+                  navigator.clipboard.writeText(codeText).then(() => {
+                    // Visual feedback
+                    this.classList.add('copied');
+                    
+                    // Store original content
+                    const originalHTML = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    
+                    // Revert after timeout
+                    setTimeout(() => {
+                      this.innerHTML = originalHTML;
+                      this.classList.remove('copied');
+                    }, 2000);
+                  }).catch(err => {
+                    console.error('Failed to copy code:', err);
+                    this.innerHTML = '<i class="fas fa-times"></i> Failed';
+                    
+                    setTimeout(() => {
+                      this.innerHTML = '<i class="fas fa-copy"></i>';
+                    }, 2000);
+                  });
+                });
+              });
+            });
+          </script>
+        </section>
+      </main>
+
+      <!-- Include the common footer -->
+      {% include 'includes/footer.html' %}
+    </div>
+
+    <!-- Prism.js scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    
+    <!-- Language components -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-yaml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    
+    <!-- Load our code assistant script -->
+    <script src="{{ url_for('static', filename='js/code-assistant.js') }}?v={{ range(10000, 99999) | random }}"></script>
+    
+    <!-- Initialize the Prism highlighter for existing code blocks and set default Python code -->
+    <script>
+      // Default Python example code to show on page load
+      const DEFAULT_PYTHON_CODE = `#!/usr/bin/env python3
+"""
+Basic example of using the Gnosis Wraith API to crawl a website.
+"""
+import requests
+import json
+
+# URL of your Gnosis Wraith server
+SERVER_URL = "http://localhost:5678"  # Change this to match your server
+
+def crawl_website(url, take_screenshot=True, javascript_enabled=False):
+    """
+    Crawl a website using the Gnosis Wraith API.
+    
+    Args:
+        url (str): The URL to crawl
+        take_screenshot (bool): Whether to take a screenshot
+        javascript_enabled (bool): Whether to enable JavaScript during crawling
+        
+    Returns:
+        dict: The API response
+    """
+    endpoint = f"{SERVER_URL}/api/crawl"
+    
+    # Configure the request payload
+    payload = {
+        "url": url,
+        "title": f"Crawl Report: {url}",
+        "take_screenshot": take_screenshot,
+        "javascript_enabled": javascript_enabled,
+        "ocr_extraction": False,
+        "markdown_extraction": "enhanced"
+    }
+    
+    # Make the API request
+    response = requests.post(endpoint, json=payload)
+    
+    # Check if the request was successful
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error: {response.status_code}")
+        print(response.text)
+        return {"success": False, "error": f"API request failed with status code {response.status_code}"}
+
+def main():
+    # Example usage
+    url_to_crawl = "https://news.ycombinator.com/"
+    print(f"Crawling {url_to_crawl}...")
+    
+    # Call the API
+    result = crawl_website(url_to_crawl)
+    
+    # Check if the crawl was successful
+    if result.get("success"):
+        print("Crawl successful!")
+        
+        # Print details about the results
+        for item in result.get("results", []):
+            print(f"\\nTitle: {item.get('title', 'No title')}")
+            
+            # Check if a screenshot was taken
+            if "screenshot" in item:
+                print(f"Screenshot: {SERVER_URL}/screenshots/{item['screenshot']}")
+            
+            # Print a snippet of the extracted text if available
+            if "extracted_text" in item:
+                text_preview = item["extracted_text"][:100] + "..." if len(item["extracted_text"]) > 100 else item["extracted_text"]
+                print(f"Text preview: {text_preview}")
+        
+        # Print the report URL if available
+        if "report_path" in result:
+            print(f"\\nFull report: {SERVER_URL}/reports/{result['report_path']}")
+            print(f"HTML report: {SERVER_URL}/reports/{result['report_path'].replace('.md', '.html')}")
+    else:
+        print(f"Crawl failed: {result.get('error', 'Unknown error')}")
+
+if __name__ == "__main__":
+    main()`;
+
+      document.addEventListener('DOMContentLoaded', function() {
+        // Set the default Python code in the output field
+        const codeOutput = document.getElementById('code-output');
+        if (codeOutput && codeOutput.textContent.trim() === '') {
+          codeOutput.textContent = DEFAULT_PYTHON_CODE;
+        }
+        
+        // Force Prism to highlight all code elements
+        if (window.Prism) {
+          Prism.highlightAll();
+        }
+        
+        // Fix any underlined text in code blocks
+        const codeBlocks = document.querySelectorAll('pre code');
+        codeBlocks.forEach(block => {
+          // Add our no-underline class to all code blocks
+          block.classList.add('no-underline');
+          
+          // Remove any underlines from child elements
+          const allElements = block.querySelectorAll('*');
+          allElements.forEach(el => {
+            el.style.textDecoration = 'none';
+            el.style.borderBottom = 'none';
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

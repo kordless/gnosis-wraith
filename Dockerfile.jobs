@@ -64,7 +64,7 @@ RUN python -c "import easyocr; reader = easyocr.Reader(['en'])" && \
 COPY . .
 
 # Define the version as a build argument
-ARG EXTENSION_VERSION=1.1.1
+ARG EXTENSION_VERSION=1.2.1
 
 # Set environment variable from the build argument 
 ENV EXTENSION_VERSION=${EXTENSION_VERSION}

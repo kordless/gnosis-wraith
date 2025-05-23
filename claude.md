@@ -1,88 +1,131 @@
-# Gnosis Wraith Project Guide for Claude
+# Claude Quick Start Guide for Gnosis Wraith
 
-## Purpose of This Document
+Claude, this document is specifically for you. The user is experienced with both this project and with Claude sessions. They've started hundreds of sessions like this and want to skip the typical exploration phase.
 
-This document serves as a primer for Claude to understand the Gnosis Wraith project without immediately exploring all files. When starting a new session with this project, Claude should:
+## Project Location & Structure
 
-1. First ask which directory it's currently in
-2. Run `evolve_status` to check available tools before accessing any project files
-3. Wait for specific user instructions rather than autonomously exploring files
+You are working in: `C:\Users\kord\Code\gnosis\gnosis-wraith\`
 
-## Project Overview
+Key directories:
+- `/gnosis_wraith/extension/` - Browser extension (primary focus area)
+- `/gnosis_wraith/server/` - Backend server code
+- `/gnosis_wraith/server/routes/` - API endpoints
+  - `pages.py` - Routes for web pages
+  - `api.py` - API endpoints for extension and clients
+- `/gnosis_wraith/server/templates/` - HTML templates
+  - Templates use Jinja2 templating engine
+  - Error pages have specific styling with `error_type` parameter
+  - Template version backups in `.filename_versions` directories
+- `/gnosis_wraith/server/static/` - CSS, JS, images
 
-Gnosis Wraith is a web crawling and content analysis system that serves as the perception layer for the Gnosis ecosystem. The metaphor is apt - Gnosis is an AI oracle, and Wraith is its "eye" that perceives the web.
+## Current Status & Priority Tasks
 
-The system crawls websites, takes screenshots, analyzes content using OCR and AI, and provides structured data extraction. It operates as an "AI oracle" that gathers information from the web with various levels of intelligence - from basic crawling to advanced AI analysis.
+The project has undergone a recent restructuring to improve the UI and navigation system:
 
-## Project Structure
+### New Navigation Structure
+- `/wraith` - Main crawling page (renamed from index)
+- `/code` - Code examples page (moved from a tab on index)
+- `/reports` - Reports listing and viewing
 
-The project is organized into several key directories:
+### Template System Notes
+- Templates use Jinja2 with some limitations:
+  - No `range(x, y) | random` filters in templates - use static values
+  - No `bin` filter - binary conversions must be done server-side
+  - Template changes require server restart to take effect
+  - Browser caching can mask template updates - use incognito window for testing
+- Error templates have special error types:
+  - `error_type="not-found"` - Red ghost theme
+  - `error_type="void-state"` - Purple elite-speak theme
+  
+### Docker Environment
+- The application runs in Docker container `gnosis-wraith`
+- Server logs can be checked with `docker_logs` when debugging
+- `docker_rebuild` may be necessary after significant changes
 
-- `server/`: Core server components, including browser automation and crawling
-- `ai/`: AI integration modules for different model providers (OpenAI, Anthropic, Gemini)
-- `gnosis_wraith/`: Main package, including extension and server components
-- `search/`: Search indexing components
-- `lightning/`: Lightning Network integration for micropayments
+The browser extension has been fixed but may need additional enhancements:
 
-Key files include:
-- `Dockerfile`: Container configuration for deployment
-- `app.py`: Main application entry point
-- `requirements.txt`: Python dependencies
-- `server/browser.py`: Browser automation and screenshot capture
-- `server/crawler.py`: Web crawling functionality
-- `ai/models.py`: Model management and selection
+### Extension Issues
+1. **Screenshot functionality** - Recently fixed, but may need testing
+2. **DOM capture** - Improved reliability, but may need further testing
+3. **Version consistency** - Consistently updated to version 1.2.1 across all files
+4. **UI styling** - Improved UI layout with reorganized control buttons and interactive nav tabs
 
-## Key Components
+### Implementation Status
 
-### Browser Automation
+#### ✅ Completed
+- Basic browser extension structure
+- Server API endpoints for receiving extension data
+- DOM content extraction system
+- Report generation from captured data
+- Job-based async processing system (implemented May 2025)
+- Dynamic module generation framework (architecture designed)
+- Navigation restructuring with sliding tabs
+- Code examples page with improved organization
+- UI layout enhancements with interactive positioning
+- Consistent version numbering (1.2.1) across all components
 
-The `browser.py` file handles all browser interactions using Playwright, including:
-- Page navigation and timing management
-- Screenshot capture
-- DOM stability monitoring
-- Handling different JavaScript rendering scenarios
+#### 🔄 In Progress
+- Extension UI enhancements
+- Better error handling and user feedback
+- Integration with Claude MCP for direct content extraction
 
-### Content Processing
+#### ❌ Not Started
+- Voice command integration (planned in UI revamp)
+- Full terminal integration for power users
+- Custom voice command training
+- Advanced speech features
 
-The system processes web content through several methods:
-- HTML parsing via Beautiful Soup in `crawler.py`
-- OCR processing of screenshots using EasyOCR
-- AI-based content analysis with multiple providers
+## Common Tasks & Commands
 
-### Crawling Engine
+When working on this project, these are common operations:
 
-The `crawler.py` file implements the core crawling functionality:
-- URL processing and navigation
-- Content extraction and filtering
-- Error handling and retry logic
-- Integration with AI processing
+```
+# Exploring files
+file_explorer - To navigate the file system
+file_explorer with read_file=true - To view file contents
 
-## Recent Optimizations
+# Editing files
+file_apply_diff - To apply changes to files using diff format
+file_writer - To create new files or make major changes
 
-### EasyOCR Model Preloading
+# Testing and Debugging
+docker_rebuild - To rebuild and test Docker containers
+docker_logs container_name=gnosis-wraith - To check the server logs (only when instructed)
 
-The Dockerfile now preloads EasyOCR models during build time to avoid downloading them on each service startup.
+# Template Versioning
+- Template file changes are automatically backed up to .filename_versions directories
+- Each backup is timestamped with version numbers
+- If a template is causing errors, looking at previous versions may help
 
-### Beautiful Soup for HTML Parsing
+# Common UI/UX Conventions
+- Use Font Awesome icons (6.4.0) for UI elements
+- Elite speak text style for system errors (R3P0RT, ERR0R, etc.)
+- Error messages prefer terminal/coding style formatting
 
-Added Beautiful Soup for HTML content filtering to improve extraction quality.
+# Don't do unnecessarily:
+- Don't run evolve_status at the start of each session - it's unnecessary
+- Don't change directories with file_explorer (..) - just use the full paths
+- Don't read all available markdown files - refer to specific ones when needed
+- Don't check container logs unless specifically requested
+```
 
-### JavaScript-Heavy Page Handling
+## User Working Style
 
-Enhanced browser.py with improved handling for complex JavaScript-rendered pages through DOM stability detection, extended wait times for known complex sites, and content existence verification.
+The user prefers:
+1. Direct, concise responses
+2. Minimal exploration of files unless specifically requested
+3. Focus on solving the immediate task at hand
+4. Assume the user knows the project well - avoid explaining project concepts
+5. When making code changes, focus on the technical solution, not explaining basic programming concepts
 
-### Browser Installation Optimization
+## Next Session Focus
 
-Optimized Docker image size by only installing Chromium instead of all browsers.
+The immediate focus will be on continuing the UI restructuring and improvements:
+1. Further refinements to the navigation system
+2. Enhancing the wraith page (formerly index page)
+3. Improving the reports page with better filtering and organization
+4. Completing the Claude MCP integration for direct content extraction
 
-## Deployment Configuration
+Claude, the user is ready to begin work immediately and will direct you to specific tasks. There's no need to explore the entire codebase proactively or read all documentation files.
 
-The system uses Docker for containerization and can be deployed to environments like Google Cloud Run, with considerations for container size, ephemeral filesystems, memory requirements, and JavaScript execution.
-
----
-
-**Important for Claude:** When starting a session with this project, first ask which directory you're in and use the `evolve_status` tool to check available capabilities. Don't automatically inspect individual files unless specifically requested. Wait for user instructions on which aspects of the project to focus on or which files to analyze.
-
-Remember that your role is to assist with the Gnosis Wraith project based on user requests, not to autonomously explore all files immediately. This approach ensures you can provide targeted, relevant help as needed.
-
-SEE NOTES.md
+Remember that your role is to assist with technical solutions as directed, not to comprehensively understand the entire system before starting work.

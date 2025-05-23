@@ -411,6 +411,9 @@ class DefaultMarkdownGenerator(MarkdownGenerationStrategy):
                 raw_markdown = f"Error converting HTML to markdown: {str(e)}"
 
             raw_markdown = raw_markdown.replace("    ```", "```")
+            
+            # Normalize excessive newlines to improve readability
+            raw_markdown = re.sub(r'\n{3,}', '\n\n', raw_markdown)
 
             # Convert links to citations
             markdown_with_citations = raw_markdown
@@ -436,6 +439,8 @@ class DefaultMarkdownGenerator(MarkdownGenerationStrategy):
                         "<div>{}</div>".format(s) for s in filtered_html
                     )
                     fit_markdown = h.handle(filtered_html)
+                    # Normalize excessive newlines in fit_markdown
+                    fit_markdown = re.sub(r'\n{3,}', '\n\n', fit_markdown)
                 except Exception as e:
                     fit_markdown = f"Error generating fit markdown: {str(e)}"
                     filtered_html = ""

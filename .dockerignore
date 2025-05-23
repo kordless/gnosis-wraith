@@ -4,6 +4,7 @@
 
 # Docker
 Dockerfile
+Dockerfile.jobs
 docker-compose.yml
 .dockerignore
 
@@ -48,6 +49,14 @@ extension/
 *.log
 screenshots/
 reports/
+rebuild_log.txt
+
+# Template version backups
+*_versions/
+.*_versions/
+.*.*_versions/
+.*.*.*_versions/
+.*.*.*.*_versions/
 
 # OS specific
 .DS_Store

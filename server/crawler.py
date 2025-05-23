@@ -6,7 +6,7 @@ import asyncio
 from typing import List, Dict, Any, Optional, Union
 
 from server.browser import BrowserControl
-from ai.processing import process_with_llm
+# from ai.processing import process_with_llm  # Moved to provider-specific modules
 from server.markdown_generation import DefaultMarkdownGenerator, PruningContentFilter
 
 # Get logger and config path
@@ -213,7 +213,14 @@ async def crawl_url(url: Union[str, List[str]],
                     
                     if content_for_llm:
                         try:
-                            llm_summary = await process_with_llm(content_for_llm, llm_provider, llm_token)
+                            if llm_provider == 'anthropic':
+                                from ai.anthropic import process_with_anthropic
+                                llm_summary = await process_with_anthropic(content_for_llm, llm_token)
+                            elif llm_provider == 'openai':
+                                from ai.openai import process_with_openai
+                                llm_summary = await process_with_openai(content_for_llm, llm_token)
+                            else:
+                                llm_summary = f"Unsupported LLM provider: {llm_provider}"
                         except Exception as llm_error:
                             logger.error(f"LLM processing error for {url}: {str(llm_error)}")
                             llm_summary = None

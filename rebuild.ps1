@@ -98,7 +98,7 @@ $manifestJson = Get-Content -Path $manifestPath | ConvertFrom-Json
 # Update values
 $manifestJson.name = "Gnosis Wraith Ghost"
 $manifestJson.description = "Gnosis Wraith - DOM capture, screenshot, and content extraction for web pages"
-$manifestJson.version = "1.1.2"
+$manifestJson.version = "1.2.1"
 
 # Save updated manifest
 $manifestJson | ConvertTo-Json -Depth 10 | Set-Content -Path $manifestPath
@@ -178,15 +178,44 @@ if (Test-Path "$PSScriptRoot\startup.sh") {
 Log-Message "  Startup script updated successfully" -ForegroundColor Green
 
 # Make sure to explicitly set the environment variable with the current version
-$manifestJson.version = "1.1.1"  # Force version to 1.1.1
+$manifestJson.version = "1.2.1"  # Use version 1.2.1 to match extension files
 $env:EXTENSION_VERSION = $manifestJson.version
 Log-Message "  Setting EXTENSION_VERSION environment variable to $($manifestJson.version)" -ForegroundColor Green
 
+# Check if .env file exists and load it
+$envFilePath = Join-Path -Path $PSScriptRoot -ChildPath ".env"
+$envFileExists = Test-Path $envFilePath
+$envFileMessage = if ($envFileExists) { "found" } else { "not found" }
+Log-Message "Checking for .env file: $envFileMessage" -ForegroundColor $(if ($envFileExists) { "Green" } else { "Yellow" })
+
+# Build the environment variables argument
+$envVarsArg = "-e EXTENSION_VERSION=$($manifestJson.version)"
+
+# If .env file exists, use --env-file
+if ($envFileExists) {
+    $envVarMessage = "--env-file ./.env"
+    Log-Message "  Using environment variables from .env file" -ForegroundColor Green
+} else {
+    $envVarMessage = "-e EXTENSION_VERSION only"
+    Log-Message "  Warning: No .env file found. API features may be limited." -ForegroundColor Yellow
+    Log-Message "  Create a .env file with your ANTHROPIC_API_KEY for AI features" -ForegroundColor Yellow
+}
+
 # Run the new container with the updated startup script
 Log-Message "Starting new container..." -ForegroundColor Yellow
-Log-Message "  Command: docker run -d -p 5678:5678 -e EXTENSION_VERSION=$($manifestJson.version) --name gnosis-wraith -v ${PWD}/startup.sh:/app/startup.sh gnosis-wraith" -ForegroundColor Gray
+$dockerRunCommand = if ($envFileExists) {
+    "docker run -d -p 5678:5678 -e EXTENSION_VERSION=$($manifestJson.version) --env-file ./.env --name gnosis-wraith -v ${PWD}/startup.sh:/app/startup.sh gnosis-wraith"
+} else {
+    "docker run -d -p 5678:5678 -e EXTENSION_VERSION=$($manifestJson.version) --name gnosis-wraith -v ${PWD}/startup.sh:/app/startup.sh gnosis-wraith"
+}
+Log-Message "  Command: $dockerRunCommand" -ForegroundColor Gray
 
-$containerOutput = docker run -d -p 5678:5678 -e EXTENSION_VERSION=$($manifestJson.version) --name gnosis-wraith -v ${PWD}/startup.sh:/app/startup.sh gnosis-wraith 2>&1
+# Run the container with the appropriate environment setup
+if ($envFileExists) {
+    $containerOutput = docker run -d -p 5678:5678 -e EXTENSION_VERSION=$($manifestJson.version) --env-file ./.env --name gnosis-wraith -v ${PWD}/startup.sh:/app/startup.sh gnosis-wraith 2>&1
+} else {
+    $containerOutput = docker run -d -p 5678:5678 -e EXTENSION_VERSION=$($manifestJson.version) --name gnosis-wraith -v ${PWD}/startup.sh:/app/startup.sh gnosis-wraith 2>&1
+}
 Log-Message "  Container ID: $containerOutput"
 
 # Display container status

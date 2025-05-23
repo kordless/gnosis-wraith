@@ -24,12 +24,19 @@ from quart import Quart, render_template, request, jsonify, send_from_directory,
 # Import config and initialize logging
 from server.config import logger, STORAGE_PATH, SCREENSHOTS_DIR, REPORTS_DIR, check_gpu_availability
 
+# Ensure all critical directories exist at startup
+os.makedirs(STORAGE_PATH, exist_ok=True)
+os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+os.makedirs(REPORTS_DIR, exist_ok=True)
+os.makedirs(os.path.join(REPORTS_DIR, "images"), exist_ok=True)
+logger.info(f"Storage directories initialized: {STORAGE_PATH}")
+
 # Import crawler and reporting modules
 from server.crawler import extract_urls, crawl_url
 from server.reports import save_markdown_report, convert_markdown_to_html, generate_markdown_report
 
 # Import AI processing modules
-from ai.processing import process_with_llm
+# from ai.processing import process_with_llm  # Moved to provider-specific modules
 from lightning.client import make_lightning_payment
 
 from server.initializers import init_job_system
@@ -99,11 +106,12 @@ if os.environ.get('EXTENSION_VERSION'):
 # Log the version being used
 logger.info(f"Extension version {EXTENSION_VERSION} will be used for all operations")
     
-# Then in the index route, pass the version to the template
+# Then in the index route, redirect to the crawl page (handled by blueprint)
 @app.route('/')
 async def index():
-    """Render the index page."""
-    return await render_template('index.html', extension_version=EXTENSION_VERSION)
+    """Redirect to the crawl page."""
+    # The pages blueprint will handle this if it's registered, but this is a fallback
+    return redirect(url_for('pages.crawl'))
 
 @app.route('/api/upload', methods=['POST'])
 async def api_upload():
@@ -184,70 +192,56 @@ async def api_upload():
             "error": str(e)
         }), 500
 
+# These routes are handled by the pages blueprint in gnosis_wraith.server.routes.pages
+# but in case the blueprint isn't registered for some reason, the main app will use these routes
 @app.route('/reports')
 async def list_reports():
-    """List all generated reports."""
-    reports = []
-    for file in os.listdir(REPORTS_DIR):
-        if file.endswith('.md'):
-            file_path = os.path.join(REPORTS_DIR, file)
-            creation_time = os.path.getctime(file_path)
-            
-            # Get the title from the markdown file (first heading)
-            title = file  # Default to filename
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read(1000)  # Read just the beginning
-                    match = re.search(r'^# (.+)$', content, re.MULTILINE)
-                    if match:
-                        title = match.group(1)
-            except Exception as e:
-                logger.error(f"Error reading report title: {str(e)}")
-            
-            reports.append({
-                "filename": file,
-                "title": title,
-                "created": datetime.datetime.fromtimestamp(creation_time),  # Store as datetime object
-                "created_str": datetime.datetime.fromtimestamp(creation_time).strftime('%Y-%m-%d %H:%M:%S'),
-                "size": os.path.getsize(file_path)
-            })
-    
-    # Sort reports by creation time (newest first)
-    reports.sort(key=lambda x: x['created'], reverse=True)
-    
-    return await render_template('reports.html', reports=reports)
+    """List all generated reports (fallback handler)."""
+    # Redirect to the blueprint-handled version
+    return redirect(url_for('pages.list_reports'))
 
 @app.route('/reports/<path:filename>')
 async def serve_report(filename):
-    """Serve a report file."""
-    # Check if the file exists
-    file_path = os.path.join(REPORTS_DIR, filename)
-    if not os.path.exists(file_path):
-        # If HTML file doesn't exist, check if we need to convert from markdown
-        if filename.endswith('.html'):
-            # Try to find the corresponding markdown file
-            md_filename = filename.replace('.html', '.md')
-            md_file_path = os.path.join(REPORTS_DIR, md_filename)
+    """Serve a report file (fallback handler)."""
+    # Redirect to the blueprint-handled version
+    return redirect(url_for('pages.serve_report', filename=filename))
+
+@app.route('/health', methods=['HEAD', 'GET'])
+async def health_check():
+    """Health check endpoint for system monitoring."""
+    try:
+        # Basic health checks
+        health_status = {
+            "status": "healthy",
+            "timestamp": datetime.datetime.now().isoformat(),
+            "version": "2025-05-14-V2",
+            "storage_accessible": os.path.exists(STORAGE_PATH),
+            "reports_accessible": os.path.exists(REPORTS_DIR),
+            "screenshots_accessible": os.path.exists(SCREENSHOTS_DIR)
+        }
+        
+        # Check if any critical directories are missing
+        if not all([health_status["storage_accessible"], 
+                   health_status["reports_accessible"], 
+                   health_status["screenshots_accessible"]]):
+            health_status["status"] = "degraded"
             
-            if os.path.exists(md_file_path):
-                # Convert markdown to HTML on-demand
-                try:
-                    from server.reports import convert_markdown_to_html
-                    html_file = await convert_markdown_to_html(md_file_path)
-                    logger.info(f"Generated HTML file on-demand: {html_file}")
-                    # Now try to serve the newly created file
-                    return await send_from_directory(REPORTS_DIR, filename)
-                except Exception as e:
-                    logger.error(f"Error generating HTML on-demand: {str(e)}")
-                    return f"Error generating HTML: {str(e)}", 500
-            else:
-                logger.error(f"Markdown file not found for HTML conversion: {md_file_path}")
-                return f"Report not found: {filename}", 404
-        else:
-            logger.error(f"Report file not found: {file_path}")
-            return f"Report not found: {filename}", 404
-    
-    return await send_from_directory(REPORTS_DIR, filename)
+        # For HEAD requests, just return status code
+        if request.method == 'HEAD':
+            return '', 200 if health_status["status"] == "healthy" else 503
+            
+        # For GET requests, return full health info
+        return jsonify(health_status), 200 if health_status["status"] == "healthy" else 503
+        
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        if request.method == 'HEAD':
+            return '', 503
+        return jsonify({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": datetime.datetime.now().isoformat()
+        }), 503
 
 @app.route('/screenshots/<path:filename>')
 async def serve_screenshot(filename):
@@ -425,17 +419,9 @@ async def serve_webwraith_extension():
 
 @app.route('/settings')
 async def settings():
-    """Render the settings page."""
-    # Default settings
-    settings_data = {
-        'server_url': os.environ.get('GNOSIS_WRAITH_SERVER_URL', 'http://localhost:5678'),
-        'llm_api_token': os.environ.get('GNOSIS_WRAITH_LLM_API_TOKEN', ''),
-        'screenshot_quality': os.environ.get('GNOSIS_WRAITH_SCREENSHOT_QUALITY', 'medium'),
-        'javascript_enabled': os.environ.get('GNOSIS_WRAITH_JAVASCRIPT_ENABLED', 'false') == 'true',
-        'storage_path': STORAGE_PATH
-    }
-    
-    return await render_template('settings.html', **settings_data)
+    """Render the settings page (fallback handler)."""
+    # Redirect to the blueprint-handled version
+    return redirect(url_for('pages.settings'))
 
 @app.route('/api/reports/<path:filename>', methods=['DELETE'])
 async def delete_report(filename):

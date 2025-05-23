@@ -7,16 +7,19 @@ from pathlib import Path
 STORAGE_PATH = os.environ.get('GNOSIS_WRAITH_STORAGE_PATH', os.path.join(os.path.expanduser("~"), ".gnosis-wraith"))
 SCREENSHOTS_DIR = os.path.join(STORAGE_PATH, "screenshots")
 REPORTS_DIR = os.path.join(STORAGE_PATH, "reports")
+DATA_DIR = os.path.join(STORAGE_PATH, "data")  # Added dedicated data directory
 LOG_FILE = os.path.join(STORAGE_PATH, "gnosis-wraith.log")
 
 # Ensure directories exist
 os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
 os.makedirs(REPORTS_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)  # Create data directory
 os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
 # Update environment variables for access in other modules
 os.environ['GNOSIS_WRAITH_SCREENSHOTS_DIR'] = SCREENSHOTS_DIR
 os.environ['GNOSIS_WRAITH_REPORTS_DIR'] = REPORTS_DIR
+os.environ['GNOSIS_WRAITH_DATA_DIR'] = DATA_DIR  # Add environment variable for data directory
 
 # Setup logging
 logger = logging.getLogger("gnosis_wraith")

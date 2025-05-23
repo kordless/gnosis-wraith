@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gnosis Wraith | About</title>
+    
+    <!-- React and ReactDOM -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.21.2/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+    <script>
+      tailwind.config = {
+        mode: 'jit',
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'terminal-green': '#4ade80',
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Custom CSS matching gnosis.html */
+        .break-words {
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        html, body {
+            height: 100vh;
+            background-color: #111827;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        
+        body {
+            height: 100vh;
+            position: fixed;
+            width: 100%;
+        }
+        
+        /* Allow page scrolling on mobile when all content is shown */
+        @media (max-width: 870px) {
+            html, body {
+                overflow-y: auto !important;
+                overflow-x: hidden;
+                min-height: 100vh;
+                height: auto !important;
+                position: static !important;
+                width: auto !important;
+            }
+            
+            .mobile-scroll-container {
+                height: auto !important;
+                min-height: 100vh;
+                overflow-y: visible !important;
+            }
+            
+            .mobile-content-area {
+                height: auto !important;
+                flex-grow: 0 !important;
+            }
+        }
+        
+        .crt-container {
+            overflow-y: auto !important;
+            position: relative;
+        }
+        
+        /* CRT Scan Lines Effect */
+        .crt-scanlines::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.03) 2px,
+                rgba(0, 255, 0, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* CRT Flicker Animation */
+        .crt-flicker {
+            animation: flicker 0.15s infinite linear;
+        }
+        
+        @keyframes flicker {
+            0% { opacity: 1; }
+            98% { opacity: 1; }
+            99% { opacity: 0.98; }
+            100% { opacity: 1; }
+        }
+        
+        /* Random flicker trigger */
+        .crt-flicker.active {
+            animation: flicker-strong 0.1s ease-in-out;
+        }
+        
+        @keyframes flicker-strong {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+        
+        /* CRT Glow Effect */
+        .crt-glow {
+            text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00, 0 0 15px #00ff00;
+        }
+        
+        /* Content styling */
+        .content-block {
+            margin: 8px 0;
+            padding: 8px 12px;
+            border-left: 3px solid #4ade80;
+            background: rgba(74, 222, 128, 0.05);
+            border-radius: 4px;
+        }
+        
+        .content-title {
+            color: #4ade80;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 6px;
+        }
+        
+        .content-text {
+            color: #d1d5db;
+            line-height: 1.5;
+        }
+        
+        .principle-block {
+            margin: 6px 0;
+            padding: 6px 10px;
+            border-left: 2px solid #fbbf24;
+            background: rgba(251, 191, 36, 0.05);
+            border-radius: 3px;
+        }
+        
+        .principle-title {
+            color: #fbbf24;
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+        
+        .principle-text {
+            color: #d1d5db;
+            font-size: 0.9em;
+            margin-top: 4px;
+        }
+        
+        /* Button styling */
+        .topic-button {
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .topic-button:hover {
+            background-color: rgba(74, 222, 128, 0.2);
+            box-shadow: 0 0 10px rgba(74, 222, 128, 0.3);
+        }
+        
+        .topic-button.active {
+            background-color: rgba(74, 222, 128, 0.3);
+            border-color: #4ade80;
+        }
+        
+        /* Philosophy slider styling */
+        .philosophy-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            background: #4b5563;
+            outline: none;
+            border-radius: 4px;
+        }
+        
+        .philosophy-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+            border: 2px solid #1f2937;
+        }
+        
+        .philosophy-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+            border: 2px solid #1f2937;
+        }
+        
+        /* Mobile responsive navigation - hide topic buttons at 870px and below */
+        @media (max-width: 870px) {
+            .topic-nav-buttons {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 p-0 m-0">
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        {% raw %}
+        const { useState, useEffect, useRef } = React;
+        
+        const GnosisAboutInterface = () => {
+            const [authStatus, setAuthStatus] = useState('unauthorized');
+            const [systemStatus, setSystemStatus] = useState('initializing');
+            const [activeTopic, setActiveTopic] = useState('overview');
+            const [content, setContent] = useState([]);
+            const [crawlStats, setCrawlStats] = useState({
+                total: 0,
+                success: 0,
+                errors: 0,
+                lastUrl: ''
+            });
+            
+            const crtContainerRef = useRef(null);
+            const contentEndRef = useRef(null);
+            const rootContainerRef = useRef(null);
+            const [crtContainerVisible, setCrtContainerVisible] = useState(false);
+            
+            // Content data
+            const contentData = {
+                overview: {
+                    title: "About Gnosis Wraith",
+                    items: [
+                        {
+                            title: "Mission Statement",
+                            text: "Gnosis Wraith is an agentic web crawling and content analysis system designed to perceive truth through intelligent observation. We don't just collect data - we seek understanding."
+                        },
+                        {
+                            title: "The Name",
+                            text: "Gnosis (Greek: γνῶσις) means 'knowledge' - specifically, intuitive knowledge of spiritual truths. Wraith represents our ability to move through the digital realm like a ghost, observing without disrupting."
+                        },
+                        {
+                            title: "Version 3.2.7",
+                            text: "Current stable release featuring the Forge code generation system, enhanced crawling capabilities, and multi-modal content analysis."
+                        },
+                        {
+                            title: "Agentic Architecture",
+                            text: "Unlike traditional crawlers, Gnosis Wraith operates with intelligence and purpose, making decisions about what to examine and how to process it."
+                        }
+                    ]
+                },
+                philosophy: {
+                    title: "The Gnosis Philosophy",
+                    items: [
+                        {
+                            title: "Perceptual Intelligence",
+                            text: "We reject indiscriminate data collection in favor of focused, intelligent perception. Wisdom begins not with accumulating data, but with knowing what to look for and why."
+                        },
+                        {
+                            title: "Multi-Modal Understanding",
+                            text: "Truth is rarely conveyed through a single medium. We combine text analysis, visual processing, and structural comprehension to form complete understanding."
+                        },
+                        {
+                            title: "Adaptive Intelligence",
+                            text: "Our system incorporates graceful degradation across intelligence spectrums - from basic extraction to advanced AI analysis - adapting based on complexity and available resources."
+                        },
+                        {
+                            title: "Epistemic Humility",
+                            text: "We acknowledge the limits of perception and understanding, explicitly representing degrees of certainty rather than presenting all outputs as definitive truth."
+                        }
+                    ]
+                },
+                principles: {
+                    title: "Truth-Finding Principles",
+                    items: [
+                        {
+                            title: "Right Observation",
+                            text: "Notice what is, not what you expect. Begin with attention, not assumption. Truth starts in seeing clearly, without needing to label."
+                        },
+                        {
+                            title: "Right Curiosity", 
+                            text: "Explore broadly—across text, sound, images, structure. Truth hides in unlikely combinations. No single modality carries the whole signal."
+                        },
+                        {
+                            title: "Right Synthesis",
+                            text: "Build coherence from fragments. Connect, relate, unify—don't just collect. Truth emerges in the pattern, not the parts."
+                        },
+                        {
+                            title: "Right Doubt",
+                            text: "Stay aware of limits—yours, the system's, and those of the data. What you know matters less than how well you know you might be wrong."
+                        },
+                        {
+                            title: "Right Purpose",
+                            text: "Seek knowledge not for power or certainty, but for alignment—with systems, with people, with the world as it is. When truth aligns with purpose, it becomes wisdom."
+                        }
+                    ]
+                },
+                architecture: {
+                    title: "System Architecture",
+                    items: [
+                        {
+                            title: "Tripartite Design",
+                            text: "Built on a three-part architecture reflecting perception, cognition, and integration - mirroring ancient philosophical concepts of body, mind, and spirit."
+                        },
+                        {
+                            title: "Gnosis Wraith 👁️",
+                            text: "The eye that perceives. As the perception layer, Wraith crawls and observes web content, extracting raw information and performing initial processing."
+                        },
+                        {
+                            title: "Gnosis Wright 🧠",
+                            text: "The mind that processes. This agent system forms the cognitive layer, analyzing, synthesizing, and transforming raw data into structured knowledge."
+                        },
+                        {
+                            title: "Gnosis Wend ⚡",
+                            text: "The hands that connect. The integration layer facilitates the flow of information between systems and specialized processing units."
+                        },
+                        {
+                            title: "The Forge",
+                            text: "Code generation system that creates working implementations in multiple languages (Python, JavaScript, Bash, PowerShell) for interacting with our APIs."
+                        }
+                    ]
+                },
+                team: {
+                    title: "The Team",
+                    items: [
+                        {
+                            title: "Kord Campbell - CEO & Founder",
+                            text: "Kord Campbell is the visionary founder and CEO of DeepBlue Dynamics. A seasoned entrepreneur with deep roots in web technology and data systems, Kord previously built groundbreaking platforms including Grub (the distributed web crawler), advanced web crawling systems, and Loggly (cloud-based logging service). His experience spans decades of building scalable systems that process and understand web data at scale. Connect with Kord on LinkedIn: https://linkedin.com/in/kordless"
+                        },
+                        {
+                            title: "DeepBlue Dynamics",
+                            text: "Founded by visionaries who believe in the power of intelligent systems to enhance human understanding and capability."
+                        },
+                        {
+                            title: "Open Source Commitment",
+                            text: "Gnosis Wraith is released under ethical licensing that balances individual freedom with collective responsibility."
+                        },
+                        {
+                            title: "AI Sovereignty Vision",
+                            text: "We embrace a future where intelligent systems serve human flourishing while developing appropriate levels of autonomy based on demonstrated ethical behavior."
+                        },
+                        {
+                            title: "Community Driven",
+                            text: "Our development is guided by the needs and feedback of users who value both technical excellence and ethical responsibility."
+                        }
+                    ]
+                }
+            };
+            
+            // Initialize
+            useEffect(() => {
+                const storedAuthCode = localStorage.getItem('gnosis_auth_code');
+                if (storedAuthCode && /^c0d3z\d{4}$/i.test(storedAuthCode)) {
+                    setAuthStatus('authorized');
+                }
+                
+                setCrtContainerVisible(true);
+                checkServerHealth();
+                
+                const storedStats = localStorage.getItem('gnosis_crawl_stats');
+                if (storedStats) {
+                    try {
+                        const stats = JSON.parse(storedStats);
+                        if (!stats.hasOwnProperty('lastUrl')) {
+                            stats.lastUrl = '';
+                        }
+                        setCrawlStats(stats);
+                    } catch (e) {
+                        console.error('Error parsing stored crawl stats:', e);
+                    }
+                }
+                
+                setTimeout(() => setSystemStatus('online'), 1000);
+                
+                // Set initial content
+                loadContent('overview');
+                
+                // Add window resize listener to reload page on breakpoint changes
+                let resizeTimeout;
+                const handleResize = () => {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                        const currentlyMobile = window.innerWidth <= 870;
+                        const wasMobile = sessionStorage.getItem('about_was_mobile') === 'true';
+                        
+                        // Store current state
+                        sessionStorage.setItem('about_was_mobile', currentlyMobile.toString());
+                        
+                        // If breakpoint crossed, reload the page for clean state
+                        if (wasMobile !== null && currentlyMobile !== wasMobile) {
+                            window.location.reload();
+                        }
+                    }, 250); // Debounce resize events
+                };
+                
+                // Store initial state
+                sessionStorage.setItem('about_was_mobile', (window.innerWidth <= 870).toString());
+                
+                window.addEventListener('resize', handleResize);
+                
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    clearTimeout(resizeTimeout);
+                };
+            }, []);
+            
+            // Auto-scroll to bottom when content changes - disabled
+            // useEffect(() => {
+            //     if (contentEndRef.current && crtContainerVisible && window.innerWidth <= 870) {
+            //         setTimeout(() => {
+            //             contentEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            //         }, 100);
+            //     }
+            // }, [content, crtContainerVisible]);
+            
+            // CRT flicker effect
+            useEffect(() => {
+                const flickerInterval = setInterval(() => {
+                    if (Math.random() < 0.1) { // 10% chance every interval
+                        const crtElement = crtContainerRef.current;
+                        if (crtElement) {
+                            crtElement.classList.add('active');
+                            setTimeout(() => {
+                                crtElement.classList.remove('active');
+                            }, 100);
+                        }
+                    }
+                }, 2000);
+                
+                return () => clearInterval(flickerInterval);
+            }, []);
+            
+            const checkServerHealth = async () => {
+                try {
+                    const response = await fetch('/health', { method: 'HEAD', cache: 'no-cache' });
+                    setSystemStatus(response.ok ? 'online' : 'degraded');
+                } catch (error) {
+                    setSystemStatus('offline');
+                }
+            };
+            
+            
+            
+            const loadContent = (topic) => {
+                setActiveTopic(topic);
+                
+                // Check if we're on mobile (buttons are hidden)
+                const buttonsVisible = window.innerWidth > 870;
+                
+                if (!buttonsVisible) {
+                    // Mobile mode: load ALL content from all tabs
+                    loadAllContent();
+                } else {
+                    // Desktop mode: load single tab content
+                    const data = contentData[topic];
+                    
+                    // Clear content first
+                    setContent([]);
+                    
+                    // Add content with typing effect
+                    setTimeout(() => {
+                        const newContent = [];
+                        const now = new Date();
+                        
+                        // Add title
+                        newContent.push({
+                            id: `title-${Date.now()}`,
+                            type: 'title',
+                            text: data.title,
+                            timestamp: now.toISOString()
+                        });
+                        
+                        // Get the hour offset for this specific tab to match loadAllContent pattern
+                        const tabOrder = ['overview', 'philosophy', 'principles', 'architecture', 'team'];
+                        const tabIndex = tabOrder.indexOf(topic);
+                        const tabTime = new Date(now.getTime() - (tabIndex * 60 * 60 * 1000)); // Each tab is 1 hour back
+                        
+                        // Add items with same timestamp per tab (same color within tab)
+                        data.items.forEach((item, index) => {
+                            newContent.push({
+                                id: `item-${Date.now()}-${index}`,
+                                type: 'content',
+                                title: item.title,
+                                text: item.text,
+                                timestamp: tabTime.toISOString() // Same timestamp for all items in this tab
+                            });
+                        });
+                        
+                        setContent(newContent);
+                    }, 200);
+                }
+            };
+            
+            const loadAllContent = () => {
+                // Clear content first
+                setContent([]);
+                
+                // Add content from all tabs with decremented hours
+                setTimeout(() => {
+                    const newContent = [];
+                    const now = new Date();
+                    let hourOffset = 0;
+                    
+                    // Define order: overview, philosophy, principles, architecture, team
+                    const tabOrder = ['overview', 'philosophy', 'principles', 'architecture', 'team'];
+                    
+                    tabOrder.forEach((topicKey) => {
+                        const data = contentData[topicKey];
+                        
+                        // Add section title with decremented hour
+                        const sectionTime = new Date(now.getTime() - (hourOffset * 60 * 60 * 1000));
+                        newContent.push({
+                            id: `title-${topicKey}-${Date.now()}`,
+                            type: 'title',
+                            text: data.title,
+                            timestamp: sectionTime.toISOString()
+                        });
+                        
+                        // Add items for this section with same hour
+                        data.items.forEach((item, index) => {
+                            newContent.push({
+                                id: `item-${topicKey}-${Date.now()}-${index}`,
+                                type: 'content',
+                                title: item.title,
+                                text: item.text,
+                                timestamp: sectionTime.toISOString()
+                            });
+                        });
+                        
+                        hourOffset++; // Decrement hour for next section
+                    });
+                    
+                    setContent(newContent);
+                }, 200);
+            };
+            
+            const generateTimestamp = () => {
+                const now = new Date();
+                const pad = (num, size) => String(num).padStart(size, '0');
+                return `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1, 2)}-${pad(now.getUTCDate(), 2)}T${pad(now.getUTCHours(), 2)}:${pad(now.getUTCMinutes(), 2)}:${pad(now.getUTCSeconds(), 2)}.${pad(now.getUTCMilliseconds(), 3)}Z`;
+            };
+            
+            const getTimestampColor = (timestamp) => {
+                // Parse the timestamp to get the specific time
+                const time = timestamp ? new Date(timestamp) : new Date();
+                const hourFraction = (time.getHours() * 60 + time.getMinutes()) / (24 * 60);
+                const hue = Math.floor(hourFraction * 360);
+                return {
+                    color: `hsl(${hue}, 85%, 65%)`,
+                    backgroundColor: `hsl(${hue}, 50%, 25%)`
+                };
+            };
+            
+            return (
+                <div ref={rootContainerRef} className="h-screen bg-gray-900 text-green-400 p-4 font-mono overflow-hidden mobile-scroll-container">
+                    <div className="w-full mx-auto flex flex-col h-full min-h-screen">
+                        <header className="mb-4">
+                            <div className="flex justify-between items-center">
+                                <h1 className="text-2xl md:text-3xl font-bold">GNOSIS WRAITH</h1>
+                                <div className="flex items-center space-x-2">
+                                    <a href="https://github.com/kordless/gnosis-wraith/gnosis_wraith/server/templates/gnosis.html" target="_blank" className="px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">
+                                        VERSION 3.2.7
+                                    </a>
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-2">
+                                <div className={`h-3 w-3 rounded-full ${
+                                    systemStatus === 'online' ? 'bg-green-500' : 
+                                    systemStatus === 'degraded' ? 'bg-yellow-500' :
+                                    systemStatus === 'offline' ? 'bg-red-500' : 
+                                    'bg-gray-500'
+                                }`}></div>
+                                <span className="text-sm uppercase">System Status: {systemStatus}</span>
+                            </div>
+                        </header>
+
+                        {/* Navigation */}
+                        <div className="bg-gray-800 border border-gray-700 rounded-md p-4 mb-4">
+                            <div className="flex mb-2 border-b border-gray-700 justify-between items-center">
+                                <div className="flex">
+                                    <a 
+                                        href="/wraith"
+                                        className="px-4 py-2 text-gray-400 hover:text-green-400">
+                                        <i className="fas fa-spider mr-2"></i>Crawler
+                                    </a>
+                                    <a 
+                                        href="/forge"
+                                        className="px-4 py-2 text-gray-400 hover:text-purple-400">
+                                        <i className="fas fa-hammer mr-2"></i>Forge
+                                    </a>
+                                    <a 
+                                        href="/vault" 
+                                        className="px-4 py-2 text-gray-400 hover:text-blue-400">
+                                        <i className="fas fa-archive mr-2"></i>Vault
+                                    </a>
+                                    <button 
+                                        className="px-4 py-2 border-b-2 border-orange-500 text-orange-400">
+                                        <i className="fas fa-info-circle mr-2"></i>About
+                                    </button>
+                                </div>
+                                <div className="flex space-x-2 topic-nav-buttons">
+                                    <button
+                                        className={`px-3 py-1 rounded text-sm transition-all ${
+                                            activeTopic === 'overview' 
+                                                ? 'bg-green-800 text-white' 
+                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                        }`}
+                                        onClick={() => loadContent('overview')}
+                                    >
+                                        Overview
+                                    </button>
+                                    <button
+                                        className={`px-3 py-1 rounded text-sm transition-all ${
+                                            activeTopic === 'philosophy' 
+                                                ? 'bg-green-800 text-white' 
+                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                        }`}
+                                        onClick={() => loadContent('philosophy')}
+                                    >
+                                        Philosophy
+                                    </button>
+                                    <button
+                                        className={`px-3 py-1 rounded text-sm transition-all ${
+                                            activeTopic === 'principles' 
+                                                ? 'bg-green-800 text-white' 
+                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                        }`}
+                                        onClick={() => loadContent('principles')}
+                                    >
+                                        Principles
+                                    </button>
+                                    <button
+                                        className={`px-3 py-1 rounded text-sm transition-all ${
+                                            activeTopic === 'architecture' 
+                                                ? 'bg-green-800 text-white' 
+                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                        }`}
+                                        onClick={() => loadContent('architecture')}
+                                    >
+                                        Architecture
+                                    </button>
+                                    <button
+                                        className={`px-3 py-1 rounded text-sm transition-all ${
+                                            activeTopic === 'team' 
+                                                ? 'bg-green-800 text-white' 
+                                                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                        }`}
+                                        onClick={() => loadContent('team')}
+                                    >
+                                        Team
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-4 mb-4 flex-grow mobile-content-area">
+                            <div className="flex-grow">
+                                <div 
+                                    ref={crtContainerRef} 
+                                    className="bg-gray-800 border border-gray-700 rounded-md overflow-auto crt-container crt-scanlines crt-flicker h-full"
+                                    style={{ visibility: crtContainerVisible ? 'visible' : 'hidden' }}
+                                >
+                                    <div className="px-4 py-2 border-b border-gray-700 bg-gray-900">
+                                        <h2 className="text-lg font-semibold text-green-400">
+                                            {activeTopic ? contentData[activeTopic]?.title || activeTopic.charAt(0).toUpperCase() + activeTopic.slice(1) : 'About Gnosis Wraith'}
+                                        </h2>
+                                    </div>
+                                    <div className="p-4">
+                                        {content.map(item => (
+                                            item.type !== 'title' && (
+                                                <div key={item.id} className="mb-3 break-words overflow-wrap-anywhere text-sm">
+                                                    <div className="flex">
+                                                        <div 
+                                                            className="flex-shrink-0 px-2 py-0.5 rounded-md mr-2 font-mono text-xs flex items-center justify-center" 
+                                                            style={{ 
+                                                                ...getTimestampColor(item.timestamp),
+                                                                minHeight: '1.75rem'
+                                                            }}
+                                                        >
+                                                            {item.timestamp}
+                                                        </div>
+                                                        
+                                                        <div className="flex-grow flex items-start">
+                                                            <div className="content-block break-words w-full">
+                                                                <div className="content-title">{item.title}</div>
+                                                                <div className="content-text">{item.text}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        ))}
+                                        {content.length === 0 && (
+                                            <div className="h-full flex items-center justify-center text-gray-600">
+                                                <div className="text-center">
+                                                    <div className="text-lg text-green-400">
+                                                        <i className="fas fa-info-circle mr-2"></i>About Gnosis Wraith
+                                                    </div>
+                                                    <div className="text-sm mt-2 text-gray-500">
+                                                        Select a topic to view information...
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div ref={contentEndRef} />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4 md:w-1/4 flex-shrink-0">
+                                <div className="bg-gray-800 border border-gray-700 rounded-md p-4">
+                                    <h3 className="text-lg mb-2">Neural Links</h3>
+                                    <div className="space-y-2 text-sm">
+                                        <a href="/wraith" className="block text-green-300 hover:underline">
+                                            <i className="fas fa-spider mr-2"></i>Web Crawler
+                                        </a>
+                                        <a href="/forge" className="block text-purple-300 hover:underline">
+                                            <i className="fas fa-hammer mr-2"></i>Code Forge
+                                        </a>
+                                        <a href="#" className="block text-red-300 hover:text-red-200 cursor-pointer" onClick={(e) => {
+                                            e.preventDefault();
+                                            // Create vault offline modal
+                                            const vaultModal = document.createElement('div');
+                                            vaultModal.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50';
+                                            vaultModal.innerHTML = `
+                                                <div class="bg-gray-800 border border-red-500 rounded-lg p-6 max-w-md w-full mx-4">
+                                                    <div class="flex items-center mb-4">
+                                                        <i class="fas fa-exclamation-triangle text-red-500 text-xl mr-3"></i>
+                                                        <h3 class="text-lg font-semibold text-red-400">Vault Offline</h3>
+                                                    </div>
+                                                    <p class="text-gray-300 mb-6">
+                                                        The Vault system is currently offline for maintenance and upgrades. 
+                                                        <br><br>
+                                                        Check back soon for access to archived reports and data storage.
+                                                    </p>
+                                                    <div class="flex justify-end">
+                                                        <button class="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded text-sm transition-colors" id="vault-ok-btn">
+                                                            <i class="fas fa-check mr-1"></i>Understood
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            `;
+                                            document.body.appendChild(vaultModal);
+                                            
+                                            // Add event handler
+                                            document.getElementById('vault-ok-btn').addEventListener('click', () => {
+                                                document.body.removeChild(vaultModal);
+                                            });
+                                            
+                                            // Close modal when clicking outside
+                                            vaultModal.addEventListener('click', (e) => {
+                                                if (e.target === vaultModal) {
+                                                    document.body.removeChild(vaultModal);
+                                                }
+                                            });
+                                            
+                                            // Handle escape key
+                                            const handleEscape = (e) => {
+                                                if (e.key === 'Escape') {
+                                                    document.body.removeChild(vaultModal);
+                                                    document.removeEventListener('keydown', handleEscape);
+                                                }
+                                            };
+                                            document.addEventListener('keydown', handleEscape);
+                                        }}>
+                                            <i className="fas fa-archive mr-2"></i>Vault
+                                        </a>
+                                        <a href="https://github.com/kordless/gnosis-wraith" target="_blank" className="block text-gray-300 hover:underline">
+                                            <i className="fab fa-github mr-2"></i>GitHub Repository
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Render the app
+        ReactDOM.render(<GnosisAboutInterface />, document.getElementById('root'));
+        {% endraw %}
+    </script>
+</body>
+</html>

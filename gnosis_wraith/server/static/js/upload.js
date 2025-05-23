@@ -12,6 +12,12 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Function to update the UI based on file selection
   function updateFileSelectionUI() {
+    // Safety check in case fileInput is null
+    if (!fileInput) {
+      console.warn('File input element not found, skipping UI update');
+      return;
+    }
+    
     if (fileInput.files && fileInput.files.length > 0) {
       // File is selected - update all UI elements
       const fileName = fileInput.files[0].name;
@@ -46,11 +52,23 @@ document.addEventListener('DOMContentLoaded', function() {
   // Make the entire search box clickable to select a file
   if (searchBox) {
     searchBox.addEventListener('click', function(e) {
+      // Check if all required elements exist
+      if (!fileInput) {
+        console.warn('File input element not found, skipping click handler');
+        return;
+      }
+      
+      if (!fileSelectBtn) {
+        console.warn('File select button not found, using simpler click handler');
+        fileInput.click();
+        return;
+      }
+      
       // Only trigger if not clicking on the folder button or the remove button
       if (e.target !== fileSelectBtn && 
           !fileSelectBtn.contains(e.target) && 
-          e.target !== removeFileBtn && 
-          !removeFileBtn.contains(e.target)) {
+          (removeFileBtn === null || (e.target !== removeFileBtn && 
+          !removeFileBtn?.contains(e.target)))) {
         fileInput.click();
       }
     });

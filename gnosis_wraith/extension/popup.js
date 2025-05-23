@@ -1,115 +1,31 @@
-// Popup script for WebWraith Capture extension
+// Popup script for Gnosis Wraith Capture extension
+// Version 1.2.1
 
 document.addEventListener('DOMContentLoaded', function() {
-    const urlInput = document.getElementById('url-input');
-    const captureUrlBtn = document.getElementById('capture-url-btn');
-    const captureBtn = document.getElementById('capture-btn');
+    const captureWithDomBtn = document.getElementById('capture-with-dom-btn');
+    const captureFullPageBtn = document.getElementById('capture-full-page-btn');
     const messageDiv = document.getElementById('message');
-    const historyList = document.getElementById('history-list');
-    const fullPageCheckbox = document.getElementById('full-page-checkbox');
     const serverUrlInput = document.getElementById('server-url-input');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
-    const sendToApiCheckbox = document.getElementById('send-to-api-checkbox');
-    const urlSendToApiCheckbox = document.getElementById('url-send-to-api-checkbox');
-    const urlUseBrowserCheckbox = document.getElementById('url-use-browser-checkbox');
-    
-    // Set focus on input
-    urlInput.focus();
-    
-    // Load and display history
-    loadHistory();
+    const reportsLink = document.getElementById('reports-link');
     
     // Load server settings
     loadServerSettings();
     
-    // Handle Enter key in URL input
-    urlInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        captureUrlBtn.click();
-      }
+    // Add visual feedback on button hover (already handled in CSS)
+    
+    // Handle capture with DOM button click
+    captureWithDomBtn.addEventListener('click', function() {
+      capturePage(false);
     });
     
-    // Add visual feedback on button hover
-    const allButtons = document.querySelectorAll('.btn');
-    allButtons.forEach(button => {
-      button.addEventListener('mouseover', function() {
-        this.style.transform = 'scale(1.02)';
-        this.style.transition = 'transform 0.1s ease-in-out';
-      });
-      
-      button.addEventListener('mouseout', function() {
-        this.style.transform = 'scale(1)';
-      });
-      
-      // Add active state
-      button.addEventListener('mousedown', function() {
-        this.style.transform = 'scale(0.98)';
-      });
-      
-      button.addEventListener('mouseup', function() {
-        this.style.transform = 'scale(1.02)';
-      });
+    // Handle full page capture button click
+    captureFullPageBtn.addEventListener('click', function() {
+      capturePage(true);
     });
     
-    // Add checkbox styling improvement
-    const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
-    allCheckboxes.forEach(checkbox => {
-      const label = checkbox.parentElement;
-      
-      checkbox.addEventListener('change', function() {
-        if (this.checked) {
-          label.style.fontWeight = 'bold';
-          label.style.color = '#3498db';
-        } else {
-          label.style.fontWeight = 'normal';
-          label.style.color = '';
-        }
-      });
-      
-      // Set initial state
-      if (checkbox.checked) {
-        label.style.fontWeight = 'bold';
-        label.style.color = '#3498db';
-      }
-    });
-    
-    // Handle capture URL button click
-    captureUrlBtn.addEventListener('click', function() {
-      const url = urlInput.value.trim();
-      if (url) {
-        // Check if we want to send to API
-        const sendToApi = document.getElementById('url-send-to-api-checkbox').checked;
-        // Check if we want to use this browser
-        const useBrowser = document.getElementById('url-use-browser-checkbox').checked;
-        
-        if (sendToApi && !useBrowser) {
-          // Just send URL to server for crawling without opening in browser
-          sendUrlToServer(url);
-          showMessage('Sent URL to server for analysis...', 'info');
-          window.close(); // Close popup
-          return;
-        }
-        
-        // Send message to background script
-        chrome.runtime.sendMessage({
-          action: 'captureUrl',
-          url: url,
-          sendToApi: sendToApi
-        }, function(response) {
-          const message = sendToApi ? 
-            'Opening page for capture and analysis...' : 
-            'Opening page for capture...';
-          showMessage(message, 'info');
-        });
-        
-        window.close(); // Close popup
-      } else {
-        showMessage('Please enter a valid URL', 'error');
-      }
-    });
-    
-    // Handle capture current page button click
-    captureBtn.addEventListener('click', function() {
+    // Function to handle page capturing
+    function capturePage(isFullPage) {
       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         if (tabs && tabs[0] && tabs[0].url) {
           // Check if we're on a restricted page where content scripts can't run
@@ -124,23 +40,18 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
           }
           
-          // Check if we want full page screenshot
-          const isFullPage = fullPageCheckbox.checked;
-          // Check if we want to send to API
-          const sendToApi = document.getElementById('send-to-api-checkbox').checked;
+          // Always send to API (Wraith) for analysis
+          const sendToApi = true;
           
           if (isFullPage) {
-            // First try sending a message to the background script directly
+            // First try sending a message to the background script
             chrome.runtime.sendMessage({
               action: 'captureCurrentPage',
               fullPage: true,
               tabId: tabs[0].id,
               sendToApi: sendToApi
             }, function(response) {
-              const message = sendToApi ? 
-                'Capturing full page for analysis...' : 
-                'Capturing full page...';
-              showMessage(message, 'info');
+              showMessage('Capturing full page and DOM for analysis...', 'info');
               window.close(); // Close popup
             });
             
@@ -164,10 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
               tabId: tabs[0].id,
               sendToApi: sendToApi
             }, function(response) {
-              const message = sendToApi ? 
-                'Capturing screenshot for analysis...' : 
-                'Capturing screenshot...';
-              showMessage(message, 'info');
+              showMessage('Capturing screenshot and DOM for analysis...', 'info');
               window.close(); // Close popup
             });
           }
@@ -175,67 +83,36 @@ document.addEventListener('DOMContentLoaded', function() {
           showMessage('Cannot access current tab', 'error');
         }
       });
-    });
+    }
     
-    // Function to show message
+    // Function to show message with improved visibility
     function showMessage(text, type) {
       messageDiv.textContent = text;
       messageDiv.className = `message ${type}`;
       messageDiv.style.display = 'block';
-    }
-    
-    // Function to load history
-    function loadHistory() {
-      chrome.storage.local.get(['history'], function(result) {
-        if (result.history && result.history.length > 0) {
-          displayHistory(result.history);
-        } else {
-          historyList.innerHTML = '<div class="history-item">No recent captures</div>';
-        }
-      });
-    }
-    
-    // Function to display history
-    function displayHistory(history) {
-      historyList.innerHTML = '';
       
-      history.forEach(item => {
-        const historyItem = document.createElement('div');
-        historyItem.className = 'history-item';
-        
-        // Use title if available, otherwise use URL
-        let displayText = item.title || item.url;
-        
-        // Truncate if too long
-        if (displayText.length > 40) {
-          displayText = displayText.substring(0, 37) + '...';
-        }
-        
-        historyItem.textContent = displayText;
-        historyItem.title = item.url;
-        
-        // Add timestamp if available
-        if (item.timestamp) {
-          const date = new Date(item.timestamp);
-          const timeString = date.toLocaleDateString() + ' ' + 
-                            date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-          
-          const timeSpan = document.createElement('span');
-          timeSpan.style.fontSize = '11px';
-          timeSpan.style.color = '#999';
-          timeSpan.style.float = 'right';
-          timeSpan.textContent = timeString;
-          
-          historyItem.appendChild(timeSpan);
-        }
-        
-        // Click to fill URL input
-        historyItem.addEventListener('click', function() {
-          urlInput.value = item.url;
-        });
-        
-        historyList.appendChild(historyItem);
-      });
+      // Ensure the message is visible by scrolling to it
+      messageDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      
+      // Add a pulsing animation for emphasis
+      messageDiv.style.animation = 'none';
+      setTimeout(() => {
+        messageDiv.style.animation = 'pulse 1.5s ease-in-out';
+      }, 10);
+      
+      // Add animation keyframes if they don't exist yet
+      if (!document.getElementById('message-animation-styles')) {
+        const style = document.createElement('style');
+        style.id = 'message-animation-styles';
+        style.textContent = `
+          @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+          }
+        `;
+        document.head.appendChild(style);
+      }
     }
     
     // Function to load server settings
@@ -268,93 +145,67 @@ document.addEventListener('DOMContentLoaded', function() {
         showMessage('Please enter a valid server URL', 'error');
       }
     });
-  });
-  
-  // Function to send URL directly to server for crawling
-  async function sendUrlToServer(url) {
-    try {
+    
+    // Setup wraith link (main dashboard)
+    const wraithLink = document.getElementById('wraith-link');
+    
+    wraithLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      
       // Get server URL from storage
-      chrome.storage.local.get(['serverUrl'], async function(result) {
+      chrome.storage.local.get(['serverUrl'], function(result) {
         let serverUrl = result.serverUrl || 'http://localhost:5678';
         
         // Force the server URL to use the correct protocol
-        if (!serverUrl.startsWith('http://')) {
+        if (!serverUrl.startsWith('http://') && !serverUrl.startsWith('https://')) {
           serverUrl = 'http://' + serverUrl;
         }
         
         // Ensure server URL ends without trailing slash
         serverUrl = serverUrl.replace(/\/$/, '');
         
-        // Prepare data for API call
-        const apiUrl = `${serverUrl}/api/crawl`;
-        const data = {
-          url: url,
-          title: `Crawl Report for ${url}`,
-          javascript_enabled: true,
-          output_format: 'both'
-        };
-        
-        // Send to server
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Origin': chrome.runtime.getURL('')
-          },
-          body: JSON.stringify(data)
-        });
-        
-        if (response.ok) {
-          const responseData = await response.json();
-          console.log('Server responded:', responseData);
-          
-          // Save to history
-          chrome.storage.local.get(['history'], function(result) {
-            let history = result.history || [];
-            
-            // Remove duplicates
-            history = history.filter(item => item.url !== url);
-            
-            // Add to beginning
-            history.unshift({
-              url: url,
-              title: `Crawl: ${url}`,
-              timestamp: Date.now()
-            });
-            
-            // Limit size
-            const MAX_HISTORY = 20;
-            if (history.length > MAX_HISTORY) {
-              history = history.slice(0, MAX_HISTORY);
-            }
-            
-            // Save
-            chrome.storage.local.set({history: history});
-          });
-        } else {
-          console.error('Server error:', response.status);
-        }
+        // Open wraith page in a new tab - using the new URL structure
+        chrome.tabs.create({ url: `${serverUrl}/wraith` });
       });
-    } catch (error) {
-      console.error('Error sending URL to server:', error);
-    }
-  }
-  
-  // Add help section toggle
-  const helpLink = document.getElementById('help-link');
-  const helpSection = document.getElementById('help-section');
-  const closeHelpBtn = document.getElementById('close-help');
-  
-  helpLink.addEventListener('click', function(e) {
-    e.preventDefault();
-    helpSection.style.display = 'block';
-    helpLink.style.display = 'none';
-  });
-  
-  closeHelpBtn.addEventListener('click', function(e) {
-    e.preventDefault();
-    helpSection.style.display = 'none';
-    helpLink.style.display = 'block';
+    });
+    
+    // Setup reports link
+    reportsLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      // Get server URL from storage
+      chrome.storage.local.get(['serverUrl'], function(result) {
+        let serverUrl = result.serverUrl || 'http://localhost:5678';
+        
+        // Force the server URL to use the correct protocol
+        if (!serverUrl.startsWith('http://') && !serverUrl.startsWith('https://')) {
+          serverUrl = 'http://' + serverUrl;
+        }
+        
+        // Ensure server URL ends without trailing slash
+        serverUrl = serverUrl.replace(/\/$/, '');
+        
+        // Open reports page in a new tab - using the new URL structure
+        chrome.tabs.create({ url: `${serverUrl}/reports` });
+      });
+    });
+    
+    // Add help section toggle
+    const helpLink = document.getElementById('help-link');
+    const helpSection = document.getElementById('help-section');
+    const closeHelpBtn = document.getElementById('close-help');
+    
+    helpLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      helpSection.style.display = 'block';
+      helpLink.style.display = 'none';
+    });
+    
+    closeHelpBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      helpSection.style.display = 'none';
+      helpLink.style.display = 'block';
+    });
   });
   
   // Listen for content script messages

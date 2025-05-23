@@ -37,6 +37,7 @@ ENV/
 # Logs
 *.log
 logs/
+rebuild_log*
 
 # Database files
 *.db
@@ -52,6 +53,7 @@ logs/
 # Backup and version directories
 backup_files/
 temp_files_backup/
+doc_backup/
 *_versions/
 .*.py_versions/
 .*.md_versions/

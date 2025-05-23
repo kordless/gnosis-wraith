@@ -64,7 +64,7 @@ RUN python -c "import easyocr; reader = easyocr.Reader(['en'])" && \
 COPY . .
 
 # Set a default extension version that will be used if reading from manifest fails
-ENV EXTENSION_VERSION=1.1.2
+ENV EXTENSION_VERSION=1.2.1
 
 # Copy manifest and attempt to read it (but don't break the build if it fails)
 COPY gnosis_wraith/extension/manifest.json /tmp/manifest.json
@@ -89,7 +89,7 @@ COPY gnosis_wraith/extension /app/gnosis_wraith/extension
 # Write the script directly (avoiding complex variable interpolation in Docker)
 RUN echo '#!/bin/bash' > /app/build_extension.sh && \
     echo 'set -e  # Exit on error' >> /app/build_extension.sh && \
-    echo 'VERSION=${EXTENSION_VERSION:-1.1.2}' >> /app/build_extension.sh && \
+    echo 'VERSION=${EXTENSION_VERSION:-1.2.1}' >> /app/build_extension.sh && \
     echo 'echo "Building extension version $VERSION..."' >> /app/build_extension.sh && \
     echo 'DIR="/app/gnosis_wraith/server/static/downloads"' >> /app/build_extension.sh && \
     echo 'TARGET="$DIR/gnosis-wraith-extension-$VERSION.zip"' >> /app/build_extension.sh && \

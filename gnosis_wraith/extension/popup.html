@@ -2,18 +2,159 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>WebWraith Capture</title>
+  <title>Gnosis Wraith</title>
   <style>
+    :root {
+      --primary-color: #5a67d8;
+      --primary-dark: #434190;
+      --secondary-color: #4fd1c5;
+      --text-color: #2d3748;
+      --light-bg: #f7fafc;
+      --border-color: #e2e8f0;
+      --success-color: #48bb78;
+      --error-color: #f56565;
+    }
+    
     body {
-      width: 320px;
-      padding: 15px;
+      width: 340px;
+      padding: 0;
+      margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text-color);
+      background-color: #fff;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+      color: white;
+      padding: 16px 20px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 5px;
+    }
+    
+    .logo-icon {
+      font-size: 24px;
+      margin-right: 8px;
     }
     
     h1 {
-      font-size: 18px;
-      margin-top: 0;
-      color: #2c3e50;
+      font-size: 22px;
+      margin: 0;
+      font-weight: 600;
+    }
+    
+    .subtitle {
+      font-size: 14px;
+      margin-top: 4px;
+      opacity: 0.9;
+    }
+    
+    .content {
+      padding: 20px;
+    }
+    
+    .section {
+      margin-bottom: 20px;
+    }
+    
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--primary-dark);
+    }
+    
+    .btn {
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      width: 100%;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .btn-icon {
+      margin-right: 8px;
+    }
+    
+    .btn:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .btn-secondary {
+      background-color: var(--secondary-color);
+    }
+    
+    .btn-secondary:hover {
+      background-color: #38b2ac;
+    }
+    
+    .btn-outline {
+      background-color: transparent;
+      color: var(--primary-color);
+      border: 1px solid var(--primary-color);
+    }
+    
+    .btn-outline:hover {
+      background-color: rgba(90, 103, 216, 0.1);
+    }
+    
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .message {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      display: none;
+      font-size: 14px;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .message.info {
+      background-color: #ebf8ff;
+      border: 1px solid #bee3f8;
+      color: #2c5282;
+    }
+    
+    .message.error {
+      background-color: #fff5f5;
+      border: 1px solid #fed7d7;
+      color: #c53030;
     }
     
     .input-group {
@@ -22,207 +163,156 @@
     
     .input-field {
       width: 100%;
-      padding: 8px;
+      padding: 10px 12px;
       box-sizing: border-box;
-      border: 1px solid #ddd;
-      border-radius: 3px;
-    }
-    
-    .btn {
-      background-color: #3498db;
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 3px;
-      cursor: pointer;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
       font-size: 14px;
-      width: 100%;
-      margin-bottom: 10px;
-      transition: background-color 0.2s ease, transform 0.1s ease;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: border-color 0.2s ease;
     }
     
-    .btn:hover {
-      background-color: #2980b9;
-    }
-    
-    .btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    
-    .btn-secondary {
-      background-color: #95a5a6;
-    }
-    
-    .btn-secondary:hover {
-      background-color: #7f8c8d;
-    }
-    
-    /* Custom checkbox styling */
-    input[type="checkbox"] {
-      cursor: pointer;
-      margin-right: 5px;
-    }
-    
-    .checkbox-group {
-      transition: color 0.2s ease;
-      margin-bottom: 12px;
-    }
-    
-    .checkbox-group label {
-      cursor: pointer;
-      user-select: none;
+    .input-field:focus {
+      border-color: var(--primary-color);
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.2);
     }
     
     .section-separator {
       margin: 20px 0;
-      border-top: 1px solid #ddd;
-      padding-top: 15px;
+      border-top: 1px solid var(--border-color);
     }
     
-    .actions {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    
-    .message {
-      margin-top: 15px;
-      padding: 8px;
-      border-radius: 3px;
-      display: none;
-    }
-    
-    .message.info {
-      background-color: #d9edf7;
-      border: 1px solid #bce8f1;
-      color: #31708f;
-    }
-    
-    .message.error {
-      background-color: #f2dede;
-      border: 1px solid #ebccd1;
-      color: #a94442;
-    }
-    
-    .history {
-      margin-top: 15px;
-      border-top: 1px solid #ddd;
-      padding-top: 10px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    
-    .history h2 {
-      font-size: 16px;
-      margin-top: 0;
-    }
-    
-    .history-item {
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-    }
-    
-    .history-item:hover {
-      background-color: #f5f5f5;
-    }
-    
-    .version {
-      font-size: 10px;
-      color: #999;
+    .help-link {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-size: 13px;
+      display: block;
       text-align: center;
       margin-top: 15px;
     }
     
-    .checkbox-group {
-      margin-bottom: 10px;
+    .help-link:hover {
+      text-decoration: underline;
+    }
+    
+    #help-section {
+      background-color: var(--light-bg);
+      padding: 15px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-top: 15px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    #help-section h3 {
+      margin-top: 0;
+      font-size: 15px;
+      color: var(--primary-dark);
+    }
+    
+    .shortcut-list {
+      padding-left: 20px;
+      margin: 8px 0;
+    }
+    
+    .shortcut-item {
+      margin-bottom: 6px;
+    }
+    
+    .shortcut-key {
+      background-color: #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-weight: bold;
+    }
+    
+    .footer {
+      padding: 12px;
+      text-align: center;
+      background-color: var(--light-bg);
+      font-size: 11px;
+      color: #718096;
+      border-top: 1px solid var(--border-color);
+    }
+    
+    .reports-link {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+      display: block;
+      text-align: center;
+      padding: 8px 0;
+      margin-top: 10px;
+    }
+    
+    .reports-link:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <h1>WebWraith Capture</h1>
+  <div class="header">
+    <div class="logo">
+      <span class="logo-icon">👻</span>
+      <h1>Gnosis Wraith</h1>
+    </div>
+    <div class="subtitle">DOM Capture & Analysis</div>
+  </div>
   
-  <!-- Current page section -->
-  <div class="section">
-    <h2>Current Page</h2>
-    
-    <div class="checkbox-group">
-      <label>
-        <input type="checkbox" id="full-page-checkbox"> Capture full page (scrolling)
-      </label>
+  <div class="content">
+    <!-- Capture Actions -->
+    <div class="section">
+      <div class="section-title">Capture Options</div>
+      
+      <div class="actions">
+        <button id="capture-with-dom-btn" class="btn">
+          <span class="btn-icon">📷</span>
+          Capture Current View & DOM
+        </button>
+        
+        <button id="capture-full-page-btn" class="btn btn-outline">
+          <span class="btn-icon">📜</span>
+          Capture Full Page (Scrolling)
+        </button>
+      </div>
     </div>
     
-    <div class="checkbox-group">
-      <label>
-        <input type="checkbox" id="send-to-api-checkbox"> Send to Wraith for analysis
-      </label>
-    </div>
+    <div id="message" class="message"></div>
     
-    <div class="actions">
-      <button id="capture-btn" class="btn">Capture Current Page</button>
+    <!-- Settings section -->
+    <div class="section-separator"></div>
+    <div class="section">
+      <div class="section-title">Server Settings</div>
+      <div class="input-group">
+        <input type="text" id="server-url-input" class="input-field" placeholder="Server URL (e.g., localhost:5678)">
+      </div>
+      <button id="save-settings-btn" class="btn btn-secondary">Save Settings</button>
+      
+      <!-- Navigation links -->
+      <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+        <a href="#" id="wraith-link" class="reports-link">Wraith Dashboard</a>
+        <a href="#" id="reports-link" class="reports-link">Wraith Reports</a>
+      </div>
     </div>
   </div>
   
-  <!-- URL capture section -->
-  <div class="section-separator"></div>
-  <div class="section">
-    <h2>Capture URL</h2>
-    
-    <div class="input-group">
-      <input type="text" id="url-input" class="input-field" placeholder="Enter URL to capture">
+  <div class="footer">
+    <a href="#" id="help-link" class="help-link">Help & Keyboard Shortcuts</a>
+    <div id="help-section">
+      <h3>Keyboard Shortcuts</h3>
+      <ul class="shortcut-list">
+        <li class="shortcut-item"><span class="shortcut-key">Alt+Shift+W</span> - Capture visible screen</li>
+        <li class="shortcut-item"><span class="shortcut-key">Alt+Shift+U</span> - Capture and upload to server</li>
+        <li class="shortcut-item"><span class="shortcut-key">Alt+Shift+F</span> - Capture full page</li>
+        <li class="shortcut-item"><span class="shortcut-key">Alt+Shift+A</span> - Capture full page and upload</li>
+      </ul>
+      <p>Full page capture takes multiple screenshots and stitches them together.</p>
+      <a href="#" id="close-help" class="help-link">Close</a>
     </div>
-    
-    <div class="checkbox-group">
-      <label>
-        <input type="checkbox" id="url-send-to-api-checkbox" checked> Send to Wraith for analysis
-      </label>
-    </div>
-    
-    <div class="checkbox-group">
-      <label>
-        <input type="checkbox" id="url-use-browser-checkbox" checked> Use this browser
-      </label>
-    </div>
-    
-    <div class="actions">
-      <button id="capture-url-btn" class="btn">Capture URL</button>
-    </div>
+    <div class="version">v1.2.1</div>
   </div>
-  
-  <div id="message" class="message"></div>
-  
-  <div class="history">
-    <h2>Recent Captures</h2>
-    <div id="history-list"></div>
-  </div>
-  
-  <div class="section-separator"></div>
-  <div class="section">
-    <h2>Settings</h2>
-    <div class="input-group">
-      <input type="text" id="server-url-input" class="input-field" placeholder="Server URL (e.g., localhost:5678)">
-    </div>
-    <button id="save-settings-btn" class="btn btn-secondary">Save Settings</button>
-    <div class="checkbox-group" style="margin-top: 10px;">
-      <a href="#" id="help-link" style="color: #3498db; text-decoration: none; font-size: 12px;">Help & Keyboard Shortcuts</a>
-    </div>
-  </div>
-  
-  <div id="help-section" style="display: none; margin-top: 15px; background-color: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px;">
-    <h3 style="margin-top: 0; font-size: 14px;">Keyboard Shortcuts</h3>
-    <ul style="padding-left: 20px; margin: 5px 0;">
-      <li><strong>Alt+Shift+W</strong> - Capture visible screen (save)</li>
-      <li><strong>Alt+Shift+U</strong> - Capture visible screen (analyze)</li>
-      <li><strong>Alt+Shift+F</strong> - Capture full page (save)</li>
-      <li><strong>Alt+Shift+A</strong> - Capture full page (analyze)</li>
-    </ul>
-    <p style="margin: 5px 0;"><strong>Full page capture</strong> takes multiple screenshots while scrolling and stitches them together.</p>
-    <a href="#" id="close-help" style="color: #3498db; text-decoration: none; display: block; text-align: center; margin-top: 10px;">Close</a>
-  </div>
-  
-  <div class="version">v1.1.2</div>
   
   <script src="popup.js"></script>
 </body>

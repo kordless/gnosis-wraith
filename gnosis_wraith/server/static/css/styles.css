@@ -220,6 +220,8 @@ pre {
     background-color: var(--input-bg);
     color: var(--text-color);
     font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    height: 42px; /* Consistent height for all inputs */
+    box-sizing: border-box;
 }
 
 .form-group textarea {
@@ -262,11 +264,30 @@ pre {
 .input-with-button {
     display: flex;
     gap: 8px;
-    align-items: center;
+    align-items: center; /* Back to center for better alignment */
+    height: 42px; /* Define a fixed height to match input */
 }
 
 .input-with-button input {
     flex: 1;
+    height: 100%; /* Ensure input takes full height */
+}
+
+/* Special styling for the delete token button */
+.delete-token-btn {
+    height: 42px !important; /* Match input height exactly */
+    min-width: 42px;
+    border-radius: var(--border-radius);
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 12px !important;
+    margin: 0 !important;
+}
+
+.delete-token-btn i {
+    margin: 0 !important; /* Remove any margin on the icon */
+    font-size: 1rem;
 }
 
 .input-with-button .btn {
@@ -284,12 +305,21 @@ pre {
     text-decoration: none;
     transition: all 0.2s;
     font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    line-height: 1.2; /* Add line height for better icon alignment */
 }
 
 .btn.small {
     padding: 4px 8px;
     font-size: 0.75rem;
     min-width: 30px;
+}
+
+/* Specific styling for danger button used in delete action */
+.btn.danger.delete-token-btn {
+    font-size: 0.9rem;
+    width: auto;
+    min-width: 42px;
+    margin: 0;
 }
 
 .btn:active {
@@ -868,8 +898,43 @@ code {
 }
 
 /* Override for code blocks in the code examples section */
-#code-examples pre code {
-    border: 0px solid transparent;
+#code-examples pre code,
+#code-examples pre code *,
+.code-container pre code,
+.code-container pre code * {
+    border: 0px solid transparent !important;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    border-bottom: none !important;
+    border-radius: 0 !important;
+}
+
+/* Class to specifically prevent any underlines in code blocks */
+.no-underline,
+.no-underline * {
+    text-decoration: none !important;
+    border-bottom: none !important;
+}
+
+/* Make sure links in code blocks don't have underlines */
+pre code a,
+pre code a:visited,
+pre code a:hover,
+pre code a:active {
+    text-decoration: none !important;
+    border-bottom: none !important;
+}
+
+/* Style for line numbers in code blocks */
+pre.line-numbers {
+    position: relative;
+    padding-left: 3.8em;
+    counter-reset: linenumber;
+}
+
+pre.line-numbers > code {
+    position: relative;
+    white-space: inherit;
 }
 
 /* Feature Grid Enhancements */

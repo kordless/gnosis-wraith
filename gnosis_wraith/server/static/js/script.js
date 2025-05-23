@@ -73,12 +73,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Server URL from localStorage or default
     const serverUrl = window.location.origin;
 
+    // ******** UNIFIED URL SUGGESTION AND CRAWLING FLOW ********
+    // 1. User inputs text/URL
+    // 2. Send to /api/suggest to get a valid URL
+    // 3. Use the suggested URL to make a request to /api/crawl
+    
+    // Instant crawl button (bolt icon)
+    const instantCrawlBtn = document.getElementById('instant-crawl');
+    if (instantCrawlBtn) {
+        instantCrawlBtn.addEventListener('click', function() {
+            const urlInput = document.getElementById('url');
+            if (!urlInput.value) {
+                urlInput.value = 'https://example.com/';
+            }
+            document.getElementById('crawl-btn').click();
+        });
+    }
+
     // Single URL Crawl with improved progress updates and file upload support
     const crawlButton = document.getElementById('crawl-btn');
     if (crawlButton) {
         crawlButton.addEventListener('click', async () => {
             const urlInput = document.getElementById('url');
-            const url = urlInput.value.trim();
+            const query = urlInput.value.trim();
             
             // Get report title if toggle is enabled, otherwise use default
             const reportTitleToggle = document.getElementById('report-title-toggle');
@@ -111,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const isFileMode = urlInput.classList.contains('file-selected');
             const mainFileInput = document.getElementById('main-file-input');
             
-            if (!url && !isFileMode) {
+            if (!query && !isFileMode) {
                 alert('Please enter a URL or select a file');
                 return;
             }
@@ -122,13 +139,34 @@ document.addEventListener('DOMContentLoaded', function() {
                 const statusText = document.getElementById('status-text');
                 const progressIndicator = document.getElementById('progress-indicator');
                 
+                // Disable buttons during crawl
+                const crawlBtn = document.getElementById('crawl-btn');
+                const instantCrawlBtn = document.getElementById('instant-crawl');
+                
+                // Disable all UI controls during crawl
+                crawlBtn.disabled = true;
+                crawlBtn.classList.add('disabled');
+                if (instantCrawlBtn) {
+                    instantCrawlBtn.disabled = true;
+                    instantCrawlBtn.classList.add('disabled');
+                }
+                
+                // Add disabled styling to crawl button
+                crawlBtn.style.opacity = '0.6';
+                crawlBtn.style.cursor = 'not-allowed';
+                
+                // Make URL input read-only during crawl
+                urlInput.readOnly = true;
+                urlInput.style.opacity = '0.7';
+                
                 statusBox.style.display = 'block';
                 
                 // Different starting messages based on mode
                 if (isFileMode) {
                     updateProgress(statusText, progressIndicator, 'Preparing file...', 5);
                 } else {
-                    updateProgress(statusText, progressIndicator, 'Initializing browser...', 5);
+                    // New flow for URL/query - start with suggesting/interpreting
+                    updateProgress(statusText, progressIndicator, 'Interpreting query...', 5);
                 }
 
                 // Handle file upload or URL crawl differently
@@ -149,9 +187,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     } 
                     // If no custom title but URL field contains user text, use that
-                    else if (url && !url.startsWith('File:')) {
+                    else if (query && !query.startsWith('File:')) {
                         // User typed a description in the URL field - use this as title
-                        imageTitle = url;
+                        imageTitle = query;
                         console.log('Using URL field text as title:', imageTitle);
                     }
                     
@@ -183,8 +221,120 @@ document.addEventListener('DOMContentLoaded', function() {
                     displayResults(result);
                     
                 } else {
-                    // Normal URL mode
-                    console.log('URL mode detected, preparing crawl request');
+                    // ****** NEW UNIFIED FLOW ******
+                    // If input isn't obviously a URL (doesn't start with http), use /api/suggest to get a URL
+                    let url = query;
+                    
+                    // ALWAYS call /api/suggest if the input doesn't look like a URL
+                    // This ensures we're converting search terms properly on each crawl
+                    if (query && !query.startsWith('http://') && !query.startsWith('https://')) {
+                        try {
+                            updateProgress(statusText, progressIndicator, 'Interpreting your query...', 10);
+                            
+                            // Call the suggest API to convert the query to a URL
+                            const suggestResponse = await fetch(`${serverUrl}/api/suggest`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ query: query })
+                            });
+                            
+                            if (!suggestResponse.ok) {
+                                // Get the error details from the response
+                                try {
+                                    const errorData = await suggestResponse.json();
+                                    console.warn('URL suggestion failed:', errorData);
+                                    
+                                    // Check for specific error types
+                                    if (errorData.is_potential_hack) {
+                                        // Show message that we're using a default URL instead
+                                        updateProgress(statusText, progressIndicator, 'Using default URL instead...', 25);
+                                        
+                                        // Use a safe default URL instead of throwing an error
+                                        url = "https://example.com/";
+                                        console.log('Using default URL instead of potentially problematic query');
+                                    } else if (errorData.query_too_long) {
+                                        // Show length warning
+                                        updateProgress(statusText, progressIndicator, 'Query too long: Please use a shorter query', 100);
+                                        progressIndicator.style.backgroundColor = '#f39c12'; // Orange color for length warning
+                                        
+                                        // Abort the process
+                                        throw new Error('Your query is too long or complex. Please keep your query under 128 characters or about 13 words.');
+                                    } else if (errorData.blocked_domain) {
+                                        // Show blocked domain warning
+                                        const domain = errorData.domain_name || 'requested site';
+                                        updateProgress(statusText, progressIndicator, `Blocked domain: ${domain} blocks web crawlers`, 100);
+                                        progressIndicator.style.backgroundColor = '#e74c3c'; // Red color for blocked domain
+                                        
+                                        // Abort the process
+                                        throw new Error(`The domain '${domain}' is known to block crawler access. Please try a different source.`);
+                                    } else {
+                                        // Generic error, continue with original query
+                                        console.warn('URL suggestion failed with unknown error, using original query');
+                                    }
+                                } catch (parseError) {
+                                    // If we can't parse the error, just use the original query
+                                    console.warn('URL suggestion failed, using original query');
+                                }
+                            } else {
+                                const suggestResult = await suggestResponse.json();
+                                console.log('Suggest API result:', suggestResult);
+                                
+                                if (suggestResult.success && suggestResult.suggested_url) {
+                                    url = suggestResult.suggested_url;
+                                    
+                                    // Brief feedback that we're using a suggested URL
+                                    updateProgress(statusText, progressIndicator, `Using suggested URL: ${url}`, 15);
+                                    
+                                    // Update the input field with the suggested URL (optional)
+                                    urlInput.value = url;
+                                    
+                                    // Add a subtle animation to highlight the change
+                                    urlInput.classList.add('highlight-input');
+                                    setTimeout(() => {
+                                        urlInput.classList.remove('highlight-input');
+                                    }, 500);
+                                    
+                                    // Check if we should update JavaScript setting based on the recommendation
+                                    if ('javascript_recommended' in suggestResult) {
+                                        // Update the JavaScript toggle
+                                        const jsToggle = document.getElementById('javascript-enabled-toggle');
+                                        const jsSelect = document.getElementById('javascript-enabled-single');
+                                        
+                                        if (jsToggle && jsSelect) {
+                                            // Only enable JavaScript if recommended, never disable it automatically
+                                            if (suggestResult.javascript_recommended === true) {
+                                                jsToggle.checked = true;
+                                                jsSelect.value = 'true';
+                                                
+                                                // Also update our local variable for the request
+                                                javascriptEnabled = true;
+                                                
+                                                // Log the change
+                                                console.log('Updated JavaScript setting to: Enabled based on site recommendation');
+                                            }
+                                            
+                                            // Show a note about the recommendation if exists
+                                            if (suggestResult.summary) {
+                                                showSuggestion(`Note: ${suggestResult.summary}`);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (suggestError) {
+                            console.error('Error calling suggest API:', suggestError);
+                            // Continue with original query if suggestion fails
+                        }
+                    }
+                    
+                    // Now proceed with the crawl using the suggested URL or original query
+                    updateProgress(statusText, progressIndicator, 'Initializing browser...', 20);
+                    
+                    // Get output format preference
+                    const outputFormat = document.getElementById('output-format') ? 
+                        document.getElementById('output-format').value : 'markdown';
                     
                     // Prepare request data with explicit boolean conversions
                     const requestData = {
@@ -193,25 +343,42 @@ document.addEventListener('DOMContentLoaded', function() {
                         take_screenshot: Boolean(takeScreenshot),  // Force boolean type
                         ocr_extraction: Boolean(ocrExtraction),    // Force boolean type
                         markdown_extraction: markdownExtraction,
-                        javascript_enabled: Boolean(javascriptEnabled)  // Force boolean type
+                        javascript_enabled: Boolean(javascriptEnabled),  // Force boolean type
+                        output_format: outputFormat  // Add output format preference
                     };
                 
-                // Track whether the request is still active
+                    // Track whether the request is still active
                     let requestActive = true;
                     
                     // Clear any existing progress tracker
                     if (currentProgressTracker && currentProgressTracker.progressUpdater) {
                         currentProgressTracker.progressUpdater.clear();
+                        // Reset to null to avoid any stale references
+                        currentProgressTracker = null;
                     }
                     
-                    // Start smart progress tracking with OCR loitering
-                    currentProgressTracker = smartProgressTracker(statusText, progressIndicator, {
-                        takeScreenshot,
-                        ocrExtraction,
-                        markdownExtraction
-                    });
+                    try {
+                        // Start smart progress tracking with OCR loitering
+                        currentProgressTracker = smartProgressTracker(statusText, progressIndicator, {
+                            takeScreenshot,
+                            ocrExtraction,
+                            markdownExtraction
+                        });
+                    } catch (progressError) {
+                        console.error('Error setting up progress tracker:', progressError);
+                        // Create a simple fallback progress mechanism
+                        currentProgressTracker = {
+                            progressUpdater: {
+                                clear: function() { /* no-op */ },
+                                resumeAfterOcr: function() { /* no-op */ }
+                            },
+                            loiteringAtOcr: function() { return false; }
+                        };
+                    }
                     
-                    const { progressUpdater, loiteringAtOcr } = currentProgressTracker;
+                    // Define these variables explicitly at this scope level to avoid access issues
+                    const progressUpdater = currentProgressTracker ? currentProgressTracker.progressUpdater : { clear: function() {}, resumeAfterOcr: function() {} };
+                    const loiteringAtOcr = currentProgressTracker ? currentProgressTracker.loiteringAtOcr : function() { return false; };
 
                     // Make API request
                     const fetchPromise = fetch(`${serverUrl}/api/crawl`, {
@@ -226,9 +393,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     fetchPromise.then(() => {
                         requestActive = false;
                         // If the progress was loitering at OCR, release it to continue
-                        if (loiteringAtOcr()) {
+                        if (currentProgressTracker && currentProgressTracker.loiteringAtOcr && currentProgressTracker.loiteringAtOcr()) {
                             console.log('Request completed, resuming progress after OCR stage');
-                            progressUpdater.resumeAfterOcr();
+                            if (currentProgressTracker.progressUpdater && currentProgressTracker.progressUpdater.resumeAfterOcr) {
+                                currentProgressTracker.progressUpdater.resumeAfterOcr();
+                            }
                         }
                     }).catch(() => {
                         requestActive = false;
@@ -238,8 +407,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const response = await fetchPromise;
 
                     // Clear the progress tracker intervals
-                    if (progressUpdater) {
-                        progressUpdater.clear();
+                    if (currentProgressTracker && currentProgressTracker.progressUpdater) {
+                        currentProgressTracker.progressUpdater.clear();
                     }
                     
                     // Reset the global tracker
@@ -254,12 +423,85 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     updateProgress(statusText, progressIndicator, 'Processing complete!', 100);
                     displayResults(result);
+                    
+                    // Reset the input field and state after crawl completes
+                    // Only if URL field contains the URL we just crawled
+                    if (urlInput.value === url) {
+                        // Don't clear the input if it's been changed during the crawl
+                        console.log('Resetting URL input after successful crawl');
+                    }
                 }
 
-                // After a short delay, hide the progress bar
+                // After a shorter delay, hide the progress bar and re-enable controls
                 setTimeout(() => {
                     statusBox.style.display = 'none';
-                }, 3000);
+                    
+                    // Re-enable all UI controls
+                    crawlBtn.disabled = false;
+                    crawlBtn.classList.remove('disabled');
+                    crawlBtn.style.opacity = '1';
+                    crawlBtn.style.cursor = 'pointer';
+                    
+                    if (instantCrawlBtn) {
+                        instantCrawlBtn.disabled = false;
+                        instantCrawlBtn.classList.remove('disabled');
+                    }
+                    
+                    // Make URL input editable again - IMPORTANT, this must happen for user to type
+                    urlInput.readOnly = false;
+                    urlInput.disabled = false; // Make sure it's not disabled
+                    urlInput.style.opacity = '1';
+                    urlInput.style.pointerEvents = 'auto'; // Ensure pointer events are enabled
+                    
+                    // Clear out the input field for a new search
+                    urlInput.value = '';
+                    
+                    // Focus the input FIRST before doing any DOM manipulation
+                    // This seems to be critical for focus to work properly
+                    urlInput.focus();
+                    console.log('Input field focused and ready for new search');
+                    
+                    // Use a simple alert-style message instead of DOM manipulation
+                    // Create this message AFTER ensuring the input is focused and editable
+                    try {
+                        // Create a floating message that doesn't interact with the page
+                        let messageEl = document.getElementById('just-crawled-message');
+                        if (!messageEl) {
+                            messageEl = document.createElement('div');
+                            messageEl.id = 'just-crawled-message';
+                            messageEl.style.position = 'fixed';
+                            messageEl.style.bottom = '20px';
+                            messageEl.style.left = '50%';
+                            messageEl.style.transform = 'translateX(-50%)';
+                            messageEl.style.backgroundColor = '#6c63ff';
+                            messageEl.style.color = 'white';
+                            messageEl.style.padding = '8px 16px';
+                            messageEl.style.borderRadius = '20px';
+                            messageEl.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+                            messageEl.style.zIndex = '9999';
+                            document.body.appendChild(messageEl);
+                        }
+                        
+                        messageEl.innerHTML = `Just crawled: ${url}`;
+                        messageEl.style.display = 'block';
+                        
+                        // Hide after 3 seconds
+                        setTimeout(() => {
+                            messageEl.style.display = 'none';
+                        }, 3000);
+                    } catch (msgErr) {
+                        console.error('Error showing message:', msgErr);
+                        // Ignore message errors - don't interfere with input functionality
+                    }
+                    
+                    // Add a subtle flash to indicate that crawling is complete
+                    setTimeout(() => {
+                        urlInput.classList.add('highlight-input');
+                        setTimeout(() => {
+                            urlInput.classList.remove('highlight-input');
+                        }, 500);
+                    }, 100);
+                }, 1000); // Reduced from 3000ms to 1000ms
                 
                 // Note: We've already processed the response and displayed results above
                 // No need to attempt additional response processing
@@ -282,7 +524,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update status text to show detailed error
                 statusText.textContent = `Error: ${error.message}`;
                 
-                // Don't hide the status box and don't show alert
+                // Re-enable controls even on error
+                const crawlBtn = document.getElementById('crawl-btn');
+                const instantCrawlBtn = document.getElementById('instant-crawl');
+                
+                // Re-enable all UI controls
+                crawlBtn.disabled = false;
+                crawlBtn.classList.remove('disabled');
+                crawlBtn.style.opacity = '1';
+                crawlBtn.style.cursor = 'pointer';
+                
+                if (instantCrawlBtn) {
+                    instantCrawlBtn.disabled = false;
+                    instantCrawlBtn.classList.remove('disabled');
+                }
+                
+                // Make URL input editable again
+                urlInput.readOnly = false;
+                urlInput.style.opacity = '1';
+                
+                // Keep the value so user can edit their query
+                
+                // Don't hide the status box on error, but do focus the input field
+                // Add a delay to ensure focus works properly
+                setTimeout(() => {
+                    urlInput.focus();
+                    console.log('Input field focused after error');
+                }, 50);
+                
+                // Automatically hide error after 4 seconds to prevent it from staying forever
+                setTimeout(() => {
+                    statusBox.style.display = 'none';
+                }, 4000);
             }
         });
     }
@@ -601,9 +874,10 @@ document.addEventListener('DOMContentLoaded', function() {
             resultsContent.appendChild(resultItem);
         });
 
-        // Set up the HTML and report links - check both places where paths might be
+        // Set up the HTML, JSON, and report links - check both places where paths might be
         const reportPath = result.report_path || (result.result && result.result.report_path);
         const htmlPath = result.html_path || (result.result && result.result.html_path);
+        const jsonPath = result.json_path || (result.result && result.result.json_path);
         
         // Store report path in a data attribute on the delete button for later use
         let storedReportPath = '';
@@ -634,6 +908,45 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Force reportLinkTop to be hidden again in case it was enabled elsewhere
             reportLinkTop.style.display = 'none';
+            
+            // Add JSON link if available
+            if (jsonPath) {
+                // Create JSON link if it doesn't exist
+                let jsonLink = document.getElementById('json-link');
+                let jsonLinkTop = document.getElementById('json-link-top');
+                
+                if (!jsonLink) {
+                    jsonLink = document.createElement('a');
+                    jsonLink.id = 'json-link';
+                    jsonLink.className = 'btn secondary';
+                    jsonLink.style.marginLeft = '5px';
+                    jsonLink.innerHTML = '<i class="fas fa-file-code"></i> View JSON';
+                    jsonLink.target = '_blank';
+                    
+                    // Add to bottom actions
+                    document.getElementById('results-actions').appendChild(jsonLink);
+                }
+                
+                if (!jsonLinkTop) {
+                    jsonLinkTop = document.createElement('a');
+                    jsonLinkTop.id = 'json-link-top';
+                    jsonLinkTop.className = 'btn secondary';
+                    jsonLinkTop.style.marginRight = '5px';
+                    jsonLinkTop.innerHTML = '<i class="fas fa-file-code"></i> View JSON';
+                    jsonLinkTop.target = '_blank';
+                    
+                    // Add to top actions before delete button
+                    const deleteBtn = document.getElementById('delete-report-btn');
+                    document.getElementById('results-actions-top').insertBefore(jsonLinkTop, deleteBtn);
+                }
+                
+                // Update links
+                jsonLink.href = `${serverUrl}/reports/${jsonPath}`;
+                jsonLink.style.display = 'inline-block';
+                
+                jsonLinkTop.href = `${serverUrl}/reports/${jsonPath}`;
+                jsonLinkTop.style.display = 'inline-block';
+            }
         } else {
             // Even if no HTML path, try to use report path for HTML if available
             if (reportPath) {
@@ -680,6 +993,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             reportLinkTop.style.display = 'none';
                             htmlLinkTop.style.display = 'none';
                             deleteReportBtn.style.display = 'none';
+                            
+                            // Hide JSON links if they exist
+                            const jsonLink = document.getElementById('json-link');
+                            const jsonLinkTop = document.getElementById('json-link-top');
+                            
+                            if (jsonLink) jsonLink.style.display = 'none';
+                            if (jsonLinkTop) jsonLinkTop.style.display = 'none';
                             
                             // Add a note about deletion to results summary
                             resultsSummary.textContent += ' (Report has been deleted)';
@@ -910,6 +1230,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const urlInput = document.getElementById('url');
         if (!urlInput) return;
         
+        // Remove the restore previous URL functionality since we're keeping the URL in the field now
+        
         // Set up file selection functionality
         const mainFileSelectBtn = document.getElementById('main-file-select-btn');
         const mainFileInput = document.getElementById('main-file-input');
@@ -1041,25 +1363,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Only special case for tech news
-        const techNewsUrl = 'https://news.ycombinator.com/';
-        
-        // Handle input event to check for matches as the user types
-        urlInput.addEventListener('input', function() {
-            const searchTerm = this.value.trim().toLowerCase();
-            
-            // If input starts with http:// or https://, it's a URL, don't try to match
-            if (searchTerm.startsWith('http://') || searchTerm.startsWith('https://')) {
-                return;
-            }
-            
-            // Only handle tech news special case
-            if (searchTerm === 'tech news') {
-                // Add a small suggestion below the input field
-                showSuggestion(`Press Enter to load Hacker News`);
-            }
-        });
-        
         // Handle key press to execute search on Enter
         urlInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
@@ -1071,15 +1374,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // Only handle tech news special case
-                if (searchTerm === 'tech news') {
-                    // Replace the input with Hacker News URL
-                    this.value = techNewsUrl;
-                    document.getElementById('crawl-btn').click();
-                    return;
-                }
-                
-                // If it's not tech news and not a URL, just submit as is
+                // For all non-URL inputs, let the suggest API handle it
+                // Do not submit directly - this ensures the suggest endpoint is called
                 document.getElementById('crawl-btn').click();
                 e.preventDefault();
             }
@@ -1104,7 +1400,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            suggestionEl.textContent = text;
+            suggestionEl.innerHTML = text;
             
             // Auto-hide after 3 seconds
             setTimeout(() => {

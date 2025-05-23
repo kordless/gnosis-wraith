@@ -1,7 +1,7 @@
 {
     "manifest_version":  3,
     "name":  "Gnosis Wraith Ghost",
-    "version":  "1.1.2",
+    "version":  "1.2.1",
     "description":  "Gnosis Wraith - DOM capture, screenshot, and content extraction for web pages",
     "permissions":  [
                         "contextMenus",
@@ -42,8 +42,8 @@
                                                 "\u003call_urls\u003e"
                                             ],
                                 "js":  [
-                                           "content.js",
-                                           "content/dom-capture.js"
+                                           "content/dom-capture.js",
+                                           "content.js"
                                        ],
                                 "run_at":  "document_idle"
                             }
