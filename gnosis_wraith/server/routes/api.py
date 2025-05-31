@@ -341,9 +341,17 @@ async def api_crawl():
                 if 'error' in result:
                     minimal_item['error'] = result['error']
                 else:
-                    # Include just the extracted text without truncation for minimal format
-                    if 'extracted_text' in result:
-                        minimal_item['markdown_content'] = result['extracted_text']
+                    # Include content without truncation for minimal format
+                    # Try multiple possible content fields in order of preference
+                    content = (
+                        result.get('markdown_content', '') or
+                        result.get('filtered_content', '') or
+                        result.get('fit_markdown_content', '') or
+                        result.get('extracted_text', '') or
+                        result.get('html_content', '')
+                    )
+                    if content:
+                        minimal_item['markdown_content'] = content
                 
                 minimal_response['results'].append(minimal_item)
             
