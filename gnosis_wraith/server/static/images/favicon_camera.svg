@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Purple circle background -->
+  <circle cx="16" cy="16" r="15" fill="#6c63ff" />
+  
+  <!-- Camera body -->
+  <rect x="8" y="13" width="16" height="10" rx="2" fill="white" />
+  
+  <!-- Camera lens -->
+  <circle cx="16" cy="17" r="3" fill="#6c63ff" />
+  <circle cx="16" cy="17" r="1.5" fill="white" />
+  
+  <!-- Camera flash/viewfinder -->
+  <rect x="10" y="10" width="4" height="2" rx="1" fill="white" />
+  <rect x="18" y="10" width="4" height="2" rx="1" fill="white" />
+</svg>

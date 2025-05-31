@@ -14,7 +14,8 @@ class ModelManager:
         self.local_models = {}
         self.remote_providers = {}
         self.ocr_reader = None
-        self._initialize_ocr()
+        # OCR is now lazy-loaded only when needed
+        # self._initialize_ocr()  # Removed - only initialize when actually used
     
     def _initialize_ocr(self):
         """Initialize EasyOCR for text extraction with GPU if available."""
@@ -53,9 +54,12 @@ class ModelManager:
     async def extract_text_from_image(self, image_path):
         """Extract text from an image using OCR."""
         if not self.ocr_reader:
+            # OCR is now lazy-loaded only when needed
+            logger.info("🔄 Initializing OCR (lazy load) - first time use detected")
             self._initialize_ocr()
             if not self.ocr_reader:
                 return "Text extraction failed: OCR reader not available. Check dependencies."
+
                 
         try:
             import time

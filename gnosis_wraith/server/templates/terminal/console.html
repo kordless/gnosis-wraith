@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Gnosis Wraith Terminal</title>
+    <style>
+        body {
+            background: #0a0a0a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #terminal {
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #333;
+            background: #000;
+        }
+        
+        .prompt-line {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        
+        .prompt-label {
+            color: #00aaff;
+            margin-right: 5px;
+            white-space: nowrap;
+        }
+        
+        .command-input {
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font: inherit;
+            outline: none;
+            flex: 1;
+            caret-color: #00ff00;
+        }
+        
+        .output-line {
+            margin: 2px 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .system { color: #ffaa00; }
+        .error { color: #ff4444; }
+        .success { color: #44ff44; }
+        .info { color: #4488ff; }
+        
+        .cursor {
+            background: #00ff00;
+            color: #000;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        /* CRT Effects */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1000;
+            
+            /* Scan lines */
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.03) 2px,
+                rgba(0, 255, 0, 0.03) 4px
+            );
+            
+            /* Subtle screen curve */
+            border-radius: 8px;
+        }
+        
+        /* Screen flicker animation */
+        @keyframes flicker {
+            0% { opacity: 1; }
+            98% { opacity: 1; }
+            99% { opacity: 0.98; }
+            100% { opacity: 1; }
+        }
+        
+        body {
+            animation: flicker 3s infinite;
+            /* Slight green glow */
+            box-shadow: inset 0 0 100px rgba(0, 255, 0, 0.1);
+        }
+        
+        /* Terminal glow effect */
+        #terminal {
+            text-shadow: 0 0 2px rgba(0, 255, 0, 0.8);
+            /* Subtle screen curvature */
+            border-radius: 4px;
+        }
+        
+        /* Enhanced cursor with glow */
+        .cursor {
+            background: #00ff00;
+            color: #000;
+            animation: blink 1s infinite;
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
+        }
+        
+        /* Phosphor persistence effect on text */
+        .output-line {
+            text-shadow: 0 0 1px rgba(0, 255, 0, 0.5);
+        }
+        
+        /* Vintage monitor bezel effect */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            pointer-events: none;
+            z-index: 999;
+            border: 10px solid #222;
+            border-radius: 20px;
+            box-shadow: 
+                inset 0 0 20px rgba(0, 0, 0, 0.8),
+                0 0 40px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal"></div>
+    
+    <script>
+        class Terminal {
+            constructor(element) {
+                this.element = element;
+                this.history = [];
+                this.historyIndex = -1;
+                this.currentInput = null;
+                
+                this.init();
+            }
+            
+            init() {
+                this.output('🚀 Gnosis Wraith Terminal v1.0', 'system');
+                this.output('Type !help for available commands', 'system');
+                this.output('');
+                this.output('💡 Want visual reports and GUI? Upgrade to Premium!', 'info');
+                this.output('   • Rich visual crawl reports', 'info');
+                this.output('   • Drag & drop interface', 'info');  
+                this.output('   • Batch processing', 'info');
+                this.output('   • Real-time monitoring', 'info');
+                this.output('');
+                this.createPrompt();
+            }
+            
+            output(text, className = '') {
+                const line = document.createElement('div');
+                line.className = `output-line ${className}`;
+                line.innerHTML = text;
+                this.element.appendChild(line);
+                this.scrollToBottom();
+            }
+            
+            createPrompt() {
+                const promptLine = document.createElement('div');
+                promptLine.className = 'prompt-line';
+                
+                const label = document.createElement('span');
+                label.className = 'prompt-label';
+                label.textContent = 'wraith@terminal:~$ ';
+                
+                const input = document.createElement('input');
+                input.className = 'command-input';
+                input.type = 'text';
+                input.spellcheck = false;
+                input.autocomplete = 'off';
+                
+                promptLine.appendChild(label);
+                promptLine.appendChild(input);
+                
+                this.element.appendChild(promptLine);
+                this.currentInput = input;
+                
+                input.addEventListener('keydown', (e) => this.handleKeydown(e));
+                input.focus();
+                
+                this.scrollToBottom();
+            }
+            
+            handleKeydown(e) {
+                if (e.key === 'Enter') {
+                    const command = this.currentInput.value.trim();
+                    if (command) {
+                        this.executeCommand(command);
+                        this.addToHistory(command);
+                    }
+                    this.currentInput.disabled = true;
+                    this.createPrompt();
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    this.navigateHistory(-1);
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    this.navigateHistory(1);
+                }
+            }
+            
+            addToHistory(command) {
+                this.history.push(command);
+                if (this.history.length > 100) {
+                    this.history.shift();
+                }
+                this.historyIndex = -1;
+            }
+            
+            navigateHistory(direction) {
+                if (direction === -1 && this.historyIndex < this.history.length - 1) {
+                    this.historyIndex++;
+                    this.currentInput.value = this.history[this.history.length - 1 - this.historyIndex];
+                } else if (direction === 1 && this.historyIndex > 0) {
+                    this.historyIndex--;
+                    this.currentInput.value = this.history[this.history.length - 1 - this.historyIndex];
+                } else if (direction === 1 && this.historyIndex === 0) {
+                    this.historyIndex = -1;
+                    this.currentInput.value = '';
+                }
+            }
+            
+            async executeCommand(command) {
+                this.output(`wraith@terminal:~$ ${command}`);
+                
+                try {
+                    const response = await fetch('/j', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            line: command,
+                            session_id: 'default'
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const jsCode = await response.text();
+                        eval(jsCode);
+                    } else {
+                        this.output('Command failed: ' + response.statusText, 'error');
+                    }
+                } catch (error) {
+                    this.output('Error: ' + error.message, 'error');
+                }
+            }
+            
+            clear() {
+                this.element.innerHTML = '';
+                this.init();
+            }
+            
+            scrollToBottom() {
+                this.element.scrollTop = this.element.scrollHeight;
+            }
+        }
+        
+        // Global functions for command scripts
+        function report(content) {
+            terminal.output(content);
+        }
+        
+        function System(message) {
+            terminal.output(`[SYSTEM] ${message}`, 'system');
+        }
+        
+        // Initialize terminal
+        let terminal;
+        document.addEventListener('DOMContentLoaded', () => {
+            terminal = new Terminal(document.getElementById('terminal'));
+        });
+        
+        // Focus handling
+        document.addEventListener('click', () => {
+            if (terminal && terminal.currentInput) {
+                terminal.currentInput.focus();
+            }
+        });
+        
+        window.addEventListener('focus', () => {
+            if (terminal && terminal.currentInput) {
+                terminal.currentInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>

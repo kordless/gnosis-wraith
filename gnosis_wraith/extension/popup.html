@@ -250,6 +250,76 @@
     .reports-link:hover {
       text-decoration: underline;
     }
+    
+    /* Custom checkbox styling */
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary-color);
+    }
+    
+    label {
+      font-size: 14px;
+      color: var(--text-color);
+      cursor: pointer;
+    }
+    
+    label:hover {
+      color: var(--primary-color);
+    }
+    
+    /* Slider styles */
+    .slider-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+    
+    .slider-label {
+      font-size: 14px;
+      color: var(--text-color);
+      margin-right: 10px;
+    }
+    
+    .slider {
+      -webkit-appearance: none;
+      width: 60px;
+      height: 6px;
+      border-radius: 3px;
+      background: #ddd;
+      outline: none;
+      transition: background 0.3s;
+    }
+    
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    .slider::-webkit-slider-thumb:hover {
+      background: var(--primary-dark);
+    }
+    
+    .key {
+      background: #ffffff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      font-weight: bold;
+      color: #333;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: inline-block;
+      margin: 0 2px;
+    }
   </style>
 </head>
 <body>
@@ -264,17 +334,25 @@
   <div class="content">
     <!-- Capture Actions -->
     <div class="section">
-      <div class="section-title">Capture Options</div>
+      <div class="section-title">Screenshot</div>
       
+      <!-- Upload slider -->
+      <div class="slider-container">
+        <span class="slider-label">Upload image</span>
+        <input type="range" min="0" max="1" value="1" class="slider" id="upload-slider">
+      </div>
+      
+      <!-- Full page slider -->
+      <div class="slider-container">
+        <span class="slider-label">Full page capture</span>
+        <input type="range" min="0" max="1" value="0" class="slider" id="fullpage-slider">
+      </div>
+      
+      <!-- Single capture button -->
       <div class="actions">
-        <button id="capture-with-dom-btn" class="btn">
+        <button id="capture-btn" class="btn">
           <span class="btn-icon">📷</span>
-          Capture Current View & DOM
-        </button>
-        
-        <button id="capture-full-page-btn" class="btn btn-outline">
-          <span class="btn-icon">📜</span>
-          Capture Full Page (Scrolling)
+          Screenshot
         </button>
       </div>
     </div>
@@ -284,16 +362,12 @@
     <!-- Settings section -->
     <div class="section-separator"></div>
     <div class="section">
-      <div class="section-title">Server Settings</div>
+      <div class="section-title">Server</div>
       <div class="input-group">
-        <input type="text" id="server-url-input" class="input-field" placeholder="Server URL (e.g., localhost:5678)">
-      </div>
-      <button id="save-settings-btn" class="btn btn-secondary">Save Settings</button>
-      
-      <!-- Navigation links -->
-      <div style="display: flex; justify-content: space-between; margin-top: 15px;">
-        <a href="#" id="wraith-link" class="reports-link">Wraith Dashboard</a>
-        <a href="#" id="reports-link" class="reports-link">Wraith Reports</a>
+        <select id="server-select" class="input-field" style="appearance: menulist;">
+          <option value="https://wraith.nuts.services">https://wraith.nuts.services</option>
+          <option value="http://localhost:5678">localhost:5678 (test)</option>
+        </select>
       </div>
     </div>
   </div>
@@ -302,16 +376,14 @@
     <a href="#" id="help-link" class="help-link">Help & Keyboard Shortcuts</a>
     <div id="help-section">
       <h3>Keyboard Shortcuts</h3>
-      <ul class="shortcut-list">
-        <li class="shortcut-item"><span class="shortcut-key">Alt+Shift+W</span> - Capture visible screen</li>
-        <li class="shortcut-item"><span class="shortcut-key">Alt+Shift+U</span> - Capture and upload to server</li>
-        <li class="shortcut-item"><span class="shortcut-key">Alt+Shift+F</span> - Capture full page</li>
-        <li class="shortcut-item"><span class="shortcut-key">Alt+Shift+A</span> - Capture full page and upload</li>
-      </ul>
-      <p>Full page capture takes multiple screenshots and stitches them together.</p>
-      <a href="#" id="close-help" class="help-link">Close</a>
+      <div style="padding: 10px 0;">
+        <div style="margin: 8px 0;"><span class="key">Alt</span> + <span class="key">Shift</span> + <span class="key">W</span> - Capture visible screen</div>
+        <div style="margin: 8px 0;"><span class="key">Alt</span> + <span class="key">Shift</span> + <span class="key">U</span> - Capture and upload to server</div>
+        <div style="margin: 8px 0;"><span class="key">Alt</span> + <span class="key">Shift</span> + <span class="key">F</span> - Capture full page</div>
+        <div style="margin: 8px 0;"><span class="key">Alt</span> + <span class="key">Shift</span> + <span class="key">A</span> - Capture full page and upload</div>
+      </div>
     </div>
-    <div class="version">v1.2.1</div>
+    <div class="version">Gnosis Wraith v1.3.0</div>
   </div>
   
   <script src="popup.js"></script>

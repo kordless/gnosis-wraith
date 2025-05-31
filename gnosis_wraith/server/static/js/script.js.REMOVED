@@ -1,0 +1,8 @@
+// This file has been removed - functionality moved to gnosis.js
+// Original file renamed to script.js.REMOVED on 2025-05-26
+// All functionality has been consolidated into the React-based gnosis.js
+
+// The URL parameter handling that was in this file has been moved to:
+// gnosis.js - main initialization useEffect
+
+// We have 132 versions backed up in .script.js_versions/ if needed

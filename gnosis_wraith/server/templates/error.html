@@ -5,18 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ error_title }} - Gnosis Wraith</title>
     
-    <!-- React and ReactDOM -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
-    
-    <!-- Babel for JSX -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.21.2/babel.min.js"></script>
-    
     <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
-        mode: 'jit',
         darkMode: 'class',
         theme: {
           extend: {
@@ -37,15 +29,10 @@
             background-color: #111827;
             margin: 0;
             padding: 0;
-            overflow: hidden;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
         }
         
-        /* CRT Effects */
-        .crt-container {
-            position: relative;
-            overflow-y: auto !important;
-        }
-        
+        /* CRT Scanlines */
         .crt-scanlines::before {
             content: '';
             position: absolute;
@@ -64,233 +51,85 @@
             z-index: 1;
         }
         
-        .crt-flicker {
-            animation: flicker 0.15s infinite linear;
-        }
-        
-        @keyframes flicker {
-            0% { opacity: 1; }
-            98% { opacity: 1; }
-            99% { opacity: 0.98; }
-            100% { opacity: 1; }
-        }
-        
-        .void-icon {
-            font-size: 8rem;
+        .error-icon {
+            font-size: 6rem;
             color: #ef4444;
-            filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.5));
-            animation: float 4s ease-in-out infinite;
+            filter: drop-shadow(0 0 20px rgba(239, 68, 68, 0.4));
+            animation: pulse 2s ease-in-out infinite;
         }
         
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-            100% { transform: translateY(0px); }
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
         }
         
-        .forge-button {
-            background: linear-gradient(45deg, #a855f7, #8b5cf6);
-            border: 2px solid #7c3aed;
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+        .crawl-button {
+            background: rgba(74, 222, 128, 0.1);
+            border: 2px solid #4ade80;
             transition: all 0.3s ease;
         }
         
-        .forge-button:hover {
+        .crawl-button:hover {
+            background: rgba(74, 222, 128, 0.2);
             transform: translateY(-2px);
-            box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
-        }
-        
-        .resource-fragment {
-            background: rgba(74, 222, 128, 0.1);
-            border: 1px solid rgba(74, 222, 128, 0.3);
-            border-radius: 8px;
-            padding: 15px;
-            font-family: monospace;
-            color: #4ade80;
-            margin: 20px 0;
-        }
-        
-        .resource-fragment .meta-data {
-            color: #94a3b8;
-            font-size: 0.9em;
-            margin-top: 8px;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.4);
         }
     </style>
 </head>
-<body class="bg-gray-900 p-0 m-0">
-    <div id="root"></div>
-    
-    <script type="text/babel">
-        {% raw %}
-        const { useState, useEffect, useRef } = React;
-        
-        const VoidErrorInterface = () => {
-            const [systemStatus, setSystemStatus] = useState('degraded');
-            const [resourceData, setResourceData] = useState({
-                path: '{{ filename or "unknown" }}',
-                timestamp: new Date().toISOString(),
-                entropy: Math.floor(Math.random() * 10000)
-            });
+<body class="bg-gray-900">
+    <div class="h-screen flex items-center justify-center relative crt-scanlines">
+        <div class="text-center max-w-2xl mx-auto p-8">
+            <!-- Error Icon -->
+            <div class="error-icon mb-8">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
             
-            const crtContainerRef = useRef(null);
+            <!-- Error Title -->
+            <h1 class="text-4xl md:text-5xl font-bold text-red-400 mb-4">
+                {% if error_type == "not-found" %}
+                    404 - Not Found
+                {% else %}
+                    Error
+                {% endif %}
+            </h1>
             
-            useEffect(() => {
-                // CRT flicker effect
-                const flickerInterval = setInterval(() => {
-                    if (Math.random() < 0.1) {
-                        const crtElement = crtContainerRef.current;
-                        if (crtElement) {
-                            crtElement.classList.add('active');
-                            setTimeout(() => {
-                                crtElement.classList.remove('active');
-                            }, 100);
-                        }
-                    }
-                }, 2000);
+            <!-- Error Message -->
+            <p class="text-xl text-gray-300 mb-8">
+                {% if error_message %}
+                    {{ error_message }}
+                {% else %}
+                    The requested resource could not be found.
+                {% endif %}
+            </p>
+            
+            <!-- Path if available -->
+            {% if filename %}
+            <div class="text-sm text-gray-500 mb-8 font-mono">
+                <span class="text-gray-600">Path:</span> 
+                <span class="text-terminal-green">/{{ filename }}</span>
+            </div>
+            {% endif %}
+            
+            <!-- Action Buttons -->
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <a 
+                    href="/wraith" 
+                    className="crawl-button px-6 py-3 text-terminal-green rounded-md font-semibold inline-flex items-center"
+                >
+                    <i class="fas fa-spider mr-2"></i>
+                    Crawl a Resource
+                </a>
                 
-                return () => clearInterval(flickerInterval);
-            }, []);
-            
-            const forgeResource = () => {
-                // Extract metadata from the failed resource
-                const metadata = {
-                    path: resourceData.path,
-                    timestamp: resourceData.timestamp,
-                    userAgent: navigator.userAgent,
-                    referrer: document.referrer || 'direct',
-                    entropy: resourceData.entropy
-                };
-                
-                // Create URL with metadata for the Forge
-                const forgeParams = new URLSearchParams({
-                    action: 'resurrect',
-                    resource: resourceData.path,
-                    metadata: JSON.stringify(metadata)
-                });
-                
-                window.location.href = `/forge?${forgeParams.toString()}`;
-            };
-            
-            return (
-                <div className="h-screen bg-gray-900 text-green-400 p-0 m-0 font-mono overflow-hidden">
-                    <div className="w-full h-full flex flex-col">
-                        {/* Header */}
-                        <header className="bg-gray-800 border-b border-gray-700 p-4">
-                            <div className="flex justify-between items-center">
-                                <h1 className="text-xl font-bold">GNOSIS WRAITH</h1>
-                                <div className="flex items-center space-x-2">
-                                    <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                                    <span className="text-sm uppercase text-red-400">System Status: {systemStatus}</span>
-                                </div>
-                            </div>
-                        </header>
-
-                        {/* Navigation - Stripped of meaning */}
-                        <div className="bg-gray-800 border-b border-gray-700 p-4">
-                            <div className="flex space-x-1">
-                                <div className="px-4 py-2 bg-gray-700 text-gray-500 rounded-t">
-                                    <i className="fas fa-ban mr-2"></i>
-                                    <span className="line-through">Crawler</span>
-                                </div>
-                                <div className="px-4 py-2 bg-purple-800 text-purple-300 rounded-t">
-                                    <i className="fas fa-hammer mr-2"></i>Forge
-                                </div>
-                                <div className="px-4 py-2 bg-gray-700 text-gray-500 rounded-t">
-                                    <i className="fas fa-archive mr-2"></i>
-                                    <span className="line-through">Vault</span>
-                                </div>
-                                <div className="px-4 py-2 bg-gray-700 text-gray-500 rounded-t">
-                                    <i className="fas fa-info-circle mr-2"></i>
-                                    <span className="line-through">About</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Main Content */}
-                        <div className="flex-grow flex items-center justify-center p-8">
-                            <div 
-                                ref={crtContainerRef} 
-                                className="text-center max-w-4xl mx-auto crt-container crt-scanlines crt-flicker"
-                            >
-                                {/* Void Icon */}
-                                <div className="void-icon mb-8">
-                                    <i className="fas fa-ghost"></i>
-                                </div>
-                                
-                                {/* Error Title */}
-                                <h1 className="text-4xl md:text-6xl font-bold text-red-400 mb-6 font-mono">
-                                    R3S0URC3_N0T_F0UND
-                                </h1>
-                                
-                                {/* Error Message */}
-                                <div className="text-xl text-gray-300 mb-8 leading-relaxed">
-                                    The requested resource has dissolved into the void.
-                                    <br />
-                                    Digital entropy has claimed another fragment.
-                                </div>
-                                
-                                {/* Resource Fragment */}
-                                <div className="resource-fragment text-left max-w-2xl mx-auto mb-8">
-                                    <div className="flex items-center mb-2">
-                                        <i className="fas fa-file-code mr-2"></i>
-                                        <span className="font-bold">RESOURCE FRAGMENT DETECTED</span>
-                                    </div>
-                                    <div className="text-green-300">
-                                        Path: <span className="text-yellow-300">/{resourceData.path}</span>
-                                    </div>
-                                    <div className="meta-data">
-                                        Timestamp: {resourceData.timestamp}
-                                        <br />
-                                        Entropy Level: {resourceData.entropy}
-                                        <br />
-                                        Status: RECOVERABLE VIA SYNTHESIS
-                                    </div>
-                                </div>
-                                
-                                {/* Action Buttons */}
-                                <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-                                    <a 
-                                        href="/wraith" 
-                                        className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-md transition-colors flex items-center"
-                                    >
-                                        <i className="fas fa-arrow-left mr-2"></i>
-                                        Return to Origin
-                                    </a>
-                                    
-                                    <button 
-                                        onClick={forgeResource}
-                                        className="forge-button px-8 py-3 text-white rounded-md font-bold flex items-center"
-                                    >
-                                        <i className="fas fa-hammer mr-2"></i>
-                                        FORGE RESOURCE
-                                    </button>
-                                </div>
-                                
-                                {/* Hint Text */}
-                                <div className="mt-8 text-sm text-purple-300 italic">
-                                    The Forge can reconstruct lost resources from available fragments...
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <footer className="bg-gray-800 border-t border-gray-700 p-4 text-center text-gray-500 text-sm">
-                            <div className="flex items-center justify-center space-x-4">
-                                <span>ERROR_CODE: 404</span>
-                                <span>•</span>
-                                <span>GNOSIS_WRAITH_V3.2.7</span>
-                                <span>•</span>
-                                <span>FORGE_SYNTHESIS_AVAILABLE</span>
-                            </div>
-                        </footer>
-                    </div>
-                </div>
-            );
-        };
-        
-        // Render the app
-        ReactDOM.render(<VoidErrorInterface />, document.getElementById('root'));
-        {% endraw %}
-    </script>
+                <a 
+                    href="/" 
+                    className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-md transition-colors inline-flex items-center"
+                >
+                    <i class="fas fa-home mr-2"></i>
+                    Home
+                </a>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

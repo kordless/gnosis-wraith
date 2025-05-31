@@ -98,7 +98,7 @@ $manifestJson = Get-Content -Path $manifestPath | ConvertFrom-Json
 # Update values
 $manifestJson.name = "Gnosis Wraith Ghost"
 $manifestJson.description = "Gnosis Wraith - DOM capture, screenshot, and content extraction for web pages"
-$manifestJson.version = "1.2.1"
+$manifestJson.version = "1.3.0"
 
 # Save updated manifest
 $manifestJson | ConvertTo-Json -Depth 10 | Set-Content -Path $manifestPath

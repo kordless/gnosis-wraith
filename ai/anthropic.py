@@ -361,8 +361,24 @@ SPECIAL TEST MODE: If query contains "TESTFALLBACK", intentionally return just a
         
     except Exception as e:
         logger.error(f"Error in execute_tools: {str(e)}")
-        return {
-            "success": False,
-            "error": str(e),
-            "provider": "anthropic"
-        }
+        
+        # Provide more specific error messages for common authentication issues
+        error_str = str(e)
+        if 'authentication' in error_str.lower() or 'unauthorized' in error_str.lower() or 'invalid api key' in error_str.lower():
+            return {
+                "success": False,
+                "error": "Anthropic API authentication failed - please check your API token is valid and has the necessary permissions",
+                "provider": "anthropic"
+            }
+        elif 'api key' in error_str.lower() and 'not found' in error_str.lower():
+            return {
+                "success": False,
+                "error": "Anthropic API token not found or invalid - please provide a valid API token",
+                "provider": "anthropic"
+            }
+        else:
+            return {
+                "success": False,
+                "error": f"Anthropic API error: {error_str}",
+                "provider": "anthropic"
+            }

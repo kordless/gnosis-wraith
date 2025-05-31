@@ -1,7 +1,7 @@
 // dom-capture.js
 // Extension Content Script for Gnosis Wraith
 // This script captures the DOM content of the current page
-// Version 1.2.1
+// Version 1.3.0
 
 /**
  * Captures the DOM content and page metadata

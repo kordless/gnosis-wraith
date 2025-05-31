@@ -1,6 +1,6 @@
 /**
  * Updated WebWraith content.js with support for job-based processing
- * Version 1.2.1
+ * Version 1.3.0
  */
 
 // Keep track of overlay elements

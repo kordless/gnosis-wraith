@@ -1,6 +1,6 @@
 // background.js
 // Background script for Gnosis Wraith extension
-// Version 1.2.1
+// Version 1.3.0
 
 // Global API settings that can be configured from the options page
 let apiSettings = {

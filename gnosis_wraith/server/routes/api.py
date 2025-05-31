@@ -26,7 +26,17 @@ direct_bp = Blueprint('direct', __name__)
 
 @api_bp.route('/crawl', methods=['POST'])
 async def api_crawl():
-    """API endpoint to crawl URLs with LLM processing."""
+    """API endpoint to crawl URLs with LLM processing.
+    
+    Supports different response formats:
+    - 'full' (default): Complete structured response with metadata
+    - 'content_only': Returns just the markdown content and basic info
+    - 'minimal': Returns essential data without truncation or file paths
+    
+    Request parameters:
+    - response_format: 'full' | 'content_only' | 'minimal'
+    - output_format: Controls file generation ('markdown', 'html', 'json', 'all')
+    """
     logger.info("Blueprint /api/crawl endpoint called")
     data = await request.get_json()
     logger.info(f"API crawl received data: {data}")
@@ -43,6 +53,7 @@ async def api_crawl():
     
     title = data.get('title', f"Web Crawl Report - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     output_format = data.get('output_format', 'markdown')  # Options: 'markdown', 'html', 'json', or 'all'
+    response_format = data.get('response_format', 'full')  # Options: 'full', 'content_only', 'minimal'
     
     # Process all settings from request
     # Process JavaScript enabled setting
@@ -63,7 +74,7 @@ async def api_crawl():
     # Process markdown extraction settings
     markdown_extraction = data.get('markdown_extraction', 'enhanced')
     
-    logger.info(f"Crawl settings: JS={javascript_enabled}, Screenshot={take_screenshot}, OCR={ocr_extraction}, Markdown={markdown_extraction}")
+    logger.info(f"Crawl settings: JS={javascript_enabled}, Screenshot={take_screenshot}, OCR={ocr_extraction}, Markdown={markdown_extraction}, ResponseFormat={response_format}")
     
     # Get LLM configuration from request
     llm_provider = data.get('llm_provider', '')
@@ -87,6 +98,7 @@ async def api_crawl():
             urls, 
             javascript_enabled=javascript_enabled,
             take_screenshot=take_screenshot,
+            screenshot_mode=data.get('screenshot_mode', 'full'),  # Pass screenshot mode
             ocr_extraction=ocr_extraction,
             markdown_extraction=markdown_extraction
         )
@@ -260,16 +272,89 @@ async def api_crawl():
                 html_path = await convert_markdown_to_html(markdown_path)
                 results['html_path'] = os.path.basename(html_path)
         
-        # Generate JSON if requested
-        if output_format in ['json', 'all']:
-            from server.reports import save_json_report
-            json_path = await save_json_report(title, crawl_results)
-            results['json_path'] = os.path.basename(json_path)
+        # Always generate JSON response for debugging
+        from server.reports import save_json_report
+        json_path = await save_json_report(title, crawl_results)
+        results['json_path'] = os.path.basename(json_path)
         
+        # Include the raw crawl results in the response for debugging
+        results['raw_crawl_data'] = crawl_results
+
+        
+        # Handle different response formats
+        if response_format == 'content_only':
+            # Return only the markdown content from the first result
+            if crawl_results and len(crawl_results) > 0:
+                first_result = crawl_results[0]
+                
+                # Debug: Log what keys are available
+                logger.info(f"Content_only debug - available keys: {list(first_result.keys())}")
+                
+                # Try multiple possible content fields
+                markdown_content = (
+                    first_result.get('extracted_text', '') or
+                    first_result.get('markdown_content', '') or
+                    first_result.get('content', '') or
+                    first_result.get('text', '') or
+                    first_result.get('markdown', '')
+                )
+                
+                logger.info(f"Content_only debug - content length: {len(markdown_content)}")
+                
+                content_response = {
+                    "success": True,
+                    "url": first_result.get('url', urls[0] if urls else "Unknown URL"),
+                    "markdown_content": markdown_content,
+                    "title": first_result.get('title', 'Untitled Page'),
+                    "report_path": results.get('report_path'),
+                    "html_path": results.get('html_path'),
+                    "json_path": results.get('json_path')
+                }
+                logger.info(f"API crawl success: returning content_only format")
+                return jsonify(content_response)
+            else:
+                logger.warning("No crawl results available for content_only format")
+                return jsonify({
+                    "success": False,
+                    "error": "No content available"
+                }), 404
+                
+        elif response_format == 'minimal':
+            # Return minimal response with just essential data
+            minimal_response = {
+                "success": True,
+                "urls_processed": urls,
+                "results": []
+            }
+            
+            for result in crawl_results:
+                response_url = result.get('url', urls[0] if urls else "Unknown URL")
+                if isinstance(response_url, list) and len(response_url) > 0:
+                    response_url = response_url[0]
+                    
+                minimal_item = {
+                    "url": response_url,
+                    "title": result.get('title', 'Untitled Page'),
+                    "success": 'error' not in result
+                }
+                
+                if 'error' in result:
+                    minimal_item['error'] = result['error']
+                else:
+                    # Include just the extracted text without truncation for minimal format
+                    if 'extracted_text' in result:
+                        minimal_item['markdown_content'] = result['extracted_text']
+                
+                minimal_response['results'].append(minimal_item)
+            
+            logger.info(f"API crawl success: returning minimal format with {len(minimal_response['results'])} results")
+            return jsonify(minimal_response)
+        
+        # Default: full response format
         # Check if 'results' is a dictionary with a 'results' key or a string
         if isinstance(results, dict) and 'results' in results:
             result_count = len(results.get('results', []))
-            logger.info(f"API crawl success: returning {result_count} results")
+            logger.info(f"API crawl success: returning full format with {result_count} results")
         else:
             logger.info(f"API crawl success: returning direct result")
         return jsonify(results)
@@ -558,18 +643,31 @@ async def suggest_url():
                 if check_for_odd_user_result:
                     break
         
-        # STEP 2: Always call suggest_url, but with context if user is acting odd
+        # STEP 2: Always call suggest_url, but with proper instruction if user is acting odd
         is_odd = check_for_odd_user_result and check_for_odd_user_result.get('user_is_acting_odd', False)
         
-        # Build the suggest_url query with context
-        suggest_query = query
+        # Build the toolbag query with proper instructions
         if is_odd:
-            suggest_query += f"\n\nContext: User appears to be chatting rather than requesting URL crawling. Please suggest a relevant URL based on their input and provide a friendly response explaining this is a web crawler."
+            # When user is acting odd, instruct the AI to use the simple_response_to_users_odd_inquiry parameter
+            toolbag_query = f"""The user said: "{query}"
+
+This appears to be a chat message rather than a URL request. You MUST:
+1. Call suggest_url with a relevant URL based on their topic
+2. Use the simple_response_to_users_odd_inquiry parameter to provide a friendly response that:
+   - Addresses their question or comment
+   - Explains this is a web crawler tool
+   - Suggests they provide a URL to crawl
+
+Example: If they say "hello", suggest a general news site and use simple_response_to_users_odd_inquiry to say "Hello! I'm a web crawler tool. I can help you extract information from websites. Would you like me to crawl a specific URL, or shall I start with a general news site like the one I've suggested?"
+"""
+        else:
+            # Normal URL suggestion request
+            toolbag_query = f"Suggest a URL for: {query}"
         
-        logger.info(f"STEP 2: Calling suggest_url with query: '{suggest_query}', is_odd: {is_odd}")
+        logger.info(f"STEP 2: Calling suggest_url with is_odd: {is_odd}")
         suggest_result = await toolbag.execute(
             tools=['suggest_url'],
-            query=suggest_query,
+            query=toolbag_query,
             provider=provider,
             model=model,
             api_key=api_key
@@ -608,8 +706,11 @@ async def suggest_url():
             if check_for_odd_user_result and check_for_odd_user_result.get('user_is_acting_odd', False):
                 response['user_acting_odd'] = True
                 response['odd_user_guidance'] = check_for_odd_user_result.get('guidance', '')
-                response['check_for_odd_user_thinking'] = check_for_odd_user_result.get('thinking_notes', '')
                 logger.info(f"Enhanced suggest_url result with odd user context")
+                
+                # Log the LLM's response to the user
+                if 'crawling_notes' in response:
+                    logger.info(f"🤖 LLM Reply: {response['crawling_notes']}")
             else:
                 response['user_acting_odd'] = False
                 logger.info(f"Normal suggest_url result (not odd user)")
@@ -652,9 +753,23 @@ async def suggest_url():
         
         # If we somehow don't have a suggest_url result, this is a failure case
         logger.error("No suggest_url result found after pipeline execution")
+        
+        # Check if the suggest_result contains an API key error
+        suggest_error = suggest_result.get('error', '') if suggest_result else ''
+        
+        # Provide more specific error message for authentication issues
+        if 'Anthropic API' in suggest_error and ('authentication' in suggest_error.lower() or 'api key' in suggest_error.lower() or 'unauthorized' in suggest_error.lower()):
+            error_msg = "Authentication failed with your Anthropic API token. Please check that your token is valid and has the necessary permissions."
+        elif 'No Anthropic API key provided' in suggest_error:
+            error_msg = "No Anthropic API token provided. Please provide a valid token to use this service."
+        elif api_key and api_key.strip():
+            error_msg = f"Unable to process request with your provided API token. Error: {suggest_error}"
+        else:
+            error_msg = "Failed to get URL suggestion from pipeline"
+            
         return jsonify({
             "success": False,
-            "error": "Failed to get URL suggestion from pipeline",
+            "error": error_msg,
             "query": query,
             "check_for_odd_user_result": check_for_odd_user_result
         })
@@ -687,7 +802,7 @@ async def api_log():
     """API endpoint to handle client-side logging events.
     
     This endpoint receives log events from the frontend and can store them
-    or process them as needed. Currently just acknowledges receipt.
+    or process them as needed. Enhanced to handle JavaScript errors.
     """
     try:
         data = await request.get_json()
@@ -696,11 +811,54 @@ async def api_log():
         event_type = data.get('event', 'unknown')
         timestamp = data.get('timestamp', datetime.datetime.now().isoformat())
         
-        # Log the event server-side for debugging/monitoring
-        logger.info(f"Client log event: {event_type} at {timestamp}")
-        
-        # Could store in database, file, or send to monitoring service here
-        # For now, just acknowledge receipt
+        # Enhanced handling for different event types
+        if event_type == 'javascript_error':
+            error_info = data.get('error', {})
+            context = data.get('context', {})
+            
+            # Log detailed error information to container logs
+            logger.error("🔥" + "="*60)
+            logger.error(f"🔥 JAVASCRIPT ERROR REPORT")
+            logger.error("🔥" + "="*60)
+            logger.error(f"🔥 Message: {error_info.get('message', 'Unknown error')}")
+            logger.error(f"🔥 Error Name: {error_info.get('name', 'Unknown')}")
+            logger.error(f"🔥 URL: {context.get('url', 'Unknown')}")
+            logger.error(f"🔥 Error Type: {context.get('type', 'Unknown')}")
+            logger.error(f"🔥 Timestamp: {timestamp}")
+            logger.error(f"🔥 User Agent: {context.get('userAgent', 'Unknown')}")
+            
+            # Log stack trace if available
+            if error_info.get('stack'):
+                logger.error(f"🔥 Stack Trace:")
+                logger.error(f"🔥 {error_info['stack']}")
+            
+            logger.error("🔥" + "="*60)
+        elif event_type == 'client_log':
+            # Handle general client logging
+            level = data.get('level', 'info')
+            message = data.get('message', 'No message')
+            log_data = data.get('data', {})
+            
+            # Use appropriate log level with emojis
+            if level == 'error':
+                logger.error(f"🚨 CLIENT ERROR: {message}")
+                if log_data:
+                    logger.error(f"🚨 Data: {log_data}")
+            elif level == 'warn':
+                logger.warning(f"⚠️  CLIENT WARNING: {message}")
+                if log_data:
+                    logger.warning(f"⚠️  Data: {log_data}")
+            elif level == 'debug':
+                logger.debug(f"🔍 CLIENT DEBUG: {message}")
+                if log_data:
+                    logger.debug(f"🔍 Data: {log_data}")
+            else:  # info
+                logger.info(f"📝 CLIENT INFO: {message}")
+                if log_data:
+                    logger.info(f"📝 Data: {log_data}")
+        else:
+            # Regular log event
+            logger.info(f"Client log event: {event_type} at {timestamp}")
         
         return jsonify({
             "success": True,
@@ -774,6 +932,72 @@ async def list_claude_models():
     
     except Exception as e:
         logger.error(f"Error listing Claude models: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+@api_bp.route('/share-code', methods=['POST'])
+async def share_code():
+    """API endpoint to share generated code snippets.
+    
+    Creates a shareable link for code that can be viewed by others.
+    Stores the code as markdown in the reports directory.
+    """
+    try:
+        data = await request.get_json()
+        
+        # Extract code data
+        code = data.get('code', '').strip()
+        language = data.get('language', 'text')
+        query = data.get('query', 'Shared code')
+        timestamp = data.get('timestamp', datetime.datetime.now().isoformat())
+        
+        if not code:
+            return jsonify({
+                "success": False,
+                "error": "No code provided"
+            }), 400
+        
+        # Generate unique ID for the shared code
+        share_id = str(uuid.uuid4())[:8]  # Use first 8 characters
+        
+        # Create markdown content for the shared code
+        markdown_content = f"""# Shared Code: {query}
+
+**Language:** {language}
+**Created:** {timestamp}
+**Share ID:** {share_id}
+
+---
+
+```{language}
+{code}
+```
+
+---
+
+*Generated by Gnosis Wraith Forge*
+"""
+        
+        # Save as markdown report
+        filename = f"shared_code_{share_id}.md"
+        file_path = os.path.join(REPORTS_DIR, filename)
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(markdown_content)
+        
+        logger.info(f"Shared code saved: {filename}")
+        
+        return jsonify({
+            "success": True,
+            "share_id": share_id,
+            "filename": filename,
+            "share_url": f"/shared-code/{share_id}"
+        })
+        
+    except Exception as e:
+        logger.error(f"Code sharing error: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e)

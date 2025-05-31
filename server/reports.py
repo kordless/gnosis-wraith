@@ -5,10 +5,30 @@ import aiofiles
 import markdown
 import json
 from typing import List, Dict, Any
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 # Get logger from config
 logger = logging.getLogger("gnosis_wraith")
 REPORTS_DIR = os.environ.get('GNOSIS_WRAITH_REPORTS_DIR', os.path.join(os.path.expanduser("~"), ".gnosis-wraith/reports"))
+
+# Set up Jinja2 template environment
+# Get the current file's directory (/app/server or /path/to/gnosis-wraith/server)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# In Docker container: /app/server -> need /app/gnosis_wraith/server/templates
+# In local dev: /path/to/gnosis-wraith/server -> need /path/to/gnosis-wraith/gnosis_wraith/server/templates
+if '/app/server' in current_dir:
+    # Docker environment - templates are at /app/gnosis_wraith/server/templates
+    template_dir = '/app/gnosis_wraith/server/templates'
+else:
+    # Local development - calculate relative path
+    project_root = os.path.dirname(current_dir)  # Go up from server/ to project root
+    template_dir = os.path.join(project_root, 'gnosis_wraith', 'server', 'templates')
+
+jinja_env = Environment(
+    loader=FileSystemLoader(template_dir),
+    autoescape=select_autoescape(['html', 'xml'])
+)
 
 def generate_markdown_report(title: str, crawl_results: List[Dict[str, Any]]) -> str:
     """Generate a markdown report from crawl results, including LLM summaries if available."""
@@ -270,10 +290,21 @@ async def save_markdown_report(title: str, crawl_results: List[Dict[str, Any]]) 
     
     report_content = generate_markdown_report(title, crawl_results)
 
-    import string
-    valid_chars = string.ascii_letters + string.digits + '-_'
-    safe_title = ''.join(c if c in valid_chars else '_' for c in title)
-    filename = f"{safe_title}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+    # Use unified hash-based naming for better organization
+    from server.filename_utils import generate_report_filename, extract_url_from_crawl_results
+    
+    # Extract primary URL from crawl results for filename generation
+    primary_url = extract_url_from_crawl_results(crawl_results)
+    
+    if primary_url:
+        # Use hash-based naming with optional custom title
+        filename = generate_report_filename(primary_url, title, "md")
+    else:
+        # Fallback to old naming if no URL found
+        import string
+        valid_chars = string.ascii_letters + string.digits + '-_'
+        safe_title = ''.join(c if c in valid_chars else '_' for c in title)
+        filename = f"{safe_title}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
 
     report_path = os.path.join(REPORTS_DIR, filename)
     
@@ -403,11 +434,21 @@ async def save_json_report(title: str, crawl_results: List[Dict[str, Any]]) -> s
     # Generate the JSON report
     json_report = generate_json_report(title, crawl_results)
 
-    # Create a safe filename
-    import string
-    valid_chars = string.ascii_letters + string.digits + '-_'
-    safe_title = ''.join(c if c in valid_chars else '_' for c in title)
-    filename = f"{safe_title}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    # Use unified hash-based naming for better organization
+    from server.filename_utils import generate_report_filename, extract_url_from_crawl_results
+    
+    # Extract primary URL from crawl results for filename generation
+    primary_url = extract_url_from_crawl_results(crawl_results)
+    
+    if primary_url:
+        # Use hash-based naming with optional custom title
+        filename = generate_report_filename(primary_url, title, "json")
+    else:
+        # Fallback to old naming if no URL found
+        import string
+        valid_chars = string.ascii_letters + string.digits + '-_'
+        safe_title = ''.join(c if c in valid_chars else '_' for c in title)
+        filename = f"{safe_title}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
 
     report_path = os.path.join(REPORTS_DIR, filename)
     
@@ -418,7 +459,7 @@ async def save_json_report(title: str, crawl_results: List[Dict[str, Any]]) -> s
     return report_path
 
 async def convert_markdown_to_html(markdown_file: str) -> str:
-    """Convert a markdown file to HTML with enhanced styling for AI summaries."""
+    """Convert a markdown file to HTML with a modern, sleek design similar to about.html."""
     logger.info(f"Converting markdown file to HTML: {markdown_file}")
     
     # Validate input
@@ -436,13 +477,23 @@ async def convert_markdown_to_html(markdown_file: str) -> str:
             md_content = await f.read()
             logger.info(f"Read {len(md_content)} bytes from markdown file")
         
-        # Check for image references and make sure they're valid
+        # Process image references for lazy loading
         import re
+        
+        # Find all image references in the markdown
         image_refs = re.findall(r'!\[(.*?)\]\((.*?)\)', md_content)
         logger.info(f"Found {len(image_refs)} image references in markdown")
         
+        # Track if we have screenshots to lazy load
+        has_screenshots = False
+        
+        # Process each image reference for validation and lazy loading prep
         for alt_text, image_path in image_refs:
             logger.info(f"Found image reference in markdown: {alt_text} at path {image_path}")
+            
+            # Check if this is a screenshot (typically start with /screenshots/)
+            if '/screenshots/' in image_path:
+                has_screenshots = True
             
             # Don't check paths that start with / as they're web paths
             if not image_path.startswith('/'):
@@ -454,6 +505,20 @@ async def convert_markdown_to_html(markdown_file: str) -> str:
                         logger.info(f"Image path is valid: {potential_path}")
                     else:
                         logger.warning(f"Image path may be invalid: {potential_path}")
+        
+        # Convert all screenshots to lazy-loaded format
+        if has_screenshots:
+            # Replace standard markdown image syntax with custom lazy-loaded version for screenshots
+            md_content = re.sub(
+                r'!\[(.*?)\]\((/screenshots/[^)]+)\)',
+                r'<div class="screenshot-container" data-alt="\1" data-src="\2">\n'
+                r'<div class="screenshot-placeholder">\n'
+                r'<i class="fas fa-image"></i>\n'
+                r'<span>Click to load screenshot</span>\n'
+                r'</div>\n'
+                r'</div>',
+                md_content
+            )
         
         # Add extensions for better markdown rendering
         logger.info("Converting markdown to HTML with extensions")
@@ -468,111 +533,152 @@ async def convert_markdown_to_html(markdown_file: str) -> str:
         return markdown_file
 
     try:
-        # Create styled HTML document with the converted content
+        # Extract metadata from the content for the header
+        # Get report information for metadata display
+        report_title = os.path.basename(markdown_file).replace('.md', '')
+        
+        # First try to extract URL from content using explicit markers
+        url_match = re.search(r'\*\*URL\*\*: (https?://[^\s\n]+)', md_content)
+        base_url = url_match.group(1) if url_match else None
+        
+        # Convert relative links to absolute URLs using base_url
+        if base_url and html:
+            from urllib.parse import urljoin, urlparse
+            
+            def convert_relative_links(html_content, base_url):
+                """Convert relative links in HTML to absolute URLs"""
+                try:
+                    # Parse the base URL to get domain info
+                    parsed_base = urlparse(base_url)
+                    base_domain = f"{parsed_base.scheme}://{parsed_base.netloc}"
+                    
+                    # Convert relative href links to absolute
+                    html_content = re.sub(
+                        r'href="(/[^"]*)"',  # Match href="/relative/path"
+                        lambda m: f'href="{urljoin(base_domain, m.group(1))}"',
+                        html_content
+                    )
+                    
+                    # Convert relative href links without leading slash
+                    html_content = re.sub(
+                        r'href="([^"]*(?<!https?://[^"]*)[^"]*)"',  # Match href="relative/path" but not full URLs
+                        lambda m: f'href="{urljoin(base_url, m.group(1))}"' if not m.group(1).startswith(('http://', 'https://', 'mailto:', 'tel:', '#')) else m.group(0),
+                        html_content
+                    )
+                    
+                    # Convert relative src links for images
+                    html_content = re.sub(
+                        r'src="(/[^"]*)"',  # Match src="/relative/path"
+                        lambda m: f'src="{urljoin(base_domain, m.group(1))}"',
+                        html_content
+                    )
+                    
+                    return html_content
+                except Exception as e:
+                    logger.error(f"Error converting relative links: {str(e)}")
+                    return html_content
+            
+            html = convert_relative_links(html, base_url)
+            logger.info(f"Converted relative links to absolute URLs using base: {base_url}")
+        
+        # Continue with existing metadata extraction logic
+        
+        # If that fails, try to find a domain in the content
+        if not base_url:
+            domain_match = re.search(r'\*\*URL\*\*: ([^\s\n]+\.[a-zA-Z]{2,}[^\s\n]*)', md_content)
+            if domain_match:
+                domain = domain_match.group(1)
+                # Add https:// to the domain if it doesn't have a protocol
+                if not domain.startswith(('http://', 'https://')):
+                    base_url = f"https://{domain}"
+                else:
+                    base_url = domain
+                    
+        # If we still don't have a URL, try to extract from the report title
+        if not base_url:
+            # Look for patterns like "Direct_Crawl_-_https___google_com_"
+            title_url_match = re.search(r'_-_(https?[_]+[^_]+)', report_title)
+            if title_url_match:
+                # Extract the URL pattern and replace _ with proper URL characters
+                encoded_url = title_url_match.group(1)
+                # Replace ___ with :// and _ with /
+                decoded_url = encoded_url.replace('___', '://').replace('_', '/')
+                base_url = decoded_url
+            else:
+                # Try to find just a domain name in the title
+                domain_in_title = re.search(r'_([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})_', report_title)
+                if domain_in_title:
+                    domain = domain_in_title.group(1)
+                    base_url = f"https://{domain}"
+        
+        # Extract generation date from report content
+        date_match = re.search(r'\*Generated on ([^*]+)\*', md_content)
+        generation_date = date_match.group(1) if date_match else datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Create a properly cleaned report title
+        if report_title.endswith('_' + ''.join(c for c in generation_date if c.isdigit())):
+            # Remove timestamp suffix if present
+            clean_title = report_title[:-(len(generation_date) + 1)]
+        else:
+            clean_title = report_title
+            
+        # Clean up title formatting
+        clean_title = clean_title.replace('_', ' ').title()
+        
+        # Create "crawl again" link - use clean URL without escaping
+        if base_url:
+            crawl_again_link = f"/crawl?q={base_url}"
+        else:
+            crawl_again_link = "/crawl"
+        
+        # Extract JS info
+        js_enabled = False
+        js_info_match = re.search(r'\*\*JavaScript\*\*: (Enabled|Disabled)', md_content)
+        if js_info_match:
+            js_enabled = js_info_match.group(1) == 'Enabled'
+        
+        # Get favicon path
+        favicon_path = "/static/images/favicon.ico"
+        
+        # Load and render the template
         try:
-            title = os.path.basename(markdown_file)
+            template = jinja_env.get_template('reports/report_html.html')
+            styled_html = template.render(
+                clean_title=clean_title,
+                favicon_path=favicon_path,
+                generation_date=generation_date,
+                base_url=base_url,
+                js_enabled=js_enabled,
+                crawl_again_link=crawl_again_link,
+                markdown_file_basename=os.path.basename(markdown_file),
+                html_content=html
+            )
+            logger.info("Created styled HTML document using template with lazy-loaded screenshots")
+        except Exception as template_error:
+            logger.error(f"Error loading template: {str(template_error)}")
+            # Fallback to simple HTML if template fails
             styled_html = f"""<!DOCTYPE html>
 <html>
 <head>
+    <title>{clean_title} - Gnosis Wraith Report</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title}</title>
-    <style>
-        :root {{
-            --primary-color: #4e9eff;
-            --bg-color: #1e2129;
-            --card-bg: #282c34;
-            --text-color: #e2e2e2;
-            --border-color: #3a3f4b;
-            --ai-summary-bg: rgba(78, 158, 255, 0.1);
-            --ai-summary-border: rgba(78, 158, 255, 0.3);
-        }}
-        
-        body {{ 
-            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-            line-height: 1.6; 
-            max-width: 900px; 
-            margin: 0 auto; 
-            padding: 20px;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }}
-        
-        /* Improved link styling for better visibility against dark backgrounds */
-        a {{
-            color: #8CB4FF; /* Lighter blue for better contrast */
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }}
-        
-        a:visited {{
-            color: #C8A9FF; /* Lighter purple for visited links */
-        }}
-        
-        a:hover {{
-            color: #A9CBFF; /* Even lighter blue for hover state */
-            text-decoration: underline;
-        }}
-        
-        img {{ max-width: 100%; border-radius: 4px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }}
-        
-        code {{ 
-            background-color: rgba(0,0,0,0.2); 
-            padding: 2px 5px; 
-            border-radius: 3px;
-            text-decoration: none !important;
-        }}
-        
-        pre {{ 
-            background-color: var(--card-bg); 
-            padding: 15px; 
-            border-radius: 4px;
-            overflow-x: auto; 
-            border: 1px solid var(--border-color);
-        }}
-        
-        /* Fix for codehilite underlines */
-        .codehilite .underline, 
-        .codehilite u,
-        pre .underline,
-        pre u,
-        code .underline,
-        code u {{
-            text-decoration: none !important;
-            border-bottom: none !important;
-        }}
-        
-        h1, h2, h3 {{ color: var(--primary-color); }}
-        
-        h2 {{ 
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }}
-        
-        /* Style AI summary sections */
-        h3:contains('AI Summary') + p {{
-            background-color: var(--ai-summary-bg);
-            border: 1px solid var(--ai-summary-border);
-            border-radius: 4px;
-            padding: 15px;
-            margin-top: 5px;
-        }}
-        
-        hr {{
-            border: none;
-            border-top: 1px solid var(--border-color);
-            margin: 30px 0;
-        }}
-    </style>
 </head>
 <body>
-    {html}
+    <h1>{clean_title}</h1>
+    <p>Generated on: {generation_date}</p>
+    <div>{html}</div>
 </body>
 </html>"""
-            logger.info("Created styled HTML document")
-        except Exception as style_error:
-            logger.error(f"Error creating styled HTML: {str(style_error)}")
-            styled_html = f"<html><body><h1>Error Creating Styled HTML</h1><p>{str(style_error)}</p><div>{html}</div></body></html>"
+        
+        # Write HTML to file (moved outside exception handler)
+        async with aiofiles.open(html_file, 'w', encoding='utf-8') as f:
+            await f.write(styled_html)
+            logger.info(f"HTML file written to {html_file}")
+        
+        return html_file
+    except Exception as style_error:
+        logger.error(f"Error creating styled HTML: {str(style_error)}")
+        styled_html = f"<html><body><h1>Error Creating Styled HTML</h1><p>{str(style_error)}</p><div>{html}</div></body></html>"
         
         # Write HTML to file
         async with aiofiles.open(html_file, 'w', encoding='utf-8') as f:

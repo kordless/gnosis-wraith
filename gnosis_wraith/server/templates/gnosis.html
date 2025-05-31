@@ -494,8 +494,6 @@
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
   };
-  
-  // Search query detection functions removed
 
   // Helper function to get cookie value
   const getCookie = (name) => {
@@ -592,20 +590,20 @@
       if (response.ok) {
         if (systemStatus !== 'online') {
           setSystemStatus('online');
-          console.log('🟢 Health Check: Server is ONLINE (HEAD /health returned 200)');
+          console.log('\ud83d\udfe2 Health Check: Server is ONLINE (HEAD /health returned 200)');
         }
       } else {
         if (systemStatus !== 'degraded') {
           setSystemStatus('degraded');
           const statusExplanation = getHttpStatusExplanation(response.status);
-          console.log(`🟡 Health Check: Server is DEGRADED (HEAD /health returned ${response.status} - ${statusExplanation})`);
+          console.log(`\ud83d\udfe1 Health Check: Server is DEGRADED (HEAD /health returned ${response.status} - ${statusExplanation})`);
           addLog(`Server health check failed: HTTP ${response.status} - ${statusExplanation}`);
         }
       }
     } catch (error) {
       if (systemStatus !== 'offline') {
         setSystemStatus('offline');
-        console.log(`🔴 Health Check: Server is OFFLINE (HEAD /health failed - ${error.message})`);
+        console.log(`\ud83d\udd34 Health Check: Server is OFFLINE (HEAD /health failed - ${error.message})`);
         addLog(`Server health check failed: ${error.message}`);
       }
     }
@@ -661,13 +659,140 @@
     }
   };
 
+  // URL validation function
+  const isValidUrl = (urlString) => {
+    // Enhanced URL validation that catches most valid URLs
+    if (urlString.startsWith('http://') || urlString.startsWith('https://')) {
+      return true;
+    }
+    
+    // Check for domain-like patterns without protocol
+    // This regex matches patterns like: example.com, sub.example.co.uk, etc.
+    const domainPattern = /^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}$/i;
+    if (domainPattern.test(urlString)) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Function to perform the actual crawl with a given URL
+  const performCrawl = async (urlToCrawl, isRetry = false) => {
+    addLog(`${isRetry ? 'Retrying crawl' : 'Crawling URL'}: ${urlToCrawl}${window.javascriptRecommended ? ' with JavaScript enabled' : ''}`);
+    if (!isRetry) {
+      addLog('Scanning liminal boundaries...');
+    }
+    
+    try {
+      const crawlResponse = await fetch('/api/crawl', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          url: urlToCrawl,
+          title: `Minimal Crawl - ${urlToCrawl}`,
+          take_screenshot: screenshotMode !== 'off',
+          screenshot_mode: screenshotMode, // 'off', 'top', or 'full'
+          javascript_enabled: forceJavascript || window.javascriptRecommended === true, // Force JS if enabled, otherwise use API recommendation
+          javascript_settle_time: window.javascriptSettleTime || 0, // Use the settle time recommendation
+          ocr_extraction: false,
+          markdown_extraction: markdownQuality // 'enhanced', 'basic', or 'none'
+        })
+      });
+      
+      if (crawlResponse.ok) {
+        const crawlResult = await crawlResponse.json();
+        if (crawlResult.success) {
+          // Log successful crawl
+          addLog('Crawl successful.');
+          
+          if (crawlResult.report_path) {
+            // Create correct report path based on the selected format
+            let reportPath = '';
+            let reportType = '';
+            
+            if (reportFormat === 'md') {
+              // Ensure path starts with /reports/
+              reportPath = crawlResult.report_path.startsWith('/reports/') 
+                ? crawlResult.report_path 
+                : `/reports/${crawlResult.report_path.split('/').pop()}`;
+              reportType = 'Markdown';
+            } else if (reportFormat === 'html') {
+              // Ensure HTML path points to /reports/ and has .html extension
+              const baseName = crawlResult.report_path.split('/').pop().replace('.md', '.html');
+              reportPath = `/reports/${baseName}`;
+              reportType = 'HTML';
+            } else if (reportFormat === 'png') {
+              // Extract screenshot from the first result
+              if (crawlResult.results && crawlResult.results[0] && crawlResult.results[0].screenshot) {
+                // Ensure screenshot path starts with /screenshots/
+                const screenshotFile = crawlResult.results[0].screenshot.split('/').pop();
+                reportPath = `/screenshots/${screenshotFile}`;
+                reportType = 'Screenshot';
+              } else {
+                // Fallback to markdown report in /reports/
+                reportPath = crawlResult.report_path.startsWith('/reports/') 
+                  ? crawlResult.report_path 
+                  : `/reports/${crawlResult.report_path.split('/').pop()}`;
+                reportType = 'Markdown';
+                addLog(`Screenshot not available, defaulting to Markdown.`);
+              }
+            }
+            
+            addLog(`<span class="text-blue-400 font-semibold">Report generated:</span> <span class="text-gray-300">${crawlResult.report_path}</span>`);
+            
+            if (reportType === 'HTML') {
+              addLog(`<span class="text-teal-400 font-semibold">Materializing HTML report...</span>`);
+            }
+            
+            addLog(`<div class="report-link bg-gray-900 rounded p-2 my-1 border-l-2 border-green-500">
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-green-400 font-semibold mr-2">View ${reportType} Report</span>
+                <a href="${reportPath}" target="_blank" class="text-green-300 hover:text-green-200 underline break-words px-2 py-1 bg-gray-800 rounded">
+                  <i class="fas fa-external-link-alt text-xs mr-1"></i>Open ${reportType}
+                </a>
+              </div>
+            </div>`);
+          }
+          
+          // Log success to server and update stats
+          logToServer('crawl_success', { 
+            query: urlToCrawl, 
+            report_path: crawlResult.report_path || 'none',
+            html_path: crawlResult.html_path || 'none'
+          });
+          
+          // Update crawl stats for success
+          updateCrawlStats(true);
+          return true; // Indicate success
+        } else {
+          addLog(`Crawl error: ${crawlResult.error || 'Unknown error'}`);
+          logToServer('crawl_error', { query: urlToCrawl, error: crawlResult.error || 'Unknown error' });
+          // Update crawl stats for error
+          updateCrawlStats(false);
+          return false; // Indicate failure
+        }
+      } else {
+        addLog(`Server error: ${crawlResponse.status} - ${crawlResponse.statusText}`);
+        logToServer('crawl_error', { query: urlToCrawl, error: `${crawlResponse.status} - ${crawlResponse.statusText}` });
+        // Update crawl stats for error
+        updateCrawlStats(false);
+        return false; // Indicate failure
+      }
+    } catch (error) {
+      addLog(`Error: ${error.message}`);
+      logToServer('crawl_error', { query: urlToCrawl, error: error.message });
+      // Update crawl stats for error
+      updateCrawlStats(false);
+      return false; // Indicate failure
+    }
+  };
+
   const handleSearch = async () => {
     if (inputValue.trim()) {
       // Store the query or URL
       let queryUrl = inputValue.trim();
-      
-      // Don't try to convert non-URL input to URLs - leave as plain text
-      // This allows search terms to be passed directly to the API
       
       // Add to URL history and update state
       const updatedHistory = updateUrlHistory(queryUrl);
@@ -682,104 +807,109 @@
       addLog(`Initiating crawl sequence for: ${queryUrl}`);
       
       try {
-        // First check if it's a URL or query
-        const isUrl = queryUrl.startsWith('http://') || queryUrl.startsWith('https://') || 
-                     /^[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,}$/i.test(queryUrl);
+        // Check if it looks like a valid URL
+        let isUrl = isValidUrl(queryUrl);
         
-        // Just a simple logging message without implying conversion
-        addLog(`Processing input: ${queryUrl}`);
+        // If it's a domain without protocol, add https://
+        if (isUrl && !queryUrl.startsWith('http://') && !queryUrl.startsWith('https://')) {
+          queryUrl = 'https://' + queryUrl;
+          addLog(`Added protocol: ${queryUrl}`);
+        }
         
-        // Log crawl attempt to server - don't try to categorize as URL or not
+        // Log crawl attempt to server
         logToServer('crawl_attempt', { 
           query: queryUrl,
           auth_code: localStorage.getItem('gnosis_auth_code') || 'none'
         });
         
-        addLog('Dispatching ethereal agents...');
+        let crawlSuccess = false;
         
-        // Always call the API to get URL suggestions - for both URLs and queries
-        try {
-          // Get the selected provider and corresponding API key from cookies
-          const provider = localStorage.getItem('gnosis_wraith_llm_provider') || 'anthropic';
+        // If it looks like a URL, try crawling directly first
+        if (isUrl) {
+          addLog(`URL detected, attempting direct crawl...`);
+          window.javascriptRecommended = false; // Reset recommendation for direct crawl
+          window.javascriptSettleTime = 0;
           
-          // Function to get cookie value
-          const getCookie = (name) => {
-            const nameEQ = `${name}=`;
-            const ca = document.cookie.split(';');
-            for (let i = 0; i < ca.length; i++) {
-              let c = ca[i];
-              while (c.charAt(0) === ' ') c = c.substring(1);
-              if (c.indexOf(nameEQ) === 0) {
-                return c.substring(nameEQ.length, c.length);
-              }
-            }
-            return '';
-          };
+          // Try direct crawl
+          crawlSuccess = await performCrawl(queryUrl);
           
-          // Get the API key for the selected provider
-          let apiKey = '';
-          let cookieName = '';
-          
-          switch(provider) {
-            case 'anthropic':
-              cookieName = 'gnosis_wraith_llm_token_anthropic';
-              break;
-            case 'openai':
-              cookieName = 'gnosis_wraith_llm_token_openai';
-              break;
-            case 'gemini':
-              cookieName = 'gnosis_wraith_llm_token_gemini';
-              break;
-            default:
-              cookieName = 'gnosis_wraith_llm_token_anthropic';
+          // If direct crawl failed, use suggestion API as fallback
+          if (!crawlSuccess) {
+            addLog(`Direct crawl failed, trying URL suggestion service...`);
           }
+        } else {
+          addLog(`Text query detected, using suggestion service...`);
+        }
+        
+        // If direct crawl failed or it's not a URL, use suggestion API
+        if (!isUrl || !crawlSuccess) {
+          addLog('Dispatching ethereal agents...');
           
-          apiKey = getCookie(cookieName);
-          
-          // Log the request before making it
-          addLog(`<div class="api-request px-2 py-1 bg-gray-900 rounded border-l-2 border-blue-500 inline-block">
-            <span class="text-blue-400 font-mono font-semibold">POST</span>
-            <span class="text-gray-400 font-mono">/api/suggest</span>
-            <span class="text-yellow-400 font-mono ml-2 px-1.5 py-0.5 bg-yellow-900 bg-opacity-30 rounded">SENDING</span>
-          </div>`);
-          
-          const suggestResponse = await fetch('/api/suggest', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-              query: queryUrl,
-              provider: provider,
-              api_key: apiKey || null // Send the user's API key if available
-            })
-          });
-          
-          // Log the response status immediately after receiving it
-          const statusColor = suggestResponse.ok ? 'text-green-400' : 'text-red-400';
-          const statusBg = suggestResponse.ok ? 'bg-green-900' : 'bg-red-900';
-          addLog(`<div class="api-request px-2 py-1 bg-gray-900 rounded border-l-2 border-blue-500 inline-block">
-            <span class="text-blue-400 font-mono font-semibold">POST</span>
-            <span class="text-gray-400 font-mono">/api/suggest</span>
-            <span class="${statusColor} font-mono ml-2 px-1.5 py-0.5 ${statusBg} bg-opacity-30 rounded">${suggestResponse.status} ${suggestResponse.statusText}</span>
-          </div>`);
-          
-          let retryCount = 0;
-          const maxRetries = 2;
-          let suggestSuccess = false;
-          
-          while (retryCount <= maxRetries && !suggestSuccess) {
-            try {
-              if (retryCount > 0) {
-                addLog(`Retrying URL suggestion (attempt ${retryCount + 1})...`);
-              }
-              
-              if (suggestResponse.ok) {
-                const suggestResult = await suggestResponse.json();
-                // Always show the JSON response regardless of success status
-
+          // Use the suggestion API
+          try {
+            // Get the selected provider and corresponding API key from cookies
+            const provider = localStorage.getItem('gnosis_wraith_llm_provider') || 'anthropic';
+            
+            // Get the API key for the selected provider
+            let apiKey = '';
+            let cookieName = '';
+            
+            switch(provider) {
+              case 'anthropic':
+                cookieName = 'gnosis_wraith_llm_token_anthropic';
+                break;
+              case 'openai':
+                cookieName = 'gnosis_wraith_llm_token_openai';
+                break;
+              case 'gemini':
+                cookieName = 'gnosis_wraith_llm_token_gemini';
+                break;
+              default:
+                cookieName = 'gnosis_wraith_llm_token_anthropic';
+            }
+            
+            apiKey = getCookie(cookieName);
+            
+            // Log the request before making it
+            addLog(`<div class="api-request px-2 py-1 bg-gray-900 rounded border-l-2 border-blue-500 inline-block">
+              <span class="text-blue-400 font-mono font-semibold">POST</span>
+              <span class="text-gray-400 font-mono">/api/suggest</span>
+              <span class="text-yellow-400 font-mono ml-2 px-1.5 py-0.5 bg-yellow-900 bg-opacity-30 rounded">SENDING</span>
+            </div>`);
+            
+            const suggestResponse = await fetch('/api/suggest', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                query: queryUrl,
+                provider: provider,
+                api_key: apiKey || null // Send the user's API key if available
+              })
+            });
+            
+            // Log the response status immediately after receiving it
+            const statusColor = suggestResponse.ok ? 'text-green-400' : 'text-red-400';
+            const statusBg = suggestResponse.ok ? 'bg-green-900' : 'bg-red-900';
+            addLog(`<div class="api-request px-2 py-1 bg-gray-900 rounded border-l-2 border-blue-500 inline-block">
+              <span class="text-blue-400 font-mono font-semibold">POST</span>
+              <span class="text-gray-400 font-mono">/api/suggest</span>
+              <span class="${statusColor} font-mono ml-2 px-1.5 py-0.5 ${statusBg} bg-opacity-30 rounded">${suggestResponse.status} ${suggestResponse.statusText}</span>
+            </div>`);
+            
+            let retryCount = 0;
+            const maxRetries = 2;
+            let suggestSuccess = false;
+            
+            while (retryCount <= maxRetries && !suggestSuccess) {
+              try {
+                if (retryCount > 0) {
+                  addLog(`Retrying URL suggestion (attempt ${retryCount + 1})...`);
+                }
                 
-                                  // Response details are already logged above with status code
+                if (suggestResponse.ok) {
+                  const suggestResult = await suggestResponse.json();
                   
                   // Format and display JSON with syntax highlighting and collapsible structure
                   const jsonStr = JSON.stringify(suggestResult, null, 2);
@@ -842,7 +972,7 @@
                     // Make this function accessible in window scope
                     window.useUrlInCrawler = useUrlInCrawler;
                     
-                    // Removed redundant "Use this URL" link - it's already in the URL confirmation/translation section below
+                    // Add "Use this URL" link
                     addLog(`<a href="#" class="text-green-400 hover:text-green-300 hover:underline ml-2" title="Use this URL" onclick="event.preventDefault(); event.stopPropagation(); window.useUrlInCrawler('${suggestResult.suggested_url.replace(/'/g, "\\'")}'); return false;"><i class="fas fa-level-up-alt mr-1"></i>Use this URL</a>`);
                     
                     // Only show the log if the URL actually changed
@@ -851,1417 +981,31 @@
                     } else {
                       addLog(`<div class="log-url-info"><span class="text-blue-400 font-semibold">URL confirmed:</span> <span class="text-green-300">${suggestResult.suggested_url}</span> <a href="#" class="text-green-400 hover:text-green-300 hover:underline ml-2" title="Use this URL" onclick="event.preventDefault(); event.stopPropagation(); window.useUrlInCrawler('${suggestResult.suggested_url.replace(/'/g, "\\'")}'); return false;"><i class="fas fa-level-up-alt mr-1"></i>Use this URL</a></div>`);
                     }
+                    
                     // Update the query to the suggested URL
                     queryUrl = suggestResult.suggested_url;
                     suggestSuccess = true;
+                    
+                    // Try crawling with the suggested URL
+                    await performCrawl(queryUrl, true);
                   } else {
                     addLog(`Suggestion API response received but no URL suggested.`);
-                    // If URL wasn't suggested but input looks like a URL, keep it. Otherwise use default
-                    // We no longer need to check for URL vs non-URL - all inputs are treated as URLs
                     suggestSuccess = true;
                   }
-
-              } else {
-                if (retryCount === maxRetries) {
-                  // Create a visually distinctive error message
-                  addLog(`<div class="bg-red-900 bg-opacity-30 border border-red-700 rounded px-3 py-2 my-2">
-                    <div class="flex items-center">
-                      <span class="text-red-500 mr-2"><i class="fas fa-exclamation-circle"></i></span>
-                      <span class="text-red-400 font-semibold">API suggest failed (${suggestResponse.status})</span>
-                    </div>
-                    <div class="mt-1 text-red-300">
-                      The URL suggestion service returned an error. Using original input: ${queryUrl}
-                    </div>
-                  </div>`);
-                  // Don't use default URL fallback
-                }
-              }
-            } catch (retryError) {
-              if (retryCount === maxRetries) {
-                // Create a visually distinctive error message for exceptions
-                addLog(`<div class="bg-red-900 bg-opacity-30 border border-red-700 rounded px-3 py-2 my-2">
-                  <div class="flex items-center">
-                    <span class="text-red-500 mr-2"><i class="fas fa-exclamation-circle"></i></span>
-                    <span class="text-red-400 font-semibold">API Error</span>
-                  </div>
-                  <div class="mt-1 text-red-300">
-                    Error in suggestion API: ${retryError.message}<br>
-                    Using original input: ${queryUrl}
-                  </div>
-                </div>`);
-                // Do not force a default URL - keep original input
-              }
-            }
-            
-            retryCount++;
-            
-            // Break if success or if we've reached max retries
-            if (suggestSuccess || retryCount > maxRetries) {
-              break;
-            }
-            
-            // Wait a short time before retrying
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        } catch (suggestError) {
-          // Create a visually distinctive error message for the main try/catch block
-          addLog(`<div class="bg-red-900 bg-opacity-30 border border-red-700 rounded px-3 py-2 my-2">
-            <div class="flex items-center">
-              <span class="text-red-500 mr-2"><i class="fas fa-exclamation-circle"></i></span>
-              <span class="text-red-400 font-semibold">API Connection Error</span>
-            </div>
-            <div class="mt-1 text-red-300">
-              Failed to connect to suggestion API: ${suggestError.message}<br>
-              Continuing with original input: ${queryUrl}
-            </div>
-          </div>`);
-          // We no longer force a default URL
-        }
-        
-        // Now make the actual crawl request
-        addLog(`Crawling URL: ${queryUrl}${window.javascriptRecommended ? ' with JavaScript enabled' : ''}`);
-        addLog('Scanning liminal boundaries...');
-        
-        const crawlResponse = await fetch('/api/crawl', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            url: queryUrl,
-            title: `Minimal Crawl - ${queryUrl}`,
-            take_screenshot: screenshotMode !== 'off',
-            screenshot_mode: screenshotMode, // 'off', 'top', or 'full'
-            javascript_enabled: forceJavascript || window.javascriptRecommended === true, // Force JS if enabled, otherwise use API recommendation
-            javascript_settle_time: window.javascriptSettleTime || 0, // Use the settle time recommendation
-            ocr_extraction: false,
-            markdown_extraction: markdownQuality // 'enhanced', 'basic', or 'none'
-          })
-        });
-        
-        if (crawlResponse.ok) {
-          const crawlResult = await crawlResponse.json();
-          if (crawlResult.success) {
-            // Log successful crawl
-            addLog('Crawl successful.');
-            
-            if (crawlResult.report_path) {
-              // Create correct report path based on the selected format
-              let reportPath = '';
-              let reportType = '';
-              
-              if (reportFormat === 'md') {
-                // Ensure path starts with /reports/
-                reportPath = crawlResult.report_path.startsWith('/reports/') 
-                  ? crawlResult.report_path 
-                  : `/reports/${crawlResult.report_path.split('/').pop()}`;
-                reportType = 'Markdown';
-              } else if (reportFormat === 'html') {
-                // Ensure HTML path points to /reports/ and has .html extension
-                const baseName = crawlResult.report_path.split('/').pop().replace('.md', '.html');
-                reportPath = `/reports/${baseName}`;
-                reportType = 'HTML';
-              } else if (reportFormat === 'png') {
-                // Extract screenshot from the first result
-                if (crawlResult.results && crawlResult.results[0] && crawlResult.results[0].screenshot) {
-                  // Ensure screenshot path starts with /screenshots/
-                  const screenshotFile = crawlResult.results[0].screenshot.split('/').pop();
-                  reportPath = `/screenshots/${screenshotFile}`;
-                  reportType = 'Screenshot';
                 } else {
-                  // Fallback to markdown report in /reports/
-                  reportPath = crawlResult.report_path.startsWith('/reports/') 
-                    ? crawlResult.report_path 
-                    : `/reports/${crawlResult.report_path.split('/').pop()}`;
-                  reportType = 'Markdown';
-                  addLog(`Screenshot not available, defaulting to Markdown.`);
-                }
-              }
-              
-              addLog(`<span class="text-blue-400 font-semibold">Report generated:</span> <span class="text-gray-300">${crawlResult.report_path}</span>`);
-              
-              if (reportType === 'HTML') {
-                addLog(`<span class="text-teal-400 font-semibold">Materializing HTML report...</span>`);
-              }
-              
-              addLog(`<div class="report-link bg-gray-900 rounded p-2 my-1 border-l-2 border-green-500">
-                <div class="flex justify-between items-center">
-                  <span class="text-xs text-green-400 font-semibold mr-2">View ${reportType} Report</span>
-                  <a href="${reportPath}" target="_blank" class="text-green-300 hover:text-green-200 underline break-words px-2 py-1 bg-gray-800 rounded">
-                    <i class="fas fa-external-link-alt text-xs mr-1"></i>Open ${reportType}
-                  </a>
-                </div>
-              </div>`);
-            }
-            
-            // Log success to server and update stats
-            logToServer('crawl_success', { 
-              query: queryUrl, 
-              report_path: crawlResult.report_path || 'none',
-              html_path: crawlResult.html_path || 'none'
-            });
-            
-            // Update crawl stats for success
-            updateCrawlStats(true);
-          } else {
-            addLog(`Crawl error: ${crawlResult.error || 'Unknown error'}`);
-            logToServer('crawl_error', { query: queryUrl, error: crawlResult.error || 'Unknown error' });
-            // Update crawl stats for error
-            updateCrawlStats(false);
-          }
-        } else {
-          addLog(`Server error: ${crawlResponse.status} - ${crawlResponse.statusText}`);
-          logToServer('crawl_error', { query: queryUrl, error: `${crawlResponse.status} - ${crawlResponse.statusText}` });
-          // Update crawl stats for error
-          updateCrawlStats(false);
-        }
-      } catch (error) {
-        addLog(`Error: ${error.message}`);
-        logToServer('crawl_error', { query: queryUrl, error: error.message });
-        // Update crawl stats for error
-        updateCrawlStats(false);
-      } finally {
-        // Clear input regardless of success or failure
-        setInputValue('');
-      }
-    }
-  };
-
-  const addLog = (message) => {
-    // Ensure unique IDs even if logs are added in the same millisecond
-    const uniqueId = Date.now() + Math.random().toString(36).substr(2, 5);
-    
-    // Check if the message already contains HTML
-    const containsHtml = message.includes('<a') || message.includes('<span') || message.includes('<div');
-    
-    // If the message doesn't already contain HTML, check for URLs and make them clickable
-    let processedMessage = message;
-    if (!containsHtml) {
-      // Regex to match URLs
-      const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
-      processedMessage = message.replace(urlRegex, url => {
-        // Skip if it's already in an HTML tag or looks like one
-        if (url.includes('<') || url.includes('>')) return url;
-        return `<a href="${url}" target="_blank" class="text-blue-400 hover:underline break-words">${url}</a>`;
-      });
-    }
-    
-    // Generate a formatted timestamp with microseconds in Z time
-    const now = new Date();
-    const pad = (num, size) => String(num).padStart(size, '0');
-    const timestamp = `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1, 2)}-${pad(now.getUTCDate(), 2)}T${pad(now.getUTCHours(), 2)}:${pad(now.getUTCMinutes(), 2)}:${pad(now.getUTCSeconds(), 2)}.${pad(now.getUTCMilliseconds(), 3)}Z`;
-    
-    // Subtle color change based on hour of day - create a gentle color cycle
-    const hourFraction = (now.getHours() * 60 + now.getMinutes()) / (24 * 60);
-    const hue = Math.floor(hourFraction * 360); // Full color cycle through the day
-    const timestampColor = `hsl(${hue}, 85%, 65%)`; // Brighter, more pastel colors
-    const timestampBgColor = `hsl(${hue}, 50%, 25%)`; // Lighter background with moderate saturation
-    
-    // Create an object with isHtml flag if the message contains HTML
-    const logEntry = {
-      id: uniqueId,
-      message: processedMessage,
-      timestamp,
-      timestampColor,
-      timestampBgColor,
-      isHtml: containsHtml || processedMessage !== message // True if original contained HTML or we added HTML
-    };
-    
-    setLogs(prevLogs => {
-      // Keep only the last 100 logs for performance
-      const newLogs = [...prevLogs, logEntry];
-      return newLogs.slice(-100);
-    });
-  };
-  
-  // Function to update crawl statistics
-  const updateCrawlStats = (success = true) => {
-    setCrawlStats(prev => ({
-      total: prev.total + 1,
-      success: prev.success + (success ? 1 : 0),
-      errors: prev.errors + (success ? 0 : 1)
-    }));
-    
-    // Refresh recent reports when stats change
-    fetchRecentReports();
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      if (authStatus !== 'authorized') {
-        handleAuthenticate();
-      } else {
-        handleSearch();
-      }
-      // Close history dropdown when Enter is pressed
-      setShowHistory(false);
-    } else if (e.key === 'Escape') {
-      // Close history dropdown when Escape is pressed
-      setShowHistory(false);
-    }
-  };
-
-  // State for recent reports
-  const [recentReports, setRecentReports] = useState([]);
-  const [loadingRecentReports, setLoadingRecentReports] = useState(false);
-  
-  // Fetch recent reports when authorized
-  useEffect(() => {
-    if (authStatus === 'authorized') {
-      fetchRecentReports();
-    }
-  }, [authStatus]);
-
-  // Function to fetch recent reports (latest 5)
-  const fetchRecentReports = async () => {
-    try {
-      setLoadingRecentReports(true);
-      
-      const response = await fetch('/reports?json=true');
-      if (response.ok) {
-        const data = await response.json();
-        // Get only the 5 most recent reports
-        const recent = (data.reports || []).slice(0, 5);
-        setRecentReports(recent);
-        console.log('Recent reports loaded:', recent.length);
-      } else {
-        console.error(`Failed to fetch recent reports: ${response.status}`);
-        setRecentReports([]);
-      }
-    } catch (error) {
-      console.error(`Error fetching recent reports: ${error.message}`);
-      setRecentReports([]);
-    } finally {
-      setLoadingRecentReports(false);
-    }
-  };
-
-    return (
-        <div ref={rootContainerRef} className="h-screen bg-gray-900 text-green-400 p-4 font-mono overflow-hidden">
-
-      <div className="w-full mx-auto flex flex-col h-full"> {/* Using flex-col to ensure proper layout */}
-        <header className="mb-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl md:text-3xl font-bold">GNOSIS WRAITH</h1>
-            <div className="flex items-center space-x-2">
-              <a href="https://github.com/kordless/gnosis-wraith/gnosis_wraith/server/templates/gnosis.html" target="_blank" className="px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs">
-                VERSION 3.2.7
-              </a>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2 mt-2">
-            <div className={`h-3 w-3 rounded-full ${
-              systemStatus === 'online' ? 'bg-green-500' : 
-              systemStatus === 'degraded' ? 'bg-yellow-500' :
-              systemStatus === 'offline' ? 'bg-red-500' : 
-              'bg-gray-500'
-            }`}></div>
-            <span className="text-sm uppercase">System Status: {systemStatus}</span>
-                <div className="ml-auto text-xs text-gray-500">
-                  Press <kbd className="px-1 py-0.5 bg-gray-800 rounded border border-gray-600">Enter</kbd> to crawl
-                </div>
-
-          </div>
-        </header>
-
-        {/* Crawler input box at top */}
-        <div className="bg-gray-800 border border-gray-700 rounded-md p-4 mb-4">
-          <div className="flex mb-2 border-b border-gray-700 justify-between items-center">
-            <div className="flex">
-              <button 
-                className="px-4 py-2 border-b-2 border-green-500 text-green-400">
-                <i className="fas fa-spider mr-2"></i>Crawler
-              </button>
-              <a 
-                href="/forge"
-                className="px-4 py-2 text-gray-400 hover:text-purple-400">
-                <i className="fas fa-hammer mr-2"></i>Forge
-              </a>
-                                    <a 
-                                        href="/vault" 
-                                        className="px-4 py-2 text-gray-400 hover:text-blue-400">
-                                        <i className="fas fa-archive mr-2"></i>Vault
-                                    </a>
-                                    <a 
-                                        href="/about"
-                                        className="px-4 py-2 text-gray-400 hover:text-orange-400">
-                                        <i className="fas fa-info-circle mr-2"></i>About
-                                    </a>
-
-            </div>
-            
-            {authStatus === 'authorized' && (
-              <div className="flex items-center space-x-4 text-xs text-gray-400">
-                <div className="flex items-center space-x-1 bg-gray-900 p-1 rounded">
-                  <label className={`cursor-pointer px-2 py-1 rounded ${reportFormat === 'md' ? 'bg-green-800 text-white' : ''}`}>
-                    <input
-                      type="radio"
-                      name="reportFormat"
-                      value="md"
-                      checked={reportFormat === 'md'}
-                      onChange={() => {
-                        setReportFormat('md');
-                        localStorage.setItem('gnosis_report_format', 'md');
-                      }}
-                      className="sr-only"
-                    />
-                    {reportFormat === 'md' && <i className="fas fa-file-alt mr-1"></i>}
-                    MD
-                  </label>
-                  <label className={`cursor-pointer px-2 py-1 rounded ${reportFormat === 'html' ? 'bg-green-800 text-white' : ''}`}>
-                    <input
-                      type="radio"
-                      name="reportFormat"
-                      value="html"
-                      checked={reportFormat === 'html'}
-                      onChange={() => {
-                        setReportFormat('html');
-                        localStorage.setItem('gnosis_report_format', 'html');
-                      }}
-                      className="sr-only"
-                    />
-                    {reportFormat === 'html' && <i className="fas fa-code mr-1"></i>}
-                    HTML
-                  </label>
-                  <label className={`cursor-pointer px-2 py-1 rounded ${reportFormat === 'png' && screenshotMode !== 'off' ? 'bg-green-800 text-white' : ''} ${screenshotMode === 'off' ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                    <input
-                      type="radio"
-                      name="reportFormat"
-                      value="png"
-                      checked={reportFormat === 'png'}
-                      disabled={screenshotMode === 'off'}
-                      onChange={() => {
-                        if (screenshotMode !== 'off') {
-                          setReportFormat('png');
-                          localStorage.setItem('gnosis_report_format', 'png');
-                        }
-                      }}
-                      className="sr-only"
-                    />
-                    {reportFormat === 'png' && screenshotMode !== 'off' && <i className="fas fa-image mr-1"></i>}
-                    PNG
-                  </label>
-                </div>
-                
-                <div className="flex items-center space-x-1 bg-gray-900 p-1 rounded">
-                  <label className={`cursor-pointer px-2 py-1 rounded ${screenshotMode === 'off' ? 'bg-red-800 text-white' : ''}`}>
-                    <input
-                      type="radio"
-                      name="screenshotMode"
-                      value="off"
-                      checked={screenshotMode === 'off'}
-                      onChange={() => {
-                        setScreenshotMode('off');
-                        localStorage.setItem('gnosis_screenshot_mode', 'off');
-                        // Auto-switch to MD if PNG was selected
-                        if (reportFormat === 'png') {
-                          setReportFormat('md');
-                          localStorage.setItem('gnosis_report_format', 'md');
-                        }
-                      }}
-                      className="sr-only"
-                    />
-                    {screenshotMode === 'off' && <i className="fas fa-ban mr-1"></i>}
-                    OFF
-                  </label>
-                  <label className={`cursor-pointer px-2 py-1 rounded ${screenshotMode === 'top' ? 'bg-blue-800 text-white' : ''}`}>
-                    <input
-                      type="radio"
-                      name="screenshotMode"
-                      value="top"
-                      checked={screenshotMode === 'top'}
-                      onChange={() => {
-                        setScreenshotMode('top');
-                        localStorage.setItem('gnosis_screenshot_mode', 'top');
-                      }}
-                      className="sr-only"
-                    />
-                    {screenshotMode === 'top' && <i className="fas fa-camera mr-1"></i>}
-                    TOP
-                  </label>
-                  <label className={`cursor-pointer px-2 py-1 rounded ${screenshotMode === 'full' ? 'bg-green-800 text-white' : ''}`}>
-                    <input
-                      type="radio"
-                      name="screenshotMode"
-                      value="full"
-                      checked={screenshotMode === 'full'}
-                      onChange={() => {
-                        setScreenshotMode('full');
-                        localStorage.setItem('gnosis_screenshot_mode', 'full');
-                      }}
-                      className="sr-only"
-                    />
-                    {screenshotMode === 'full' && <i className="fas fa-camera mr-1"></i>}
-                    FULL
-                  </label>
-                </div>
-                
-                <div className="flex items-center space-x-1 bg-gray-900 p-1 rounded">
-                  <label className={`cursor-pointer px-2 py-1 rounded ${markdownQuality === 'enhanced' ? 'bg-green-800 text-white' : ''}`}>
-                    <input
-                      type="radio"
-                      name="markdownQuality"
-                      value="enhanced"
-                      checked={markdownQuality === 'enhanced'}
-                      onChange={() => {
-                        setMarkdownQuality('enhanced');
-                        localStorage.setItem('gnosis_markdown_quality', 'enhanced');
-                      }}
-                      className="sr-only"
-                    />
-                    {markdownQuality === 'enhanced' && <i className="fas fa-magic mr-1"></i>}
-                    Enhanced
-                  </label>
-                  <label className={`cursor-pointer px-2 py-1 rounded ${markdownQuality === 'basic' ? 'bg-blue-800 text-white' : ''}`}>
-                    <input
-                      type="radio"
-                      name="markdownQuality"
-                      value="basic"
-                      checked={markdownQuality === 'basic'}
-                      onChange={() => {
-                        setMarkdownQuality('basic');
-                        localStorage.setItem('gnosis_markdown_quality', 'basic');
-                      }}
-                      className="sr-only"
-                    />
-                    {markdownQuality === 'basic' && <i className="fas fa-file-alt mr-1"></i>}
-                    Basic
-                  </label>
-                  <label className={`cursor-pointer px-2 py-1 rounded ${markdownQuality === 'none' ? 'bg-gray-800 text-white' : ''}`}>
-                    <input
-                      type="radio"
-                      name="markdownQuality"
-                      value="none"
-                      checked={markdownQuality === 'none'}
-                      onChange={() => {
-                        setMarkdownQuality('none');
-                        localStorage.setItem('gnosis_markdown_quality', 'none');
-                      }}
-                      className="sr-only"
-                    />
-                    {markdownQuality === 'none' && <i className="fas fa-code mr-1"></i>}
-                    Raw
-                  </label>
-                </div>
-                
-                <div className="flex items-center space-x-1 bg-gray-900 p-1 rounded">
-                  <label className={`cursor-pointer px-2 py-1 rounded transition-colors ${forceJavascript ? 'bg-blue-800 text-white' : 'hover:bg-gray-700'}`}>
-                    <input
-                      type="checkbox"
-                      checked={forceJavascript}
-                      onChange={(e) => {
-                        setForceJavascript(e.target.checked);
-                        localStorage.setItem('gnosis_force_javascript', e.target.checked.toString());
-                        addLog(`JavaScript force ${e.target.checked ? 'enabled' : 'disabled'}`);
-                      }}
-                      className="sr-only"
-                    />
-                    {forceJavascript && <i className="fab fa-js-square mr-1"></i>}
-                    <i className={`fas ${forceJavascript ? 'fa-toggle-on' : 'fa-toggle-off'} mr-1`}></i>
-                    Force
-                  </label>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex flex-col">
-            <div className="flex flex-col space-y-2">
-              <div className="flex space-x-2">
-                <div className="relative flex-grow">
-                  <input
-                    type={authStatus === 'authorized' ? 'text' : 'password'}
-                    placeholder={authStatus === 'authorized' ? "Enter URL or summon phrase..." : "Enter authentication key..."}
-                    className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded focus:outline-none focus:border-green-500"
-                    value={inputValue}
-                    onChange={handleInputChange}
-                    onKeyPress={handleKeyPress}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') {
-                        setShowHistory(false);
-                      }
-                    }}
-                    onFocus={() => authStatus === 'authorized' && urlHistory.length > 0 && setShowHistory(true)}
-                    onBlur={() => setTimeout(() => setShowHistory(false), 200)}
-                  />
-                {authStatus === 'authorized' && showHistory && urlHistory.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg">
-                    <ul className="max-h-48 overflow-auto">
-                      {urlHistory.map((url, index) => (
-                        <li 
-                          key={index}
-                          className="px-3 py-2 text-sm hover:bg-gray-700 cursor-pointer truncate"
-                          onClick={() => {
-                            setInputValue(url);
-                            setShowHistory(false);
-                          }}
-                        >
-                          {url}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-                <button
-                  className="px-4 py-2 bg-green-800 hover:bg-green-700 text-white rounded"
-                  onClick={authStatus === 'authorized' ? handleSearch : handleAuthenticate}
-                >
-                  {authStatus === 'authorized' ? 'Crawl' : 'Authenticate'}
-                </button>
-              </div>
-            </div>
-            
-            {authStatus === 'authorized' && urlHistory.length > 0 && (
-              <div className="mt-2 flex space-x-1 items-center">
-                <span className="text-xs text-gray-500">Recent:</span>
-                <div className="flex flex-wrap gap-1">
-                  {urlHistory.slice(0, 3).map((url, index) => (
-                    <button
-                      key={index}
-                      className="px-2 py-1 text-xs bg-gray-900 hover:bg-gray-700 rounded border border-gray-700"
-                      onClick={() => setInputValue(url)}
-                      title={url}
-                    >
-                      {url.length > 30 ? url.substring(0, 30) + '...' : url}
-                    </button>
-                  ))}
-                  {urlHistory.length > 3 && (
-                    <button
-                      className="px-2 py-1 text-xs bg-gray-900 hover:bg-gray-700 rounded border border-gray-700"
-                      onClick={() => setShowHistory(!showHistory)}
-                    >
-                      +{urlHistory.length - 3} more
-                    </button>
-                  )}
-                    <button
-                      className="px-2 py-1 text-xs bg-gray-900 hover:bg-gray-700 rounded border border-gray-700 text-red-400"
-                      onClick={() => {
-                        // Create confirmation modal
-                        const confirmModal = document.createElement('div');
-                        confirmModal.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50';
-                        confirmModal.innerHTML = `
-                          <div class="bg-gray-800 border border-red-500 rounded-lg p-6 max-w-md w-full mx-4">
-                            <div class="flex items-center mb-4">
-                              <i class="fas fa-exclamation-triangle text-red-500 text-xl mr-3"></i>
-                              <h3 class="text-lg font-semibold text-red-400">Clear Search History</h3>
-                            </div>
-                            <p class="text-gray-300 mb-6">
-                              Are you sure you want to clear all URL search history? This action cannot be undone.
-                            </p>
-                            <div class="flex justify-end space-x-3">
-                              <button class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors" id="cancel-clear-btn">
-                                Cancel
-                              </button>
-                              <button class="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded text-sm transition-colors" id="confirm-clear-btn">
-                                <i class="fas fa-trash mr-1"></i>Clear History
-                              </button>
-                            </div>
-                          </div>
-                        `;
-                        document.body.appendChild(confirmModal);
-                        
-                        // Add event handlers
-                        document.getElementById('cancel-clear-btn').addEventListener('click', () => {
-                          document.body.removeChild(confirmModal);
-                        });
-                        
-                        document.getElementById('confirm-clear-btn').addEventListener('click', () => {
-                          localStorage.removeItem('gnosis_url_history');
-                          setUrlHistory([]);
-                          addLog('URL history has been cleared');
-                          document.body.removeChild(confirmModal);
-                        });
-                        
-                        // Close modal when clicking outside
-                        confirmModal.addEventListener('click', (e) => {
-                          if (e.target === confirmModal) {
-                            document.body.removeChild(confirmModal);
-                          }
-                        });
-                        
-                        // Handle escape key
-                        const handleEscape = (e) => {
-                          if (e.key === 'Escape') {
-                            document.body.removeChild(confirmModal);
-                            document.removeEventListener('keydown', handleEscape);
-                          }
-                        };
-                        document.addEventListener('keydown', handleEscape);
-                      }}
-                      title="Clear URL history"
-                    >
-                      <span className="text-red-400">×</span> Clear
-                    </button>
-
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div 
-          className="flex flex-col md:flex-row gap-4 mb-4 flex-grow" 
-          style={{ 
-            minHeight: '180px'
-            // Height will be managed dynamically by our resize handler
-          }}>
-          <div className="flex-grow">
-            <div 
-              ref={logContainerRef} 
-              className="bg-gray-800 border border-gray-700 rounded-md overflow-auto log-container crt-scanlines crt-flicker"
-              style={{ visibility: logContainerVisible ? 'visible' : 'hidden' }}
-            >
-
-              <div className="px-4 py-2 border-b border-gray-700 bg-gray-900">
-                <h2 className="text-lg font-semibold text-green-400">Logs</h2>
-              </div>
-              <div className="p-4">
-              {logs.map(log => (
-                <div key={log.id} className="mb-2 break-words overflow-wrap-anywhere text-sm">
-                  <div className="flex">
-                    <div 
-                      className="flex-shrink-0 px-2 py-0.5 rounded-md mr-2 font-mono text-xs flex items-center justify-center" 
-                      style={{ 
-                        color: log.timestampColor || '#9ca3af', 
-                        backgroundColor: log.timestampBgColor || 'rgba(31, 41, 55, 0.5)',
-                        minHeight: '1.75rem' // Ensure consistent height
-                      }}
-                    >
-                      {log.timestamp}
-                    </div>
-                    
-                    <div className="flex-grow flex items-center"> {/* Message content aligned with timestamp */}
-                      {log.isHtml ? (
-                        <span dangerouslySetInnerHTML={{ __html: log.message }} className="break-words" />
-                      ) : (
-                        <span className="break-words overflow-wrap-anywhere">{log.message}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {logs.length === 0 && (
-                <div className="h-full flex items-center justify-center text-gray-600">
-                  Initializing system...
-                </div>
-              )}
-              <div ref={logsEndRef} />
-              </div>
-            </div>
-          </div>
-          
-          <div className="space-y-4 md:w-1/4 flex-shrink-0">
-                            <div className="bg-gray-800 border border-gray-700 rounded-md p-4">
-              <h2 className="text-xl mb-3">System Controls</h2>
-              <div className="space-y-2">
-                <div className={`${authStatus === 'authorized' ? 'text-green-500' : 'text-yellow-500'}`}>
-                  Status: {authStatus === 'authorized' ? 'AUTHORIZED' : 'UNAUTHORIZED'}
-                </div>
-                
-                {authStatus === 'authorized' && (
-                  <>
-                    <div className="border-t border-gray-700 my-2 pt-2">
-                      <div className="text-green-400 font-semibold">Crawl Statistics</div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                      <div className="bg-gray-900 rounded p-1">
-                        <div className="text-gray-400">Total</div>
-                        <div className="text-xl">{crawlStats.total}</div>
+                  if (retryCount === maxRetries) {
+                    // Create a visually distinctive error message
+                    addLog(`<div class="bg-red-900 bg-opacity-30 border border-red-700 rounded px-3 py-2 my-2">
+                      <div class="flex items-center">
+                        <span class="text-red-500 mr-2"><i class="fas fa-exclamation-circle"></i></span>
+                        <span class="text-red-400 font-semibold">API suggest failed (${suggestResponse.status})</span>
                       </div>
-                      <div className="bg-gray-900 rounded p-1">
-                        <div className="text-gray-400">Success</div>
-                        <div className="text-xl text-green-500">{crawlStats.success}</div>
+                      <div class="mt-1 text-red-300">
+                        The URL suggestion service returned an error. Using original input: ${queryUrl}
                       </div>
-                      <div className="bg-gray-900 rounded p-1">
-                        <div className="text-gray-400">Errors</div>
-                        <div className="text-xl text-red-500">{crawlStats.errors}</div>
-                      </div>
-                    </div>
-                    
-                    {crawlStats.lastUrl && (
-                      <div className="mt-2 text-xs bg-gray-900 rounded p-2 border border-gray-700">
-                        <div className="text-gray-400 mb-1">Last Crawled:</div>
-                        <div className="truncate text-green-300" title={crawlStats.lastUrl}>
-                          {crawlStats.lastUrl}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <button 
-                      className="w-full mt-2 bg-gray-900 hover:bg-gray-700 text-xs border border-gray-700 rounded p-1"
-                      onClick={() => {
-                        if (confirm('Are you sure you want to clear all crawl statistics?')) {
-                          setCrawlStats({ total: 0, success: 0, errors: 0 });
-                          localStorage.removeItem('gnosis_crawl_stats');
-                          addLog('Crawl statistics have been reset');
-                        }
-                      }}
-                    >
-                      Reset Stats
-                    </button>
-                    
-                    <div className="border-t border-gray-700 my-2 pt-2">
-                      <div className="text-green-400 font-semibold mb-2">System Uptime</div>
-                      {(() => {
-                        const errorRate = crawlStats.total > 0 ? (crawlStats.errors / crawlStats.total) * 100 : 0;
-                        const successRate = 100 - errorRate;
-                        const uptimeColor = successRate >= 95 ? 'bg-green-500' : 
-                                          successRate >= 80 ? 'bg-yellow-500' : 'bg-red-500';
-                        
-                        return (
-                          <div>
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Success Rate</span>
-                              <span>{successRate.toFixed(1)}%</span>
-                            </div>
-                            <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
-                              <div 
-                                className={`h-2 rounded-full transition-all duration-300 ${uptimeColor}`}
-                                style={{ width: `${successRate}%` }}
-                              ></div>
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              {crawlStats.total > 0 ? 
-                                `Error Rate: ${errorRate.toFixed(1)}% (${crawlStats.errors}/${crawlStats.total})` :
-                                'No crawls recorded yet'
-                              }
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    
-                    <div className="mt-3 border-t border-gray-700 pt-3">
-                      <div className="text-green-400 font-semibold mb-2">LLM Settings</div>
-                      
-                      {/* Provider selection dropdown */}
-                      <div className="text-xs text-gray-400 mb-1">LLM Provider:</div>
-                      <div className="mb-2">
-                        <select 
-                          className="w-full px-2 py-1 bg-gray-900 border border-gray-700 rounded text-xs"
-                          value={localStorage.getItem('gnosis_wraith_llm_provider') || 'anthropic'}
-                          onChange={(e) => {
-                            // Save the selected provider
-                            localStorage.setItem('gnosis_wraith_llm_provider', e.target.value);
-                            addLog(`Provider set to ${e.target.value}`);
-                            
-                            // Force re-render to update the key input field
-                            setCrawlStats({...crawlStats});
-                          }}
-                        >
-                          <option value="anthropic">Anthropic (Claude)</option>
-                          <option value="openai">OpenAI (GPT)</option>
-                          <option value="gemini">Google (Gemini)</option>
-                        </select>
-                      </div>
-                      
-                      {/* API Key input field that adapts based on selected provider */}
-                      {(() => {
-                        // Get current provider
-                        const provider = localStorage.getItem('gnosis_wraith_llm_provider') || 'anthropic';
-                        
-                        // Key name and placeholder based on provider
-                        let keyName, placeholder, cookieName;
-                        
-                        switch(provider) {
-                          case 'anthropic':
-                            keyName = 'Anthropic API Token';
-                            placeholder = 'sk-ant-api...';
-                            cookieName = 'gnosis_wraith_llm_token_anthropic';
-                            break;
-                          case 'openai':
-                            keyName = 'OpenAI API Token';
-                            placeholder = 'sk-...';
-                            cookieName = 'gnosis_wraith_llm_token_openai';
-                            break;
-                          case 'gemini':
-                            keyName = 'Google Gemini API Token';
-                            placeholder = 'api_key...';
-                            cookieName = 'gnosis_wraith_llm_token_gemini';
-                            break;
-                          default:
-                            keyName = 'API Token';
-                            placeholder = 'Enter API token';
-                            cookieName = 'gnosis_wraith_llm_token_anthropic';
-                        }
-                        
-                        // Function to get the cookie
-                        const getCookie = (name) => {
-                          const nameEQ = `${name}=`;
-                          const ca = document.cookie.split(';');
-                          for (let i = 0; i < ca.length; i++) {
-                            let c = ca[i];
-                            while (c.charAt(0) === ' ') c = c.substring(1);
-                            if (c.indexOf(nameEQ) === 0) {
-                              return c.substring(nameEQ.length, c.length);
-                            }
-                          }
-                          return '';
-                        };
-                        
-                        // Function to set the cookie
-                        const setCookie = (name, value, days = 90) => {
-                          const date = new Date();
-                          date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-                          const expires = `expires=${date.toUTCString()}`;
-                          document.cookie = `${name}=${value};${expires};path=/;SameSite=Strict`;
-                        };
-                        
-                        // Function to delete the cookie
-                        const deleteCookie = (name) => {
-                          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
-                        };
-                        
-                        // Get the current API key from the cookie
-                        const currentKey = getCookie(cookieName);
-                        
-                        return (
-                          <>
-                            <div className="text-xs text-gray-400 mb-1">{keyName}:</div>
-                            <div className="flex space-x-1">
-                              <input 
-                                type="password"
-                                className="flex-grow px-2 py-1 bg-gray-900 border border-gray-700 rounded text-xs cursor-pointer"
-                                placeholder={currentKey ? "••••••••••••••••••••" : "Click 'Set' to configure"}
-                                value={currentKey ? "••••••••••••••••••••" : ""}
-                                readOnly={true}
-                                onClick={() => {
-                                  // Click the Set/Clear button when field is clicked
-                                  const button = document.querySelector(`button:contains("${currentKey ? 'Clear' : 'Set'}")`);
-                                  if (button) button.click();
-                                }}
-                                                                                title="Click 'Set' button to configure API token"
-
-                              />
-                              <button
-                                className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs"
-                                onClick={() => {
-                                  // If we have a key, confirm deletion
-                                  if (currentKey) {
-                                    // Create an inline modal for confirmation
-                                    const confirmBox = document.createElement('div');
-                                    confirmBox.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50';
-                                    confirmBox.innerHTML = `
-                                      <div class="bg-gray-800 border border-gray-700 rounded-md p-4 max-w-md w-full">
-                                        <div class="text-green-400 font-semibold mb-2">Confirm</div>
-                                        <div class="text-white mb-4">Are you sure you want to remove this API key?</div>
-                                        <div class="flex justify-end space-x-2">
-                                          <button class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm" id="cancel-btn">Cancel</button>
-                                          <button class="px-3 py-1 bg-red-700 hover:bg-red-600 text-white rounded text-sm" id="confirm-btn">Remove</button>
-                                        </div>
-                                      </div>
-                                    `;
-                                    document.body.appendChild(confirmBox);
-                                    
-                                    // Add event handlers
-                                    document.getElementById('cancel-btn').addEventListener('click', () => {
-                                      document.body.removeChild(confirmBox);
-                                    });
-                                    document.getElementById('confirm-btn').addEventListener('click', () => {
-                                      deleteCookie(cookieName);
-                                      addLog(`${keyName} removed`);
-                                      document.body.removeChild(confirmBox);
-                                      // Force re-render by updating state
-                                      setCrawlStats({...crawlStats});
-                                    });
-                                  } else {
-                                    // Create an inline modal for entering a new key
-                                    const inputBox = document.createElement('div');
-                                    inputBox.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50';
-                                    inputBox.innerHTML = `
-                                      <div class="bg-gray-800 border border-gray-700 rounded-md p-4 max-w-md w-full">
-                                        <div class="text-green-400 font-semibold mb-2">Enter ${keyName}</div>
-                                        <input type="text" id="api-key-input" class="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded mb-4" placeholder="${placeholder}"/>
-                                        <div class="flex justify-end space-x-2">
-                                          <button class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm" id="cancel-key-btn">Cancel</button>
-                                          <button class="px-3 py-1 bg-green-700 hover:bg-green-600 text-white rounded text-sm" id="save-key-btn">Save</button>
-                                        </div>
-                                      </div>
-                                    `;
-                                    document.body.appendChild(inputBox);
-                                    
-                                    // Focus the input field
-                                    setTimeout(() => {
-                                      document.getElementById('api-key-input').focus();
-                                    }, 100);
-                                    
-                                    // Add event handlers
-                                    document.getElementById('cancel-key-btn').addEventListener('click', () => {
-                                      document.body.removeChild(inputBox);
-                                    });
-                                    document.getElementById('save-key-btn').addEventListener('click', () => {
-                                      const inputEl = document.getElementById('api-key-input');
-                                      const newKey = inputEl.value.trim();
-                                      
-                                      if (newKey) {
-                                        setCookie(cookieName, newKey);
-                                        addLog(`${keyName} saved`);
-                                        document.body.removeChild(inputBox);
-                                        // Force re-render by updating state
-                                        setCrawlStats({...crawlStats});
-                                      } else {
-                                        // Highlight input with red border if empty
-                                        inputEl.classList.add('border-red-500');
-                                        setTimeout(() => {
-                                          inputEl.classList.remove('border-red-500');
-                                        }, 2000);
-                                      }
-                                    });
-                                    
-                                    // Handle enter key
-                                    document.getElementById('api-key-input').addEventListener('keydown', (e) => {
-                                      if (e.key === 'Enter') {
-                                        document.getElementById('save-key-btn').click();
-                                      } else if (e.key === 'Escape') {
-                                        document.getElementById('cancel-key-btn').click();
-                                      }
-                                    });
-                                  }
-                                }}
-                              >
-                                {currentKey ? 'Clear' : 'Set'}
-                              </button>
-                            </div>
-                          </>
-                        );
-                      })()}
-                      
-                      {/* Security info */}
-                      <div className="mt-2 text-xs text-gray-500 italic">
-                        API tokens are stored locally in cookies with SameSite=Strict
-                      </div>
-                    </div>
-                    
-                    <button 
-                      className="w-full mt-3 bg-gray-900 hover:bg-gray-700 text-xs border border-gray-700 rounded p-1"
-                      onClick={() => {
-                        // Create a nice modal for logout confirmation
-                        const logoutModal = document.createElement('div');
-                        logoutModal.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50';
-                        logoutModal.innerHTML = `
-                          <div class="bg-gray-800 border border-red-500 rounded-lg p-6 max-w-md w-full mx-4">
-                            <div class="flex items-center mb-4">
-                              <i class="fas fa-exclamation-triangle text-red-500 text-xl mr-3"></i>
-                              <h3 class="text-lg font-semibold text-red-400">WIPE SYSTEM</h3>
-                            </div>
-                            <p class="text-gray-300 mb-4">
-                              Choose your logout method:
-                            </p>
-                            <div class="space-y-3 mb-6">
-                              <div class="bg-gray-900 border border-gray-700 rounded p-3">
-                                <div class="font-semibold text-yellow-400 mb-1">Standard Logout</div>
-                                <div class="text-sm text-gray-400">Clear authentication only. Keep LLM tokens and settings.</div>
-                              </div>
-                              <div class="bg-gray-900 border border-red-700 rounded p-3">
-                                <div class="font-semibold text-red-400 mb-1">WIPE ALL DATA</div>
-                                <div class="text-sm text-gray-400">Clear authentication AND all stored tokens/cookies.</div>
-                              </div>
-                            </div>
-                            <div class="flex justify-end space-x-3">
-                              <button class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm transition-colors" id="cancel-logout-btn">
-                                Cancel
-                              </button>
-                              <button class="px-4 py-2 bg-yellow-700 hover:bg-yellow-600 text-white rounded text-sm transition-colors" id="standard-logout-btn">
-                                <i class="fas fa-sign-out-alt mr-1"></i>Standard Logout
-                              </button>
-                              <button class="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded text-sm transition-colors" id="wipe-system-btn">
-                                <i class="fas fa-trash mr-1"></i>WIPE SYSTEM
-                              </button>
-                            </div>
-                          </div>
-                        `;
-                        document.body.appendChild(logoutModal);
-                        
-                        // Add event handlers
-                        document.getElementById('cancel-logout-btn').addEventListener('click', () => {
-                          document.body.removeChild(logoutModal);
-                        });
-                        
-                        document.getElementById('standard-logout-btn').addEventListener('click', () => {
-                          localStorage.removeItem('gnosis_auth_code');
-                          setAuthStatus('unauthorized');
-                          addLog('Authentication cleared');
-                          addLog('System locked');
-                          addLog('Awaiting new authentication...');
-                          document.body.removeChild(logoutModal);
-                        });
-                        
-                        document.getElementById('wipe-system-btn').addEventListener('click', () => {
-                          // Clear all localStorage
-                          localStorage.clear();
-                          
-                          // Clear all cookies
-                          document.cookie.split(";").forEach(function(c) { 
-                            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-                          });
-                          
-                          setAuthStatus('unauthorized');
-                          addLog('SYSTEM WIPED - All data cleared');
-                          addLog('Authentication cleared');
-                          addLog('All tokens and cookies removed');
-                          addLog('System reset complete');
-                          addLog('Awaiting new authentication...');
-                          document.body.removeChild(logoutModal);
-                        });
-                        
-                        // Close modal when clicking outside
-                        logoutModal.addEventListener('click', (e) => {
-                          if (e.target === logoutModal) {
-                            document.body.removeChild(logoutModal);
-                          }
-                        });
-                        
-                        // Handle escape key
-                        const handleEscape = (e) => {
-                          if (e.key === 'Escape') {
-                            document.body.removeChild(logoutModal);
-                            document.removeEventListener('keydown', handleEscape);
-                          }
-                        };
-                        document.addEventListener('keydown', handleEscape);
-                      }}
-                    >
-                      Log Out
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-            
-            {authStatus === 'authorized' && (
-              <>
-                <div className="bg-gray-800 border border-gray-700 rounded-md p-4">
-                  <h3 className="text-lg mb-2">Recent Crawls</h3>
-                  {recentReports.length > 0 ? (
-                    <ul className="text-sm space-y-2">
-                      {recentReports.map(report => (
-                        <li key={report.filename} className="border-b border-gray-700 pb-1 last:border-b-0">
-                          <a 
-                            href={report.filename.startsWith('/') ? report.filename : `/reports/${report.filename}`} 
-                            target="_blank" 
-                            className="text-green-300 hover:underline truncate block"
-                          >
-                            {report.title}
-                          </a>
-                          <div className="text-xs text-gray-400">
-                            {report.created_str}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : loadingRecentReports ? (
-                    <div className="text-center py-2">
-                      <div className="text-xs text-gray-400">Loading...</div>
-                    </div>
-                  ) : (
-                    <div className="text-gray-500 text-sm">No recent crawls found</div>
-                  )}
-                </div>
-                
-                {/* System Resources and Liminal Access boxes removed */}
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* This div is now empty since we moved its content to the top */}
-      </div>
-    </div>
-  );
-};
-        
-        // Function to format JSON with syntax highlighting and better word wrapping
-        const formatJsonForDisplay = (jsonString) => {
-          try {
-            // First, parse and re-stringify the JSON to ensure proper format
-            const obj = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
-            
-            // Replace JSON syntax with HTML spans for syntax highlighting
-            return JSON.stringify(obj, null, 2)
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')
-              .replace(/>/g, '&gt;')
-              .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, 
-                function (match) {
-                  let cls = 'text-blue-400'; // Default for numbers
-                  
-                  if (/^"/.test(match)) {
-                    if (/:$/.test(match)) {
-                      cls = 'text-purple-400 font-semibold'; // Keys
-                    } else {
-                      cls = 'text-green-400'; // Strings
-                    }
-                  } else if (/true|false/.test(match)) {
-                    cls = 'text-yellow-500'; // Booleans
-                  } else if (/null/.test(match)) {
-                    cls = 'text-red-400'; // null values
+                    </div>`);
                   }
-                  
-                  return '<span class="' + cls + '">' + match + '</span>';
-                });
-          } catch (e) {
-            console.error("Error formatting JSON:", e);
-            return jsonString; // Return the original string if there's an error
-          }
-        };
-        
-        // Function to copy JSON to clipboard
-        window.copyJsonToClipboard = function(button, jsonString) {
-          // Create test modal first to verify function is being called
-          const testModal = document.createElement('div');
-          testModal.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50';
-          testModal.innerHTML = `
-            <div class="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4">
-              <div class="flex items-center mb-4">
-                <i class="fas fa-clipboard text-blue-500 text-xl mr-3"></i>
-                <h3 class="text-lg font-semibold text-blue-400">Copy JSON Debug</h3>
-              </div>
-              <div class="text-gray-300 mb-4">
-                <p class="mb-2">Function called successfully!</p>
-                <p class="text-sm">JSON length: ${jsonString ? jsonString.length : 'null'} characters</p>
-                <p class="text-sm">Clipboard API available: ${navigator.clipboard ? 'Yes' : 'No'}</p>
-                <p class="text-sm">Secure context: ${window.isSecureContext ? 'Yes' : 'No'}</p>
-              </div>
-              <div class="bg-gray-900 rounded p-3 mb-4 max-h-32 overflow-auto">
-                <div class="text-xs font-mono text-green-400">JSON Preview:</div>
-                <div class="text-xs font-mono text-gray-300 mt-1">${jsonString ? jsonString.substring(0, 200) + (jsonString.length > 200 ? '...' : '') : 'No JSON data'}</div>
-              </div>
-              <div class="flex justify-end space-x-3">
-                <button class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm" id="test-cancel-btn">
-                  Cancel
-                </button>
-                <button class="px-4 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded text-sm" id="test-copy-btn">
-                  Try Copy Now
-                </button>
-              </div>
-            </div>
-          `;
-          document.body.appendChild(testModal);
-          
-          // Add event handlers
-          document.getElementById('test-cancel-btn').addEventListener('click', () => {
-            document.body.removeChild(testModal);
-          });
-          
-          document.getElementById('test-copy-btn').addEventListener('click', () => {
-            // Now actually try to copy
-            try {
-              if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(jsonString).then(() => {
-                  // Success feedback
-                  const originalText = button.querySelector('span').textContent;
-                  const originalIcon = button.querySelector('i').className;
-                  
-                  button.querySelector('span').textContent = 'Copied!';
-                  button.querySelector('i').className = 'fas fa-check';
-                  button.style.backgroundColor = 'rgba(34, 197, 94, 0.3)';
-                  
-                  setTimeout(() => {
-                    button.querySelector('span').textContent = originalText;
-                    button.querySelector('i').className = originalIcon;
-                    button.style.backgroundColor = '';
-                  }, 2000);
-                  
-                  document.body.removeChild(testModal);
-                }).catch(err => {
-                  console.error('Clipboard API failed:', err);
-                  fallbackCopyTextToClipboard(jsonString, button);
-                  document.body.removeChild(testModal);
-                });
-              } else {
-                fallbackCopyTextToClipboard(jsonString, button);
-                document.body.removeChild(testModal);
-              }
-            } catch (error) {
-              console.error('Error in copy function:', error);
-              fallbackCopyTextToClipboard(jsonString, button);
-              document.body.removeChild(testModal);
-            }
-          });
-          
-          // Close modal when clicking outside
-          testModal.addEventListener('click', (e) => {
-            if (e.target === testModal) {
-              document.body.removeChild(testModal);
-            }
-          });
-        };
-        
-        // Fallback function for copying text to clipboard
-        function fallbackCopyTextToClipboard(text, button) {
-          try {
-            const textArea = document.createElement('textarea');
-            textArea.value = text;
-            textArea.style.position = 'fixed';
-            textArea.style.left = '-999999px';
-            textArea.style.top = '-999999px';
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
-            const successful = document.execCommand('copy');
-            document.body.removeChild(textArea);
-            
-            if (successful) {
-              // Provide visual feedback
-              const originalText = button.querySelector('span').textContent;
-              const originalIcon = button.querySelector('i').className;
-              
-              button.querySelector('span').textContent = 'Copied!';
-              button.querySelector('i').className = 'fas fa-check';
-              button.style.backgroundColor = 'rgba(34, 197, 94, 0.3)';
-              
-              setTimeout(() => {
-                button.querySelector('span').textContent = originalText;
-                button.querySelector('i').className = originalIcon;
-                button.style.backgroundColor = '';
-              }, 2000);
-            } else {
-              throw new Error('Copy command failed');
-            }
-          } catch (err) {
-            console.error('Fallback copy failed:', err);
-            // Show error feedback
-            const originalText = button.querySelector('span').textContent;
-            const originalIcon = button.querySelector('i').className;
-            
-            button.querySelector('span').textContent = 'Failed';
-            button.querySelector('i').className = 'fas fa-exclamation-triangle';
-            button.style.backgroundColor = 'rgba(239, 68, 68, 0.3)';
-            
-            setTimeout(() => {
-              button.querySelector('span').textContent = originalText;
-              button.querySelector('i').className = originalIcon;
-              button.style.backgroundColor = '';
-            }, 2000);
-          }
-        }
-        
-        // Function to toggle JSON visibility (for collapsible sections)
-        window.toggleJsonVisibility = function(button) {
-          const container = button.closest('.json-container');
-          const content = container.querySelector('.json-content');
-          const buttonText = button.querySelector('span');
-          const icon = button.querySelector('i');
-          
-          if (content.style.display === 'none') {
-            // Show the content
-            content.style.display = 'block';
-            buttonText.textContent = 'Collapse';
-            icon.className = 'fas fa-chevron-down';
-          } else {
-            // Hide the content
-            content.style.display = 'none';
-            buttonText.textContent = 'Expand';
-            icon.className = 'fas fa-chevron-right';
-          }
-        };
-
-        // Function to copy JSON to clipboard
-        window.copyJsonToClipboard = function(button, jsonString) {
-          try {
-            // Use the modern clipboard API if available
-            if (navigator.clipboard && window.isSecureContext) {
-              navigator.clipboard.writeText(jsonString).then(() => {
-                showCopySuccess(button);
-              }).catch(err => {
-                console.error('Failed to copy to clipboard:', err);
-                fallbackCopy(jsonString, button);
-              });
-            } else {
-              // Fallback for older browsers or non-HTTPS
-              fallbackCopy(jsonString, button);
-            }
-          } catch (error) {
-            console.error('Copy error:', error);
-            fallbackCopy(jsonString, button);
-          }
-        };
-
-        // Fallback copy method using textarea
-        function fallbackCopy(text, button) {
-          const textArea = document.createElement('textarea');
-          textArea.value = text;
-          textArea.style.position = 'fixed';
-          textArea.style.left = '-999999px';
-          textArea.style.top = '-999999px';
-          document.body.appendChild(textArea);
-          textArea.focus();
-          textArea.select();
-          
-          try {
-            const successful = document.execCommand('copy');
-            if (successful) {
-              showCopySuccess(button);
-            } else {
-              showCopyError(button);
-            }
-          } catch (err) {
-            console.error('Fallback copy failed:', err);
-            showCopyError(button);
-          } finally {
-            document.body.removeChild(textArea);
-          }
-        }
-
-        // Show copy success feedback
-        function showCopySuccess(button) {
-          const originalContent = button.innerHTML;
-          button.innerHTML = '<i class="fas fa-check text-green-400"></i> <span>Copied!</span>';
-          button.classList.add('text-green-400');
-          
-          setTimeout(() => {
-            button.innerHTML = originalContent;
-            button.classList.remove('text-green-400');
-          }, 2000);
-        }
-
-        // Show copy error feedback
-        function showCopyError(button) {
-          const originalContent = button.innerHTML;
-          button.innerHTML = '<i class="fas fa-exclamation-triangle text-red-400"></i> <span>Failed</span>';
-          button.classList.add('text-red-400');
-          
-          setTimeout(() => {
-            button.innerHTML = originalContent;
-            button.classList.remove('text-red-400');
-          }, 2000);
-        }
-
-        // Find the component function name from the code
-        const scriptContent = document.querySelector('script[type="text/babel"]').textContent;
-        const functionMatch = scriptContent.match(/function\s+(\w+)/);
-        const constMatch = scriptContent.match(/const\s+(\w+)\s*=/);
-        
-        let componentName = null;
-        if (functionMatch) {
-            componentName = functionMatch[1];
-        } else if (constMatch) {
-            componentName = constMatch[1];
-        }
-        
-        // Render the component
-        if (componentName && typeof window[componentName] === 'function') {
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(React.createElement(window[componentName]));
-        } else {
-            // Fallback - try to find any function in the window object that looks like a React component
-            const possibleComponents = Object.keys(window).filter(key => 
-                typeof window[key] === 'function' && 
-                window[key].toString().includes('React.createElement')
-            );
-            
-            if (possibleComponents.length > 0) {
-                const root = ReactDOM.createRoot(document.getElementById('root'));
-                root.render(React.createElement(window[possibleComponents[0]]));
-            } else {
-                document.getElementById('root').innerHTML = 
-                    '<div class="p-8 text-red-600 text-center"><h2 class="text-xl font-bold mb-2">Error</h2><p>Could not find a React component to render.</p></div>';
-            }
-        }
-        {% endraw %}
-    </script>
-</body>
-</html>
+                }
+              } catch (retryError) {
+                if (retryCount === maxRetries) {
+                  // Create a visually distinctive

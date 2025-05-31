@@ -7,8 +7,10 @@ Gnosis Wraith is a powerful web crawling and content analysis system that serves
 > *Gnosis is an AI oracle, and Wraith is the eye.*
 
 ## Try It Now!
-[Gnosis Wraith](https://gnosis-wraith-949870462453.us-central1.run.app)
+[Gnosis Wraith](https://wraith.nuts.services)
 
+## Join the Community
+[![Discord](https://img.shields.io/badge/Discord-Join%20Us-7289da?logo=discord&logoColor=white)](https://discord.gg/AQnAn9XgFJ)
 
 ## Key Features
 

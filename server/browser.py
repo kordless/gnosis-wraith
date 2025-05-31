@@ -21,15 +21,30 @@ class BrowserControl:
         """Extract text from a screenshot using OCR."""
         return await self.model_manager.extract_text_from_image(screenshot_path)
         
-    async def screenshot(self, path):
-        """Take a screenshot and save it to the specified path."""
+    async def screenshot(self, path, mode="full"):
+        """Take a screenshot and save it to the specified path.
+        
+        Args:
+            path: Path to save the screenshot
+            mode: Screenshot mode - "full", "top", or "off" (default: "full")
+        """
         if not self.page:
             raise Exception("Browser not started")
         
         try:
-            # Take full page screenshot to capture everything
-            await self.page.screenshot(path=path, full_page=True)
-            logger.info(f"Screenshot saved to {path}")
+            # Handle different screenshot modes
+            if mode == "top":
+                # Take viewport-only screenshot (top portion)
+                await self.page.screenshot(path=path, full_page=False)
+                logger.info(f"Top viewport screenshot saved to {path}")
+            elif mode == "full":
+                # Take full page screenshot to capture everything
+                await self.page.screenshot(path=path, full_page=True)
+                logger.info(f"Full page screenshot saved to {path}")
+            else:
+                # For any other mode (including "off"), don't take screenshot
+                logger.info(f"Screenshot skipped (mode: {mode})")
+                return
         except Exception as e:
             logger.error(f"Error taking screenshot: {str(e)}")
             

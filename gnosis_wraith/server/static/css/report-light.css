@@ -1,0 +1,255 @@
+/* Light theme for Gnosis Wraith reports with yellowed scan lines */
+:root {
+    --primary-color: #2a75d0;
+    --secondary-color: #7b5fe7;
+    --bg-color: #f8f5eb;
+    --card-bg: #ffffff;
+    --text-color: #2c2c2c;
+    --text-muted: #6c6c6c;
+    --border-color: #e0dacb;
+    --success-color: #2cb67d;
+    --warning-color: #f0a04b;
+    --danger-color: #e94a4a;
+    --ai-summary-bg: rgba(42, 117, 208, 0.05);
+    --ai-summary-border: rgba(42, 117, 208, 0.15);
+    --scanline-color: rgba(218, 182, 97, 0.06);
+    --scanline-highlight-color: rgba(218, 182, 97, 0.1);
+}
+
+/* Base styles */
+body {
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    line-height: 1.6;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Yellowed scan lines effect like old legal paper */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        var(--scanline-color) 0px,
+        var(--scanline-color) 1px,
+        var(--scanline-highlight-color) 2px,
+        transparent 3px,
+        transparent 9px
+    );
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.8;
+}
+
+/* Link styling for light theme */
+a {
+    color: #2a75d0;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:visited {
+    color: #7b5fe7;
+}
+
+a:hover {
+    color: #408cdf;
+    text-decoration: underline;
+}
+
+img {
+    max-width: 100%;
+    border-radius: 4px;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    border: 1px solid #e0dacb;
+}
+
+code {
+    background-color: rgba(0,0,0,0.05);
+    padding: 2px 5px;
+    border-radius: 3px;
+    text-decoration: none !important;
+    color: #2a75d0;
+}
+
+pre {
+    background-color: var(--card-bg);
+    padding: 15px;
+    border-radius: 4px;
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+}
+
+/* Fix for codehilite underlines */
+.codehilite .underline, 
+.codehilite u,
+pre .underline,
+pre u,
+code .underline,
+code u {
+    text-decoration: none !important;
+    border-bottom: none !important;
+}
+
+h1, h2, h3 {
+    color: var(--primary-color);
+}
+
+h2 {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+/* Style AI summary sections */
+h3:contains('AI Summary') + p {
+    background-color: var(--ai-summary-bg);
+    border: 1px solid var(--ai-summary-border);
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 5px;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 30px 0;
+}
+
+/* Report header styling */
+.report-header {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.report-branding {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.report-branding img {
+    width: 32px;
+    height: 32px;
+    box-shadow: none;
+    border: none;
+}
+
+.report-branding span {
+    font-weight: bold;
+    font-size: 16px;
+    color: var(--primary-color);
+}
+
+.report-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.report-button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    cursor: pointer;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+    border: 1px solid var(--border-color);
+}
+
+.report-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.report-button.theme-toggle:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.report-button.crawl-again {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.report-button.crawl-again:hover {
+    background-color: #408cdf;
+}
+
+.report-button.close {
+    background-color: transparent;
+}
+
+.report-button.close:hover {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+/* Report metadata */
+.report-metadata {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 25px;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.report-metadata div {
+    margin: 5px 0;
+}
+
+.report-metadata .label {
+    color: var(--text-muted);
+    display: inline-block;
+    width: 100px;
+}
+
+/* Custom styling for URL in metadata */
+.report-metadata .url {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-all;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    .report-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .report-metadata .label {
+        width: auto;
+        display: block;
+        margin-bottom: 5px;
+    }
+    
+    .mobile-hidden {
+        display: none;
+    }
+}

@@ -156,6 +156,12 @@ async def suggest_url(
             existing_notes = result.get("crawling_notes", "")
             result["crawling_notes"] = f"{existing_notes}. Recommend enabling JavaScript for better content extraction"
         
+        # If user provided a response for odd inquiry, use it as the crawling notes
+        if simple_response_to_users_odd_inquiry:
+            result["crawling_notes"] = simple_response_to_users_odd_inquiry
+            result["user_acting_odd"] = True
+            result["odd_user_guidance"] = "User appears to be trying to chat or ask questions."
+        
         logger.info(f"URL validation: {suggested_url} -> {result.get('crawling_notes', 'OK')}")
         return result
         
@@ -458,26 +464,24 @@ def create_search_url(invalid_input: str, original_query: str = "") -> str:
     ]
     
     try:
-        # Create search terms from the invalid input and original query
-        search_terms = []
+        # First try to use the complete original query if available
+        search_query = ""
         
-        # Add the invalid input (cleaned up)
-        cleaned_input = invalid_input.strip().replace('"', '').replace("'", "")
-        if cleaned_input:
-            search_terms.append(cleaned_input)
+        # If we have an original query, use it as the primary search terms
+        if original_query and original_query.strip():
+            search_query = original_query.strip()
+            logger.info(f"Using full original query for search: '{search_query}'")
+        # If not, fall back to the invalid input
+        elif invalid_input and invalid_input.strip():
+            search_query = invalid_input.strip()
+            logger.info(f"Using invalid input for search: '{search_query}'")
         
-        # Add original query if it's different and meaningful
-        if original_query and original_query.strip() != cleaned_input:
-            # Take key words from the original query
-            query_words = original_query.strip().split()
-            # Add up to 3 meaningful words (skip common words)
-            stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'like', 'such', 'this', 'that', 'these', 'those'}
-            meaningful_words = [word for word in query_words if word.lower() not in stop_words and len(word) > 2]
-            search_terms.extend(meaningful_words[:3])
+        # Clean up the query - remove quotes but preserve spaces
+        search_query = search_query.replace('"', '').replace("'", "").strip()
         
-        # Create the search query
-        search_query = " ".join(search_terms)
-        if not search_query.strip():
+        # If we still don't have a valid search query, return empty string
+        if not search_query:
+            logger.warning("No valid search terms found in query or input")
             return ""
             
         # URL encode the search query

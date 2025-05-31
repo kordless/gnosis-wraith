@@ -64,31 +64,4 @@ Gnosis Wraith is a web crawling and content extraction system with a browser ext
 5. Browser integration
 6. Customizable extraction settings
 
-## Development Workflow
-1. Local development with Flask server 
-2. Docker containerization (`Dockerfile`, `docker-compose.yml`) for consistent environments
-3. Testing with PowerShell test scripts (`Run-Tests.ps1`, `test_endpoints.ps1`, `test_reports.ps1`)
-4. Extension building and updating pipeline (`build_extension.ps1`, `build_extension.sh`)
-5. Deployment automation (`deploy.ps1`, `startup.sh`)
-
-## Deployment Options
-1. **Docker-based deployment** (primary method)
-   - Standard container for server (`Dockerfile`)
-   - Jobs container for background processing (`Dockerfile.jobs`)
-2. **Local development setup** (`docker-compose.dev.yml`)
-
-## Testing Strategy
-- Endpoint testing (`test_endpoints.ps1`)
-- Report testing (`test_reports.ps1`)
-- Full system tests (`Run-Tests.ps1`)
-
-## Documentation
-- Project README with setup instructions (`README.md`)
-- Development logs and notes (`DEVELOPMENT_LOG.md`, `NOTES.md`)
-- UI enhancement tracking (`UI_ENHANCEMENT_LOG.md`, `UI_NOTES.md`)
-- Dynamic module planning (`DYNAMIC_MODULE_PLAN.md`)
-
-## Future Development
-- Feature enhancements tracked in task lists
-- UI improvements documented in dedicated notes
-- API extensions planned in development logs
+## Dev flow TBD

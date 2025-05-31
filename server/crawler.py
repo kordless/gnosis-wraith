@@ -22,6 +22,7 @@ def extract_urls(content: str) -> List[str]:
 async def crawl_url(url: Union[str, List[str]], 
                    javascript_enabled: bool = False, 
                    take_screenshot: bool = True, 
+                   screenshot_mode: str = "full",  # Add screenshot mode parameter
                    ocr_extraction: bool = True, 
                    markdown_extraction: str = "enhanced",
                    llm_provider: Optional[str] = None,
@@ -33,6 +34,7 @@ async def crawl_url(url: Union[str, List[str]],
         url: A single URL string or a list of URL strings to crawl
         javascript_enabled: Whether to enable JavaScript for the crawl
         take_screenshot: Whether to take screenshots of pages
+        screenshot_mode: Screenshot mode - "full", "top", or "off" (default: "full")
         ocr_extraction: Whether to extract text from screenshots using OCR
         markdown_extraction: Type of markdown to generate ("enhanced", "basic", or "none")
         llm_provider: Optional LLM provider for content summarization
@@ -81,9 +83,11 @@ async def crawl_url(url: Union[str, List[str]],
         # Process each URL
         for url in urls:
             try:
-                # Create a safe filename from the URL
-                filename = url.replace('https://', '').replace('http://', '').replace('/', '_').replace('.', '_')
-                filename = re.sub(r'[^\w\-_.]', '_', filename)
+                # Create a safe filename from the URL using unified hash-based naming
+                from server.filename_utils import generate_screenshot_filename
+                # Extract just the base filename without extension for screenshot path
+                screenshot_filename = generate_screenshot_filename(url)
+                filename = screenshot_filename.replace('.png', '')  # Remove extension for internal use
                 
                 try:
                     # Navigate to the URL
@@ -113,10 +117,10 @@ async def crawl_url(url: Union[str, List[str]],
                 screenshot_path = None
                 
                 if take_screenshot:
-                    logger.info(f"Taking screenshot as requested (take_screenshot=True)")
-                    screenshot_path = os.path.join(SCREENSHOTS_DIR, f"{filename}_{uuid.uuid4().hex[:8]}.png")
+                    logger.info(f"Taking screenshot as requested (take_screenshot=True, mode={screenshot_mode})")
+                    screenshot_path = os.path.join(SCREENSHOTS_DIR, f"{filename}.png")
                     try:
-                        await browser_control.screenshot(screenshot_path)
+                        await browser_control.screenshot(screenshot_path, mode=screenshot_mode)
                         logger.info(f"Screenshot successfully saved at {screenshot_path}")
                     except Exception as ss_error:
                         logger.error(f"Screenshot failed for {url}: {str(ss_error)}")
@@ -241,7 +245,9 @@ async def crawl_url(url: Union[str, List[str]],
                 
                 # Only include optional fields if they were generated
                 if screenshot_path:
-                    result['screenshot'] = screenshot_path
+                    # Convert file system path to web path for frontend
+                    screenshot_filename = os.path.basename(screenshot_path)
+                    result['screenshot'] = f"/screenshots/{screenshot_filename}"
                 
                 if extracted_text:
                     result['extracted_text'] = extracted_text

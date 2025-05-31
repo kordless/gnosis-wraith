@@ -66,7 +66,9 @@ async def log_request():
 # Register blueprints if available (in try block to handle restructuring phase)
 try:
     from gnosis_wraith.server.routes import register_blueprints
+    from gnosis_wraith.terminal import terminal_bp
     register_blueprints(app)
+    app.register_blueprint(terminal_bp)
     # Note: When blueprints are registered, they take precedence over routes defined here
     # During refactoring, we'll keep the original routes as fallbacks
     logger.info("Blueprints registered successfully")
@@ -109,9 +111,14 @@ logger.info(f"Extension version {EXTENSION_VERSION} will be used for all operati
 # Then in the index route, redirect to the crawl page (handled by blueprint)
 @app.route('/')
 async def index():
-    """Redirect to the crawl page."""
-    # The pages blueprint will handle this if it's registered, but this is a fallback
-    return redirect(url_for('pages.crawl'))
+    """Redirect to the main crawl page."""
+    # Since we're registering blueprints properly now, this should work
+    # But keep a fallback just in case
+    try:
+        return redirect(url_for('pages.crawl'))
+    except:
+        # Last resort fallback - serve a basic page or redirect to available interface
+        return redirect('/c')
 
 @app.route('/api/upload', methods=['POST'])
 async def api_upload():
@@ -197,14 +204,19 @@ async def api_upload():
 @app.route('/reports')
 async def list_reports():
     """List all generated reports (fallback handler)."""
-    # Redirect to the blueprint-handled version
+    # This should now work with proper blueprint registration
     return redirect(url_for('pages.list_reports'))
 
 @app.route('/reports/<path:filename>')
 async def serve_report(filename):
     """Serve a report file (fallback handler)."""
-    # Redirect to the blueprint-handled version
+    # This should now work with proper blueprint registration
     return redirect(url_for('pages.serve_report', filename=filename))
+
+@app.route('/favicon.ico')
+async def favicon():
+    """Serve the favicon.ico file."""
+    return await send_from_directory(os.path.join(app.static_folder, 'images'), 'favicon.ico')
 
 @app.route('/health', methods=['HEAD', 'GET'])
 async def health_check():
@@ -420,7 +432,7 @@ async def serve_webwraith_extension():
 @app.route('/settings')
 async def settings():
     """Render the settings page (fallback handler)."""
-    # Redirect to the blueprint-handled version
+    # This should now work with proper blueprint registration
     return redirect(url_for('pages.settings'))
 
 @app.route('/api/reports/<path:filename>', methods=['DELETE'])

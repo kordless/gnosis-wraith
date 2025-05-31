@@ -64,22 +64,25 @@ async def list_reports():
         if not any(f.endswith('.md') for f in files):
             logger.info("No reports found in directory. This is expected if no reports have been generated yet.")
         
-        # Process all report files (markdown and JSON)
+        # Process all report files - group by base name to avoid duplicates
+        # We'll prefer markdown files but include format info for both md and json
+        report_groups = {}
+        
         for file in files:
             if file.endswith('.md') or file.endswith('.json'):
                 file_path = os.path.join(REPORTS_DIR, file)
                 creation_time = os.path.getctime(file_path)
                 
-                # Format title from filename
-                # Extract report name from filename, removing date suffix and underscores
+                # Get base name without extension for grouping
                 if file.endswith('.md'):
-                    display_name = file.replace('.md', '')
+                    base_name = file.replace('.md', '')
                     format_type = 'markdown'
                 else:  # .json
-                    display_name = file.replace('.json', '')
+                    base_name = file.replace('.json', '')
                     format_type = 'json'
                 
                 # Remove timestamp pattern if present (typically last part after underscore)
+                display_name = base_name
                 if '_' in display_name:
                     parts = display_name.rsplit('_', 1)
                     if len(parts[1]) == 15 and parts[1].isdigit():  # Assuming YYYYMMDD_HHMMSS format = 15 chars
@@ -87,14 +90,89 @@ async def list_reports():
                 # Replace underscores with spaces and capitalize words
                 display_name = display_name.replace('_', ' ').title()
                 
-                reports.append({
+                # Group reports by base name
+                if base_name not in report_groups:
+                    report_groups[base_name] = {
+                        "name": base_name,
+                        "path": base_name,  # Use base name as path
+                        "title": display_name,
+                        "created": datetime.datetime.fromtimestamp(creation_time),
+                        "created_str": datetime.datetime.fromtimestamp(creation_time).strftime('%Y-%m-%d %H:%M:%S'),
+                        "size": os.path.getsize(file_path),
+                        "formats": {},
+                        "screenshot_url": None  # Will be set if screenshot is found
+                    }
+                
+                # Add this format to the group
+                report_groups[base_name]["formats"][format_type] = {
                     "filename": file,
-                    "title": display_name,
-                    "created": datetime.datetime.fromtimestamp(creation_time),
-                    "created_str": datetime.datetime.fromtimestamp(creation_time).strftime('%Y-%m-%d %H:%M:%S'),
-                    "size": os.path.getsize(file_path),
-                    "format": format_type
-                })
+                    "size": os.path.getsize(file_path)
+                }
+                
+                # Check for corresponding screenshot file
+                if format_type == 'markdown':
+                    # Look for screenshot in screenshots directory
+                    from server.config import SCREENSHOTS_DIR
+                    
+                    # Try different screenshot naming patterns
+                    possible_screenshot_names = [
+                        f"{base_name}.png",
+                        f"{base_name}.jpg", 
+                        f"{base_name}.jpeg"
+                    ]
+                    
+                    # Also try to match with domain_hash pattern for new naming scheme
+                    if '_' in base_name:
+                        # For new hash-based naming like "splunk_com_3693f7fe"
+                        domain_part = base_name.split('_')[0]
+                        possible_screenshot_names.extend([
+                            f"{domain_part}_*.png",  # Will need glob matching
+                            f"{base_name}*.png"      # With any suffix
+                        ])
+                    
+                    # Use glob to find matching screenshots
+                    import glob
+                    screenshot_found = False
+                    for pattern in possible_screenshot_names:
+                        if '*' in pattern:
+                            # Use glob for wildcard patterns
+                            matches = glob.glob(os.path.join(SCREENSHOTS_DIR, pattern))
+                            if matches:
+                                screenshot_filename = os.path.basename(matches[0])  # Take first match
+                                report_groups[base_name]["screenshot_url"] = f"/screenshots/{screenshot_filename}"
+                                logger.info(f"Found screenshot for report {base_name}: {screenshot_filename}")
+                                screenshot_found = True
+                                break
+                        else:
+                            # Direct file check
+                            screenshot_path = os.path.join(SCREENSHOTS_DIR, pattern)
+                            if os.path.exists(screenshot_path):
+                                report_groups[base_name]["screenshot_url"] = f"/screenshots/{pattern}"
+                                logger.info(f"Found screenshot for report {base_name}: {pattern}")
+                                screenshot_found = True
+                                break
+                    
+                    if screenshot_found:
+                        break
+        
+        # Convert grouped reports to list format
+        for base_name, group_data in report_groups.items():
+            report_entry = {
+                "filename": group_data["name"],  # Use base name as filename
+                "name": group_data["name"],
+                "path": group_data["path"],
+                "title": group_data["title"], 
+                "created": group_data["created"],
+                "created_str": group_data["created_str"],
+                "size": group_data["size"],
+                "formats": group_data["formats"]  # Available formats (markdown, json)
+            }
+            
+            # Include screenshot URL if available
+            if group_data.get("screenshot_url"):
+                report_entry["screenshot_url"] = group_data["screenshot_url"]
+                
+            reports.append(report_entry)
         
         # Sort reports by creation time (newest first)
         reports.sort(key=lambda x: x['created'], reverse=True)
@@ -152,6 +230,7 @@ async def serve_report(filename):
                     logger.info(f"Converting markdown to HTML on-demand: {md_file_path}")
                     html_file = await convert_markdown_to_html(md_file_path)
                     logger.info(f"Generated HTML file on-demand: {html_file}")
+                    logger.info(f"REPORTS DIR: {REPORTS_DIR}")
                     
                     # Verify the HTML file was created
                     if os.path.exists(os.path.join(REPORTS_DIR, filename)):
@@ -267,10 +346,26 @@ async def wraith():
     """Render the simplified wraith page (legacy route)."""
     return redirect(url_for('pages.crawl'))
 
+# Path-based URL route - put this at the end to avoid conflicts
+@pages_bp.route('/http/<path:url>')
+@pages_bp.route('/https/<path:url>')
+async def crawl_with_path(url):
+    """Handle path-based URLs like /https://example.com"""
+    # Reconstruct the full URL
+    protocol = 'https' if request.endpoint == 'pages.crawl_with_path' and 'https' in request.path else 'http'
+    full_url = f"{protocol}://{url}"
+    
+    # Convert special characters back from URL-safe format  
+    full_url = full_url.replace('_id_3D', '?id=')  # Convert _id_3D back to ?id=
+    full_url = full_url.replace('_', '/')   # Convert _ back to /
+    
+    # Redirect to crawl page with the URL as a parameter
+    return redirect(f'/crawl?q={full_url}')
+
 @pages_bp.route('/crawl')
 async def crawl():
     """Render the crawl page."""
-    return await render_template('gnosis.html', active_page='crawl')
+    return await render_template('index.html', active_page='crawl')
 
 @pages_bp.route('/crawl')
 async def crawl_redirect():
@@ -356,7 +451,7 @@ async def settings():
 @pages_bp.route('/min')
 async def minimal_interface():
     """Render the minimal Gnosis interface."""
-    return await render_template('gnosis.html', active_page='min')
+    return await render_template('index.html', active_page='min')
 
 @pages_bp.route('/min/logs')
 async def minimal_interface_logs():
@@ -402,3 +497,111 @@ async def vault():
 async def chrome_error():
     """Render a fake Chrome error page."""
     return await render_template('chrome_error.html')
+
+@pages_bp.route('/shared-code/<share_id>')
+async def shared_code(share_id):
+    """Display shared code snippets."""
+    try:
+        # Find the shared code file
+        filename = f"shared_code_{share_id}.md"
+        file_path = os.path.join(REPORTS_DIR, filename)
+        
+        if not os.path.exists(file_path):
+            logger.warning(f"Shared code not found: {share_id}")
+            return await render_template('error.html',
+                                  error_title="Shared Code Not Found",
+                                  error_message=f"The shared code with ID '{share_id}' could not be found. It may have expired or been removed.",
+                                  error_type="not-found",
+                                  active_page='shared-code')
+        
+        # Read the markdown content
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Parse metadata from the markdown
+        lines = content.split('\n')
+        title = "Shared Code"
+        language = "text"
+        created = ""
+        
+        for line in lines:
+            if line.startswith('# Shared Code:'):
+                title = line.strip('# ')
+            elif line.startswith('**Language:**'):
+                language = line.replace('**Language:**', '').strip()
+            elif line.startswith('**Created:**'):
+                created = line.replace('**Created:**', '').strip()
+        
+        # Extract just the code portion
+        code_start = content.find('```' + language)
+        code_end = content.find('```', code_start + 3)
+        
+        if code_start != -1 and code_end != -1:
+            code = content[code_start + len('```' + language):code_end].strip()
+        else:
+            code = "Code could not be extracted from the shared file."
+        
+        # Return a simple template that displays the code
+        return f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>{title}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-{language}.min.js"></script>
+    <style>
+        body {{ font-family: 'SF Mono', 'Consolas', 'Monaco', monospace; background: #1e1e1e; color: #d4d4d4; margin: 20px; }}
+        .header {{ margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px; }}
+        .meta {{ font-size: 14px; color: #888; }}
+        pre {{ background: #1e1e1e !important; padding: 20px; border-radius: 8px; border: 1px solid #444; }}
+        .actions {{ margin: 20px 0; }}
+        .btn {{ background: #444; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px; }}
+        .btn:hover {{ background: #555; }}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>{title}</h1>
+        <div class="meta">
+            <strong>Language:</strong> {language}<br>
+            <strong>Created:</strong> {created}<br>
+            <strong>Share ID:</strong> {share_id}
+        </div>
+    </div>
+    
+    <div class="actions">
+        <button class="btn" onclick="copyCode()">Copy Code</button>
+        <button class="btn" onclick="downloadCode()">Download</button>
+        <a href="/forge" class="btn" style="text-decoration: none;">Open in Forge</a>
+    </div>
+    
+    <pre><code class="language-{language}">{code}</code></pre>
+    
+    <script>
+        async function copyCode() {{
+            await navigator.clipboard.writeText(`{code}`);
+            alert('Code copied to clipboard!');
+        }}
+        
+        function downloadCode() {{
+            const blob = new Blob([`{code}`], {{ type: 'text/plain' }});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'shared_code_{share_id}.{language}';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }}
+    </script>
+</body>
+</html>"""
+        
+    except Exception as e:
+        logger.error(f"Error displaying shared code {share_id}: {str(e)}")
+        return await render_template('error.html',
+                              error_title="Error Loading Shared Code",
+                              error_message=f"An error occurred while loading the shared code: {str(e)}",
+                              error_type="error",
+                              active_page='shared-code')
