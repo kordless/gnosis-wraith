@@ -53,7 +53,7 @@ async def api_crawl():
     
     title = data.get('title', f"Web Crawl Report - {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     output_format = data.get('output_format', 'markdown')  # Options: 'markdown', 'html', 'json', or 'all'
-    response_format = data.get('response_format', 'full')  # Options: 'full', 'content_only', 'minimal'
+    response_format = data.get('response_format', 'minimal')  # Options: 'full', 'content_only', 'minimal'
     
     # Process all settings from request
     # Process JavaScript enabled setting
