@@ -26,6 +26,14 @@ Gnosis Wraith is a powerful web crawling and content analysis system that serves
 - 🗂️ **User-Isolated Storage** - Multi-tenant support with hash-based user bucketing
 - ☁️ **Cloud-Ready Storage** - Seamless switching between local filesystem and Google Cloud Storage
 
+### 🆕 New in v2 API
+
+- 💻 **JavaScript Execution** - Execute custom JavaScript on any webpage with safety validation
+- 🤖 **LLM-Powered JavaScript** - Generate JavaScript from natural language requests
+- 📋 **Content Analysis** - Extract entities, sentiment, and structured data using LLMs
+- 🧹 **Smart Markdown Cleanup** - AI-powered content cleaning and optimization
+- 📄 **Intelligent Summarization** - Create summaries in multiple formats and styles
+
 
 ## Quick Installation
 
