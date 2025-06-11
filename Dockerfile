@@ -1,6 +1,9 @@
 # Use the official Playwright Python image 
 FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy
 
+# Accept extension version as build argument
+ARG EXTENSION_VERSION=1.4.1
+
 # Install dependencies for NVIDIA CUDA
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -28,6 +31,9 @@ ENV LD_LIBRARY_PATH="/usr/local/cuda-12-3/lib64:${LD_LIBRARY_PATH:-/usr/local/li
 ENV NVIDIA_VISIBLE_DEVICES=all
 ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
 ENV NVIDIA_DISABLE_REQUIRE=true
+
+# Set extension version environment variable
+ENV EXTENSION_VERSION=${EXTENSION_VERSION}
 
 # Set working directory
 WORKDIR /app
@@ -81,7 +87,7 @@ RUN if [ -f /tmp/manifest.json ]; then \
 # We continue to use the ENV value which is either the default or was updated by the previous step
 
 # Create build_extension.sh script to help with extension packaging
-RUN mkdir -p /app/gnosis_wraith/server/static/downloads
+RUN mkdir -p /app/web/static/downloads
 
 # Create the build_extension.sh script in a simpler way to avoid issues
 COPY gnosis_wraith/extension /app/gnosis_wraith/extension
@@ -91,7 +97,7 @@ RUN echo '#!/bin/bash' > /app/build_extension.sh && \
     echo 'set -e  # Exit on error' >> /app/build_extension.sh && \
     echo 'VERSION=${EXTENSION_VERSION:-1.2.1}' >> /app/build_extension.sh && \
     echo 'echo "Building extension version $VERSION..."' >> /app/build_extension.sh && \
-    echo 'DIR="/app/gnosis_wraith/server/static/downloads"' >> /app/build_extension.sh && \
+    echo 'DIR="/app/web/static/downloads"' >> /app/build_extension.sh && \
     echo 'TARGET="$DIR/gnosis-wraith-extension-$VERSION.zip"' >> /app/build_extension.sh && \
     echo 'WEB_TARGET="$DIR/webwraith-extension-$VERSION.zip"' >> /app/build_extension.sh && \
     echo 'mkdir -p "$DIR"' >> /app/build_extension.sh && \
@@ -117,18 +123,20 @@ RUN echo '#!/bin/bash' > /app/build_extension.sh && \
     echo 'fi' >> /app/build_extension.sh && \
     chmod +x /app/build_extension.sh && \
     /app/build_extension.sh && \
-    ls -la /app/gnosis_wraith/server/static/downloads/
+    ls -la /app/web/static/downloads/
+
 
 # Volume for persistent storage
 VOLUME /data
 
 # Define environment variables
 ENV GNOSIS_WRAITH_STORAGE_PATH=/data
-ENV QUART_APP=gnosis_wraith.server.app:app
+ENV QUART_APP=app:app
 ENV QUART_ENV=production
+ENV PYTHONPATH=/app:$PYTHONPATH
 
 # Expose the port
 EXPOSE 5678
 
 # Command to run using Hypercorn
-CMD ["hypercorn", "--bind", "0.0.0.0:5678", "gnosis_wraith.server.app:app"]
+CMD ["hypercorn", "--bind", "0.0.0.0:5678", "app:app"]

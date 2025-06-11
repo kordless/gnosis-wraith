@@ -16,13 +16,16 @@ Gnosis Wraith is a powerful web crawling and content analysis system that serves
 
 - 🌐 **Intelligent Web Crawling** - Process any website with or without JavaScript
 - 📸 **Screenshot Capture** - High-quality visual representation of web pages
-- 👁️ **OCR Processing** - Extract text from images using EasyOCR
+- 🖼️ **OCR Processing** - Extract text from images using EasyOCR
 - 🧠 **AI Content Analysis** - Process content with OpenAI, Claude, Google Gemini or local models
 - 🔄 **DOM Content Extraction** - Direct browser DOM capturing via extension
 - 📊 **Smart Content Filtering** - Automated filtering of relevant information
 - 📝 **Report Generation** - Beautiful Markdown and HTML reports
 - 🧩 **Browser Extension** - Capture and process content directly from your browser
 - ⚡ **Lightning Network** - Optional micropayments for AI analysis
+- 🗂️ **User-Isolated Storage** - Multi-tenant support with hash-based user bucketing
+- ☁️ **Cloud-Ready Storage** - Seamless switching between local filesystem and Google Cloud Storage
+
 
 ## Quick Installation
 
@@ -107,6 +110,31 @@ The web interface offers multiple ways to interact with Gnosis Wraith:
 - **`/api/jobs`** - Manage background processing jobs
 - **`/reports`** - Access generated reports
 
+## Storage System
+
+Gnosis Wraith features an advanced storage abstraction layer that supports both local development and cloud deployment:
+
+### Key Features
+
+- **User Isolation**: Each user's reports are stored in separate buckets using SHA-256 hashing
+- **Cloud Support**: Automatic switching between local filesystem and Google Cloud Storage (GCS)
+- **Multi-Tenancy**: Built-in support for multiple users with complete data isolation
+- **Migration Tools**: Scripts to migrate existing reports to the new structure
+
+### Storage Structure
+
+```
+users/
+├── a1b2c3d4e5f6/     # User hash bucket
+│   ├── reports/      # User's reports
+│   └── screenshots/  # User's screenshots
+└── system/           # System/shared reports
+```
+
+For detailed implementation information, see:
+- [Storage Implementation Guide](./docs/STORAGE_IMPLEMENTATION_GUIDE.md)
+- [Storage Quick Reference](./docs/STORAGE_QUICK_REFERENCE.md)
+
 ## Configuration Options
 
 Gnosis Wraith offers flexible configuration:
@@ -116,6 +144,9 @@ Gnosis Wraith offers flexible configuration:
 - **OCR Extraction** - Extract text from images using OCR
 - **Markdown Extraction** - Control content extraction methods
 - **AI Integration** - Connect with various AI providers
+- **Storage Backend** - Choose between local filesystem or Google Cloud Storage
+- **User Bucketing** - Enable/disable user isolation for multi-tenant deployments
+
 
 ## Architecture
 

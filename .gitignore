@@ -2,91 +2,54 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
+*.pyc
+*.pyo
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environments
-venv/
-env/
-ENV/
-
-# IDE files
-.idea/
-.vscode/
-*.swp
-*.swo
-.project
-.pydevproject
-.settings/
-
-# Logs
-*.log
-logs/
-rebuild_log*
-
-# Database files
-*.db
-*.sqlite3
-
-# Environment variables
-.env
-.env.*
-
-# Docker
-.docker/
-
-# Backup and version directories
-backup_files/
-temp_files_backup/
-doc_backup/
-*_versions/
-.*.py_versions/
-.*.md_versions/
-.*.ps1_versions/
-.*.txt_versions/
-.*.yml_versions/
-
-# Auto-generated files
-.DS_Store
-Thumbs.db
-
-# Binaries and packages
-*.zip
-*.tar.gz
-*.tar.bz2
-*.tar
-*.gz
-*.bz2
-*.xz
-*.lzma
-*.7z
-*.exe
-*.dll
-*.so
-*.dylib
-*.jar
-
-# Cache directories
-.cache/
 .pytest_cache/
 .coverage
-htmlcov/
+.hypothesis/
 
-# Generated reports and artifacts
-reports/*
-!reports/.gitkeep
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Project specific
+local_datastore/
+storage/logs/
+storage/reports/
+storage/screenshots/
+storage/data/
+storage/*.db
+storage/*.sqlite
+*.backup
+*.new
+*.tmp
+archive_cleanup_*/
+archive/
+
+# Cleanup artifacts
+cleanup_*.py
+organize_docs*.py
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/

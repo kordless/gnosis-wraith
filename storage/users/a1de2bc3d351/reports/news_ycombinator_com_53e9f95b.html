@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Ycombinator Com 53E9F95B - Gnosis Wraith Report</title>
+    
+    <!-- Tailwind CSS for consistent styling -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'terminal-green': '#4ade80',
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/images/favicon.ico">
+    
+    <style>
+        /* Custom CSS matching gnosis.html */
+        .break-words {
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        html, body {
+            height: 100vh;
+            background-color: #111827;
+            margin: 0;
+            padding: 0;
+            color: #e2e8f0;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+        }
+        
+        /* Small scanlines similar to about.html */
+        .crt-scanlines::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 0, 0.03) 2px,
+                rgba(0, 255, 0, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* CRT Flicker Animation */
+        .crt-flicker {
+            animation: flicker 0.15s infinite linear;
+        }
+        
+        @keyframes flicker {
+            0% { opacity: 1; }
+            98% { opacity: 1; }
+            99% { opacity: 0.98; }
+            100% { opacity: 1; }
+        }
+        
+        /* Random flicker trigger */
+        .crt-flicker.active {
+            animation: flicker-strong 0.1s ease-in-out;
+        }
+        
+        @keyframes flicker-strong {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+        
+        /* Screenshot lazy loading styles */
+        .screenshot-container {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+            position: relative;
+            cursor: pointer;
+            background-color: #1e2129;
+            border: 1px solid #3a3f4b;
+            min-height: 150px;
+        }
+        
+        .screenshot-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 150px;
+            color: #4ade80;
+            transition: all 0.3s ease;
+        }
+        
+        .screenshot-placeholder i {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .screenshot-placeholder:hover {
+            background-color: rgba(74, 222, 128, 0.1);
+        }
+        
+        .screenshot-image {
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        /* Content styling */
+        .content-block {
+            margin: 8px 0;
+            padding: 8px 12px;
+            border-left: 3px solid #4ade80;
+            background: rgba(74, 222, 128, 0.05);
+            border-radius: 4px;
+        }
+        
+        pre {
+            background-color: #1e293b;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border: 1px solid #374151;
+        }
+        
+        code {
+            background-color: rgba(15, 23, 42, 0.3);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        
+        /* Metadata toggle */
+        .metadata-toggle {
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .metadata-toggle:hover {
+            background-color: rgba(74, 222, 128, 0.1);
+        }
+        
+        /* Theme toggle */
+        .theme-toggle {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .theme-toggle:hover {
+            color: #4ade80;
+        }
+        
+        /* Handle dark/light mode */
+        body.light-mode {
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        body.light-mode .nav-header {
+            background-color: #f1f5f9;
+        }
+        
+        body.light-mode .content-container {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+        }
+        
+        body.light-mode pre {
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+        }
+        
+        body.light-mode code {
+            background-color: #f1f5f9;
+        }
+        
+        body.light-mode .crt-scanlines::before {
+            display: none;
+        }
+        
+        @media print {
+            .nav-header, .metadata-toggle {
+                display: none;
+            }
+            body {
+                background-color: white;
+                color: black;
+            }
+            .content-container {
+                border: none;
+            }
+            .crt-scanlines::before {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <!-- Fixed header with navigation and controls -->
+    <header class="nav-header fixed top-0 w-full bg-gray-800 border-b border-gray-700 z-10 shadow-md">
+        <div class="container mx-auto px-4">
+            <!-- Top row: Logo and action buttons -->
+            <div class="flex justify-between items-center h-12 border-b border-gray-600">
+                <div class="flex items-center space-x-4">
+                    <span class="text-terminal-green font-bold text-lg">GNOSIS WRAITH</span>
+                    <span class="text-sm text-gray-400 hidden md:inline">Report</span>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <button id="theme-toggle" class="theme-toggle p-2 rounded hover:bg-gray-700" title="Toggle Light/Dark Mode">
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    <a href="/crawl?q=https://news.ycombinator.com/" class="p-2 rounded bg-blue-600 hover:bg-blue-700 text-white" title="Crawl Again">
+                        <i class="fas fa-sync-alt"></i>
+                    </a>
+                    <a href="/reports" class="p-2 rounded hover:bg-gray-700" title="Back to Reports">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Bottom row: Conference badge-style metadata -->
+            <div class="flex justify-center items-center py-2">
+                <div class="flex items-center space-x-1 metadata-toggle cursor-pointer" id="metadata-toggle">
+                    <div class="text-xs px-3 py-2 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center space-x-2 shadow-md border border-blue-500">
+                        <i class="fas fa-info-circle text-blue-200"></i>
+                        <span class="text-white font-medium">News Ycombinator Com 53E9F95B</span>
+                    </div>
+                    <div class="text-xs px-3 py-2 bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg hidden md:flex items-center space-x-2 shadow-md border border-purple-500">
+                        <i class="fas fa-calendar-alt text-purple-200"></i>
+                        <span class="text-white font-medium">2025-06-07 08:24:22</span>
+                    </div>
+                    
+                    <div class="text-xs px-3 py-2 bg-gradient-to-br from-green-600 to-green-700 rounded-lg hidden lg:flex items-center space-x-2 shadow-md border border-green-500">
+                        <i class="fas fa-link text-green-200"></i>
+                        <span class="text-white font-medium truncate max-w-xs">https://news.ycombinator.com/</span>
+                    </div>
+                    
+                    
+                    <div class="text-xs px-3 py-2 bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-lg hidden lg:flex items-center space-x-2 shadow-md border border-yellow-500">
+                        <i class="fab fa-js-square text-yellow-200"></i>
+                        <span class="text-white font-medium">JS OFF</span>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Full metadata panel (hidden by default) -->
+    <div id="metadata-panel" class="hidden fixed top-20 left-0 right-0 bg-gray-800 border-b border-gray-700 shadow-md z-10 transition-all duration-300 ease-in-out">
+        <div class="container mx-auto p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <div class="flex items-start">
+                        <span class="text-gray-400 w-24 flex-shrink-0">Title:</span>
+                        <span class="text-white">News Ycombinator Com 53E9F95B</span>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="text-gray-400 w-24 flex-shrink-0">Generated:</span>
+                        <span class="text-white">2025-06-07 08:24:22</span>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <span class="text-gray-400 w-24 flex-shrink-0">URL:</span>
+                        <span class="text-white break-all">https://news.ycombinator.com/</span>
+                    </div>
+                    
+                </div>
+                <div class="space-y-2">
+                    
+                    <div class="flex items-start">
+                        <span class="text-gray-400 w-24 flex-shrink-0">JavaScript:</span>
+                        <span class="text-white">Disabled</span>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <span class="text-gray-400 w-24 flex-shrink-0">Generated By:</span>
+                        <span class="text-white">Gnosis Wraith v3.2.7</span>
+                    </div>
+                    <div class="flex items-start">
+                        <span class="text-gray-400 w-24 flex-shrink-0">File:</span>
+                        <span class="text-white break-all">news_ycombinator_com_53e9f95b.md</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main content -->
+    <main class="container mx-auto pt-24 pb-8 px-4">
+        <div class="content-container bg-gray-800 border border-gray-700 rounded-md overflow-hidden relative crt-scanlines crt-flicker">
+            <div class="p-6 prose prose-invert max-w-none">
+                <h1>None</h1>
+<p><em>Generated on 2025-06-07 08:24:22</em></p>
+<h2>1. Hacker News</h2>
+<p><strong>URL</strong>: https://news.ycombinator.com/</p>
+<p><strong>JavaScript</strong>: Disabled</p>
+<p><strong>Screenshot</strong>:</p>
+<div class="screenshot-container" data-alt="news_ycombinator_com_cbc58071.png" data-src="/screenshots/news_ycombinator_com_cbc58071.png">
+<div class="screenshot-placeholder">
+<i class="fas fa-image"></i>
+<span>Click to load screenshot</span>
+</div>
+</div>
+
+<p><strong>Content (Enhanced Markdown)</strong>:</p>
+<p><strong><a href="news">Hacker News</a></strong>
+<a href="newest">new</a> | <a href="front">past</a> | <a href="newcomments">comments</a> | <a href="ask">ask</a> | <a href="show">show</a> | <a href="jobs">jobs</a> | <a href="submit">submit</a> </p>
+<p><a href="https://www.michaelhorowitz.com/Windows10.spying.onsettings.php">Windows 10 spies on your use of System Settings (2021)</a>
+43 points by <a href="user?id=userbinator">userbinator</a>   | <a href="hide?id=44208050&amp;goto=news">hide</a> | <a href="item?id=44208050">19 comments</a> </p>
+<p><a href="https://alloc.dev/2025/06/07/zig_optimization">Low-Level Optimization with Zig</a>
+20 points by <a href="user?id=Retro_Dev">Retro_Dev</a>   | <a href="hide?id=44208060&amp;goto=news">hide</a> | <a href="item?id=44208060">discuss</a> </p>
+<p><a href="https://joost.blog/path-forward-for-wordpress/">The FAIR Package Manager: Decentralized WordPress infrastructure</a>
+72 points by <a href="user?id=twapi">twapi</a>   | <a href="hide?id=44207503&amp;goto=news">hide</a> | <a href="item?id=44207503">12 comments</a> </p>
+<p><a href="https://japannews.yomiuri.co.jp/science-nature/technology/20250605-259501/">Researchers develop ‘transparent paper’ as alternative to plastics</a>
+252 points by <a href="user?id=anigbrowl">anigbrowl</a>   | <a href="hide?id=44205282&amp;goto=news">hide</a> | <a href="item?id=44205282">118 comments</a> </p>
+<p><a href="https://qz.com/tech-layoffs-tax-code-trump-section-174-microsoft-meta-1851783502">The time bomb in the tax code that's fueling mass tech layoffs</a>
+796 points by <a href="user?id=booleanbetrayal">booleanbetrayal</a>   | <a href="hide?id=44180533&amp;goto=news">hide</a> | <a href="item?id=44180533">532 comments</a> </p>
+<p><a href="https://flightaware.engineering/falsehoods-programmers-believe-about-aviation/">Falsehoods programmers believe about aviation</a> (<a href="from?site=flightaware.engineering">flightaware.engineering</a>)
+209 points by <a href="user?id=cratermoon">cratermoon</a>   | <a href="hide?id=44205590&amp;goto=news">hide</a> | <a href="item?id=44205590">76 comments</a> </p>
+<p><a href="https://spectrum.ieee.org/getting-past-procastination">Getting Past Procrastination</a>
+68 points by <a href="user?id=WaitWaitWha">WaitWaitWha</a>   | <a href="hide?id=44207095&amp;goto=news">hide</a> | <a href="item?id=44207095">26 comments</a> </p>
+<p><a href="https://about.gitlab.com/blog/2025/06/05/how-we-decreased-gitlab-repo-backup-times-from-48-hours-to-41-minutes/">How we decreased GitLab repo backup times from 48 hours to 41 minutes</a>
+403 points by <a href="user?id=immortaljoe">immortaljoe</a>   | <a href="hide?id=44201975&amp;goto=news">hide</a> | <a href="item?id=44201975">168 comments</a> </p>
+<p><a href="https://ziina.notion.site/Senior-Backend-Engineer-8b6642ec52ac45869656c135e07c6e86">Ziina (YC W21) the Series A fintech is hiring product engineers</a>
+ | <a href="hide?id=44207967&amp;goto=news">hide</a> </p>
+<ol>
+<li>
+<p><a href="https://www.daemonology.net/blog/2025-06-06-A-year-of-funded-FreeBSD.html">A year of funded FreeBSD development</a>
+247 points by <a href="user?id=cperciva">cperciva</a>   | <a href="hide?id=44204224&amp;goto=news">hide</a> | <a href="item?id=44204224">76 comments</a> </p>
+</li>
+<li>
+<p><a href="https://practical.engineering/blog/2025/6/3/why-are-smokestacks-so-tall">Why are smokestacks so tall?</a> (<a href="from?site=practical.engineering">practical.engineering</a>)
+54 points by <a href="user?id=azeemba">azeemba</a>   | <a href="hide?id=44206553&amp;goto=news">hide</a> | <a href="item?id=44206553">7 comments</a> </p>
+</li>
+<li>
+<p><a href="https://blog.pkh.me/p/42-sharing-everything-i-could-understand-about-gradient-noise.html">Sharing everything I could understand about gradient noise</a>
+51 points by <a href="user?id=ux">ux</a>   | <a href="hide?id=44201527&amp;goto=news">hide</a> | <a href="item?id=44201527">1 comment</a> </p>
+</li>
+<li>
+<p><a href="https://veitner.bearblog.dev/highly-efficient-matrix-transpose-in-mojo/">Highly efficient matrix transpose in Mojo</a> (<a href="from?site=veitner.bearblog.dev">veitner.bearblog.dev</a>)
+100 points by <a href="user?id=timmyd">timmyd</a>   | <a href="hide?id=44204155&amp;goto=news">hide</a> | <a href="item?id=44204155">29 comments</a> </p>
+</li>
+<li>
+<p><a href="https://ml-site.cdn-apple.com/papers/the-illusion-of-thinking.pdf">The Illusion of Thinking: Understanding the Limitations of Reasoning LLMs [pdf]</a>
+168 points by <a href="user?id=amrrs">amrrs</a>   | <a href="hide?id=44203562&amp;goto=news">hide</a> | <a href="item?id=44203562">79 comments</a> </p>
+</li>
+<li>
+<p><a href="https://www.atlasobscura.com/articles/medieval-african-gold">Medieval Africans had a unique process for purifying gold with glass (2019)</a>
+88 points by <a href="user?id=mooreds">mooreds</a>   | <a href="hide?id=44205599&amp;goto=news">hide</a> | <a href="item?id=44205599">35 comments</a> </p>
+</li>
+<li>
+<p><a href="https://www.maxemitchell.com/writings/i-read-all-of-cloudflares-claude-generated-commits/">I Read All of Cloudflare's Claude-Generated Commits</a>
+105 points by <a href="user?id=maxemitchell">maxemitchell</a>   | <a href="hide?id=44205697&amp;goto=news">hide</a> | <a href="item?id=44205697">74 comments</a> </p>
+</li>
+<li>
+<p><a href="https://blocksandfiles.com/2025/06/06/sandia-turns-on-brain-like-storage-free-supercomputer/">Sandia turns on brain-like storage-free supercomputer</a>
+173 points by <a href="user?id=rbanffy">rbanffy</a>   | <a href="hide?id=44201812&amp;goto=news">hide</a> | <a href="item?id=44201812">60 comments</a> </p>
+</li>
+<li>
+<p><a href="https://storytotell.org/smalltalk-haskell-and-lisp">Smalltalk, Haskell and Lisp</a>
+75 points by <a href="user?id=todsacerdoti">todsacerdoti</a>   | <a href="hide?id=44204878&amp;goto=news">hide</a> | <a href="item?id=44204878">24 comments</a> </p>
+</li>
+<li>
+<p><a href="https://sebastiano.tronto.net/blog/2025-06-06-webdev/">A masochist's guide to web development</a>
+206 points by <a href="user?id=sebtron">sebtron</a>   | <a href="hide?id=44200895&amp;goto=news">hide</a> | <a href="item?id=44200895">26 comments</a> </p>
+</li>
+<li>
+<p><a href="https://sutro.sh/blog/workhorse-llms-why-open-source-models-win-for-batch-tasks">Workhorse LLMs: Why Open Source Models Dominate Closed Source for Batch Tasks</a>
+61 points by <a href="user?id=cmogni1">cmogni1</a>   | <a href="hide?id=44203732&amp;goto=news">hide</a> | <a href="item?id=44203732">15 comments</a> </p>
+</li>
+<li>
+<p><a href="https://theedgemalaysia.com/node/758199">NASA delays next flight of Boeing's alternative to SpaceX Dragon</a>
+18 points by <a href="user?id=bookmtn">bookmtn</a>   | <a href="hide?id=44207144&amp;goto=news">hide</a> | <a href="item?id=44207144">10 comments</a> </p>
+</li>
+<li>
+<p><a href="https://odyc.dev">Odyc.js – A tiny JavaScript library for narrative games</a>
+204 points by <a href="user?id=achtaitaipai">achtaitaipai</a>   | <a href="hide?id=44200866&amp;goto=news">hide</a> | <a href="item?id=44200866">49 comments</a> </p>
+</li>
+<li>
+<p><a href="https://www.godmodeai.cloud/ai-sprite-generator">Show HN: AI game animation sprite generator</a>
+71 points by <a href="user?id=lyogavin">lyogavin</a>   | <a href="hide?id=44204181&amp;goto=news">hide</a> | <a href="item?id=44204181">55 comments</a> </p>
+</li>
+<li>
+<p><a href="https://mattrighetti.com/2025/06/04/too-many-files-open">Too Many Open Files</a>
+118 points by <a href="user?id=furkansahin">furkansahin</a>   | <a href="hide?id=44201762&amp;goto=news">hide</a> | <a href="item?id=44201762">89 comments</a> </p>
+</li>
+<li>
+<p><a href="https://www.heise.de/en/news/Wendelstein-7-X-sets-new-fusion-record-10422955.html">Wendelstein 7-X sets new fusion record</a>
+145 points by <a href="user?id=doener">doener</a>   | <a href="hide?id=44168184&amp;goto=news">hide</a> | <a href="item?id=44168184">22 comments</a> </p>
+</li>
+<li>
+<p><a href="https://esham.io/2025/05/shell-history">Curate your shell history</a>
+114 points by <a href="user?id=todsacerdoti">todsacerdoti</a>   | <a href="hide?id=44200870&amp;goto=news">hide</a> | <a href="item?id=44200870">69 comments</a> </p>
+</li>
+<li>
+<p><a href="https://gametorch.app/collections/7">Good pixel art can be one-shotted by AI now</a>
+23 points by <a href="user?id=gametorch">gametorch</a>   | <a href="hide?id=44207304&amp;goto=news">hide</a> | <a href="item?id=44207304">33 comments</a> </p>
+</li>
+<li>
+<p><a href="https://www.cursor.com/en/blog/series-c">Series C and scale</a>
+72 points by <a href="user?id=fidotron">fidotron</a>   | <a href="hide?id=44203003&amp;goto=news">hide</a> | <a href="item?id=44203003">53 comments</a> </p>
+</li>
+<li>
+<p><a href="https://a16z.com/revenue-benchmarks-ai-apps/">What “working” means in the era of AI apps</a>
+66 points by <a href="user?id=Brysonbw">Brysonbw</a>   | <a href="hide?id=44205718&amp;goto=news">hide</a> | <a href="item?id=44205718">42 comments</a> </p>
+</li>
+<li>
+<p><a href="https://www.mozillafoundation.org/en/campaigns/meta-shut-down-your-invasive-ai-discover-feed-now/">Meta: Shut down your invasive AI Discover feed</a> (<a href="from?site=mozillafoundation.org">mozillafoundation.org</a>)
+470 points by <a href="user?id=speckx">speckx</a>   | <a href="hide?id=44201872&amp;goto=news">hide</a> | <a href="item?id=44201872">202 comments</a> </p>
+</li>
+</ol>
+<p><a href="newsguidelines.html">Guidelines</a> | <a href="newsfaq.html">FAQ</a> | <a href="lists">Lists</a> | <a href="https://github.com/HackerNews/API">API</a> | <a href="security.html">Security</a> | <a href="https://www.ycombinator.com/legal/">Legal</a> | <a href="https://www.ycombinator.com/apply/">Apply to YC</a> | <a href="mailto:hn@ycombinator.com">Contact</a></p>
+<hr />
+<h2>Metadata</h2>
+<ul>
+<li><strong>Total URLs Processed</strong>: 1</li>
+<li><strong>Generated By</strong>: Gnosis Wraith with Enhanced Markdown Conversion</li>
+</ul>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Screenshot lazy loading
+            document.querySelectorAll('.screenshot-container').forEach(container => {
+                container.addEventListener('click', function() {
+                    const src = this.getAttribute('data-src');
+                    const alt = this.getAttribute('data-alt');
+                    
+                    if (!this.querySelector('img')) {
+                        // Remove placeholder
+                        this.innerHTML = '';
+                        
+                        // Create loading indicator
+                        const loading = document.createElement('div');
+                        loading.className = 'screenshot-placeholder';
+                        loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Loading screenshot...</span>';
+                        this.appendChild(loading);
+                        
+                        // Create image
+                        const img = new Image();
+                        img.className = 'screenshot-image';
+                        img.alt = alt;
+                        img.onload = function() {
+                            // Remove loading indicator when image is loaded
+                            container.innerHTML = '';
+                            container.appendChild(img);
+                        };
+                        img.onerror = function() {
+                            // Show error message if image fails to load
+                            loading.innerHTML = '<i class="fas fa-exclamation-triangle text-red-500"></i><span>Failed to load screenshot</span>';
+                        };
+                        img.src = src;
+                    }
+                });
+            });
+            
+            // Metadata panel toggle
+            const metadataToggle = document.getElementById('metadata-toggle');
+            const metadataPanel = document.getElementById('metadata-panel');
+            
+            if (metadataToggle && metadataPanel) {
+                metadataToggle.addEventListener('click', function() {
+                    if (metadataPanel.classList.contains('hidden')) {
+                        metadataPanel.classList.remove('hidden');
+                    } else {
+                        metadataPanel.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Theme toggle
+            const themeToggle = document.getElementById('theme-toggle');
+            
+            if (themeToggle) {
+                // Get saved theme preference
+                const savedTheme = localStorage.getItem('gnosis-wraith-report-theme') || 'dark';
+                
+                // Apply saved theme
+                if (savedTheme === 'light') {
+                    document.body.classList.add('light-mode');
+                    themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                }
+                
+                themeToggle.addEventListener('click', function() {
+                    // Toggle theme
+                    if (document.body.classList.contains('light-mode')) {
+                        document.body.classList.remove('light-mode');
+                        themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                        localStorage.setItem('gnosis-wraith-report-theme', 'dark');
+                    } else {
+                        document.body.classList.add('light-mode');
+                        themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                        localStorage.setItem('gnosis-wraith-report-theme', 'light');
+                    }
+                });
+            }
+            
+            // CRT flicker effect
+            const crtElement = document.querySelector('.crt-flicker');
+            if (crtElement) {
+                setInterval(() => {
+                    if (Math.random() < 0.1) { // 10% chance every interval
+                        crtElement.classList.add('active');
+                        setTimeout(() => {
+                            crtElement.classList.remove('active');
+                        }, 100);
+                    }
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>

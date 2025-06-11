@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - {{ config.BRAND or 'Gnosis Wraith' }}</title>
+    <link rel="icon" type="image/x-icon" href="{{ brand.favicon or '/static/favicon.ico' }}">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+        }
+        .ghost-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        .glow {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="max-w-md w-full space-y-8 p-8">
+        <!-- Ghost Logo/Icon -->
+        <div class="text-center">
+            <div class="ghost-float text-6xl mb-4">👻</div>
+            <h2 class="text-3xl font-bold text-white">
+                {{ config.BRAND or 'Gnosis Wraith' }}
+            </h2>
+            <p class="mt-2 text-gray-400">
+                Sign in to continue
+            </p>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                <div class="bg-blue-900 border border-blue-700 text-blue-200 px-4 py-3 rounded relative" role="alert">
+                    <span class="block sm:inline">{{ message }}</span>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Login Form -->
+        <form class="mt-8 space-y-6" method="POST" action="/auth/login{% if next %}?next={{ next }}{% endif %}">
+            <input type="hidden" name="transaction_id" value="{{ transaction_id }}">
+            <input type="hidden" name="op" value="{{ op or '0' }}">
+            {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-300">
+                    Email address
+                </label>
+                <div class="mt-1">
+                    <input 
+                        id="email" 
+                        name="email" 
+                        type="email" 
+                        autocomplete="email" 
+                        required 
+                        class="appearance-none relative block w-full px-3 py-2 border border-gray-600 placeholder-gray-500 text-white bg-gray-800 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                        placeholder="you@example.com"
+                    >
+                </div>
+            </div>
+
+            <!-- Hidden password field to catch bots -->
+            <div style="position: absolute; left: -9999px;">
+                <input type="password" name="password" tabindex="-1" autocomplete="off">
+            </div>
+
+            <div>
+                <button 
+                    type="submit" 
+                    class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 glow transition-all duration-200"
+                >
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <svg class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                    Send Login Link
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div class="text-sm">
+                    <a href="/auth/token" class="font-medium text-indigo-400 hover:text-indigo-300">
+                        Have a login token?
+                    </a>
+                </div>
+                {% if config.DEV == "True" %}
+                <div class="text-sm text-gray-500">
+                    Dev Mode Active
+                </div>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Info Box -->
+        <div class="mt-6 bg-gray-800 bg-opacity-50 rounded-lg p-4 text-sm text-gray-400">
+            <p class="mb-2">
+                <strong class="text-white">No password required!</strong>
+            </p>
+            <p>
+                We'll send you a secure login link via email. 
+                {% if config.BRAND_SERVICE %}
+                    Check your inbox and click the link to access {{ config.BRAND_SERVICE }}.
+                {% else %}
+                    Check your inbox and click the link to sign in.
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Footer Links -->
+        <div class="text-center text-sm text-gray-500 space-x-4">
+            {% if brand.github_url %}
+            <a href="{{ brand.github_url }}" target="_blank" class="hover:text-gray-300">
+                GitHub
+            </a>
+            {% endif %}
+            {% if brand.discord_url %}
+            <a href="{{ brand.discord_url }}" target="_blank" class="hover:text-gray-300">
+                Discord
+            </a>
+            {% endif %}
+            {% if brand.service_url %}
+            <a href="{{ brand.service_url }}" target="_blank" class="hover:text-gray-300">
+                About
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,1 @@
+"""LLM prompts for different use cases"""

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Phone - {{ config.BRAND or 'Gnosis Wraith' }}</title>
+    <link rel="icon" type="image/x-icon" href="{{ config.BRAND_FAVICON or '/static/favicon.ico' }}">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+        }
+        .ghost-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="max-w-md w-full space-y-8 p-8">
+        <div class="text-center">
+            <div class="ghost-float text-6xl mb-4">📱</div>
+            <h2 class="text-3xl font-bold text-white">Verify Your Phone</h2>
+            <p class="mt-2 text-gray-300">Enter your phone number to continue</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('auth.verify_phone_post', email=email, next=next, op=op) }}" class="mt-8 space-y-6">
+            <div>
+                <label for="phone" class="block text-sm font-medium text-gray-300">Phone Number</label>
+                <input id="phone" name="phone" type="tel" required 
+                       placeholder="+1234567890"
+                       class="mt-1 block w-full px-3 py-2 bg-gray-700 text-white border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            
+            <div>
+                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Send Verification Code
+                </button>
+            </div>
+            
+            <input type="hidden" name="next" value="{{ next }}">
+        </form>
+        
+        <div class="text-center">
+            <a href="{{ url_for('auth.login') }}" class="text-indigo-400 hover:text-indigo-300">Back to Login</a>
+        </div>
+    </div>
+</body>
+</html>

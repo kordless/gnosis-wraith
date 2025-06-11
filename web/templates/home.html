@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gnosis - Your AI's Extended Memory</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/images/favicon_new.svg">
+    
+    <style>
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .terminal-text {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .privacy-box {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #4ade80;
+            box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .dark-gradient {
+                background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
+            }
+        }
+        
+        @keyframes pulse-ghost {
+            0%, 100% {
+                transform: translateY(0) scale(1);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translateY(5px) scale(1.1);
+                opacity: 1;
+            }
+        }
+        
+        .pulse-ghost {
+            animation: pulse-ghost 2s ease-in-out infinite;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <!-- Hero Section -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-4 py-16 dark-gradient relative">
+        <div class="max-w-4xl w-full mx-auto text-center">
+            <div class="text-5xl mb-2 float-animation">🚀</div>
+            <h1 class="text-6xl md:text-8xl font-bold mb-4 gradient-text">
+                GNOSIS
+            </h1>
+            <p class="text-2xl md:text-3xl mb-8 text-gray-300">
+                Your AI's Extended Memory
+            </p>
+            
+            <div class="mb-12">
+                <p class="text-xl mb-2 text-gray-400">Stop losing context. Stop retraining threads.</p>
+                <p class="text-xl text-gray-400">Index documents, URLs, and images once - discuss forever.</p>
+            </div>
+            
+            <!-- CTA Buttons -->
+            <div class="flex flex-col md:flex-row gap-4 justify-center mb-8">
+                <button onclick="showMCPConfig()" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-lg font-semibold transition-colors">
+                    <i class="fas fa-code mr-2"></i>Get MCP Config
+                </button>
+                <a href="/auth/login" class="px-8 py-4 bg-green-600 hover:bg-green-700 rounded-lg text-lg font-semibold transition-colors inline-block">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Sign In (30s)
+                </a>
+                <button onclick="showLocalSetup()" class="px-8 py-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-lg font-semibold transition-colors">
+                    <i class="fas fa-server mr-2"></i>Run Locally
+                </button>
+            </div>
+            
+            <!-- Supported Tools -->
+            <div class="text-gray-400 text-sm">
+                <p class="mb-2">Works with:</p>
+                <div class="flex flex-wrap justify-center gap-4 text-gray-300">
+                    <span>Claude Desktop</span>
+                    <span>•</span>
+                    <span>Cursor</span>
+                    <span>•</span>
+                    <span>Windsurf</span>
+                    <span>•</span>
+                    <span>Cline</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pulsing Ghost Scroll Indicator -->
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2" id="ghostIndicator">
+            <div class="text-5xl pulse-ghost cursor-pointer" onclick="document.getElementById('ghostIndicator').style.display='none'; window.scrollTo({top: window.innerHeight, behavior: 'smooth'})">
+                👻
+            </div>
+        </div>
+    </section>
+    
+    <!-- Privacy Pledge Section -->
+    <section class="py-16 px-4">
+        <div class="max-w-4xl mx-auto">
+            <div class="privacy-box rounded-lg p-8 md:p-12">
+                <h2 class="text-3xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-lock mr-3 text-green-400"></i>
+                    YOUR DATA STAYS YOURS
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 text-red-400">We will NEVER:</h3>
+                        <ul class="space-y-2 text-gray-300">
+                            <li><i class="fas fa-times text-red-500 mr-2"></i>Train models on your data</li>
+                            <li><i class="fas fa-times text-red-500 mr-2"></i>Share your documents with others</li>
+                            <li><i class="fas fa-times text-red-500 mr-2"></i>Use your content for our growth</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-xl font-semibold mb-4 text-green-400">Proof? Run our exact code locally:</h3>
+                        <div class="bg-black rounded p-4 terminal-text text-sm mb-4">
+                            <code class="text-green-400">$ docker run -d gnosis/memory</code>
+                        </div>
+                        <p class="text-gray-300">Same code. Your infrastructure.</p>
+                        <p class="text-gray-300">Zero trust required.</p>
+                    </div>
+                </div>
+                
+                <p class="mt-6 text-sm text-gray-500 text-center">
+                    * Corporate use requires license - <a href="#" class="text-blue-400 hover:underline">see terms</a>
+                </p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Problem/Solution Section -->
+    <section class="py-16 px-4 bg-gray-800">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">The Real Problem We Solve</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Without Gnosis -->
+                <div class="bg-gray-900 rounded-lg p-8">
+                    <h3 class="text-xl font-semibold mb-6 text-red-400">WITHOUT GNOSIS</h3>
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-red-500 pl-4">
+                            <p class="text-gray-300">"Read this 50-page PDF"</p>
+                            <p class="text-sm text-gray-500 italic">*AI forgets after 5 messages*</p>
+                        </div>
+                        <div class="border-l-4 border-red-500 pl-4">
+                            <p class="text-gray-300">"Check these 10 URLs"</p>
+                            <p class="text-sm text-gray-500 italic">*Context window explodes*</p>
+                        </div>
+                        <div class="border-l-4 border-red-500 pl-4">
+                            <p class="text-gray-300">"Remember this for later"</p>
+                            <p class="text-sm text-gray-500 italic">*Start new thread, lose it all*</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- With Gnosis -->
+                <div class="bg-gray-900 rounded-lg p-8">
+                    <h3 class="text-xl font-semibold mb-6 text-green-400">WITH GNOSIS</h3>
+                    <div class="space-y-4">
+                        <div class="border-l-4 border-green-500 pl-4">
+                            <p class="text-gray-300">"What did the PDF say about X?"</p>
+                            <p class="text-sm text-gray-500 italic">*AI remembers everything*</p>
+                        </div>
+                        <div class="border-l-4 border-green-500 pl-4">
+                            <p class="text-gray-300">"Compare all those sites"</p>
+                            <p class="text-sm text-gray-500 italic">*Instant perfect recall*</p>
+                        </div>
+                        <div class="border-l-4 border-green-500 pl-4">
+                            <p class="text-gray-300">"What did we discuss last month?"</p>
+                            <p class="text-sm text-gray-500 italic">*Seamless continuation*</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- MCP Quick Setup -->
+    <section class="py-16 px-4">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-8">MCP Quick Setup</h2>
+            
+            <div class="bg-gray-800 rounded-lg p-6 mb-8">
+                <pre class="text-sm overflow-x-auto terminal-text"><code>{
+  "mcpServers": {
+    "gnosis": {
+      "command": "npx",
+      "args": ["@gnosis/memory-mcp"],
+      "env": {
+        "GNOSIS_API_KEY": "<span class="text-yellow-400">Get free key in 30 seconds →</span>"
+      }
+    }
+  }
+}</code></pre>
+                <button onclick="copyMCPConfig()" class="mt-4 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 rounded text-sm">
+                    <i class="fas fa-copy mr-2"></i>Copy to Clipboard
+                </button>
+            </div>
+            
+            <div class="bg-gray-900 rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-4">What You Can Do:</h3>
+                <ul class="space-y-2 text-gray-300">
+                    <li><i class="fas fa-check text-green-400 mr-2"></i>"Save this documentation for our project"</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i>"Index my competitor's entire website"</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i>"Remember these meeting notes"</li>
+                    <li><i class="fas fa-check text-green-400 mr-2"></i>"Store these architecture diagrams"</li>
+                </ul>
+                <p class="mt-4 text-sm text-gray-400">→ Then discuss them in ANY future conversation</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Deployment Options -->
+    <section class="py-16 px-4 bg-gray-800">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Choose Your Deployment</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Cloud Option -->
+                <div class="bg-gray-900 rounded-lg p-8">
+                    <h3 class="text-2xl font-bold mb-6 text-blue-400">CLOUD (EASY)</h3>
+                    <ul class="space-y-3 mb-8">
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Zero setup</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Always updated</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>30-second start</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>We handle scale</li>
+                    </ul>
+                    <a href="/auth/login" class="block text-center px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold">
+                        Start Cloud Free
+                    </a>
+                </div>
+                
+                <!-- Self-Hosted Option -->
+                <div class="bg-gray-900 rounded-lg p-8">
+                    <h3 class="text-2xl font-bold mb-6 text-green-400">SELF-HOSTED (PRIVATE)</h3>
+                    <ul class="space-y-3 mb-8">
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Complete data control</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Air-gapped option</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Your infrastructure</li>
+                        <li><i class="fas fa-check text-green-400 mr-2"></i>Audit everything</li>
+                    </ul>
+                    <button onclick="showDockerDocs()" class="block w-full text-center px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold">
+                        View Docker Docs
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center bg-gray-900 rounded-lg p-6">
+                <h4 class="text-lg font-semibold mb-2">LICENSE NOTE</h4>
+                <p class="text-gray-300">Personal use: Free forever (both options)</p>
+                <p class="text-gray-300">Corporate use: License required</p>
+                <a href="#" class="text-blue-400 hover:underline text-sm">[View License Terms]</a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Pricing Tiers -->
+    <section class="py-16 px-4">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Three Tiers of Intelligence</h2>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Basic -->
+                <div class="bg-gray-800 rounded-lg p-8 border border-gray-700">
+                    <h3 class="text-2xl font-bold mb-2">BASIC MEMORY</h3>
+                    <p class="text-3xl font-bold mb-6 text-green-400">Free</p>
+                    <ul class="space-y-3 mb-8 text-gray-300">
+                        <li>100 MB storage</li>
+                        <li>Basic indexing</li>
+                        <li>Text & URLs</li>
+                        <li>Single workspace</li>
+                    </ul>
+                    <a href="/auth/login" class="block text-center px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg">
+                        Start Free
+                    </a>
+                </div>
+                
+                <!-- Extended -->
+                <div class="bg-gray-800 rounded-lg p-8 border-2 border-indigo-500 relative">
+                    <span class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-indigo-500 text-white px-4 py-1 rounded-full text-sm">
+                        POPULAR
+                    </span>
+                    <h3 class="text-2xl font-bold mb-2">EXTENDED MEMORY</h3>
+                    <p class="text-3xl font-bold mb-6 text-indigo-400">$29<span class="text-lg">/month</span></p>
+                    <ul class="space-y-3 mb-8 text-gray-300">
+                        <li>10 GB storage</li>
+                        <li>Smart indexing</li>
+                        <li>+ Images & PDFs</li>
+                        <li>5 workspaces</li>
+                        <li>Version history</li>
+                        <li>API access</li>
+                    </ul>
+                    <a href="/auth/login" class="block text-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-semibold">
+                        Start Free Trial
+                    </a>
+                </div>
+                
+                <!-- Perfect -->
+                <div class="bg-gray-800 rounded-lg p-8 border border-gray-700">
+                    <h3 class="text-2xl font-bold mb-2">PERFECT MEMORY</h3>
+                    <p class="text-3xl font-bold mb-6 text-purple-400">$99<span class="text-lg">/month</span></p>
+                    <ul class="space-y-3 mb-8 text-gray-300">
+                        <li>Unlimited storage</li>
+                        <li>Semantic indexing</li>
+                        <li>+ Any file type</li>
+                        <li>Unlimited workspaces</li>
+                        <li>Full audit trail</li>
+                        <li>Priority processing</li>
+                    </ul>
+                    <button onclick="contactSales()" class="block w-full text-center px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg">
+                        Contact Sales
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- How It Works -->
+    <section class="py-16 px-4 bg-gray-800">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">How It Works</h2>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Step 1 -->
+                <div class="text-center">
+                    <div class="bg-gray-900 rounded-lg p-8 mb-4">
+                        <i class="fas fa-upload text-4xl text-blue-400 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">Step 1: Save Anything</h3>
+                        <p class="text-gray-400">"Index this PDF"</p>
+                        <p class="text-gray-400">"Save this URL"</p>
+                        <p class="text-gray-400">"Store image"</p>
+                    </div>
+                    <p class="text-sm text-gray-500">One command</p>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="text-center">
+                    <div class="bg-gray-900 rounded-lg p-8 mb-4">
+                        <div class="text-4xl mb-4">
+                            <div class="inline-block">
+                                <div class="h-2 bg-green-400 rounded-full animate-pulse" style="width: 150px;">
+                                    <div class="h-full bg-green-500 rounded-full" style="width: 90%;"></div>
+                                </div>
+                                <p class="text-sm mt-2 text-gray-400">90%</p>
+                            </div>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Step 2: It's Indexed</h3>
+                        <p class="text-gray-400">Creating smart</p>
+                        <p class="text-gray-400">memory index...</p>
+                    </div>
+                    <p class="text-sm text-gray-500">Intelligent parsing</p>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="text-center">
+                    <div class="bg-gray-900 rounded-lg p-8 mb-4">
+                        <i class="fas fa-comments text-4xl text-green-400 mb-4"></i>
+                        <h3 class="text-xl font-semibold mb-2">Step 3: Discuss Anytime</h3>
+                        <p class="text-gray-400">"What did the PDF</p>
+                        <p class="text-gray-400">say about</p>
+                        <p class="text-gray-400">deployment?"</p>
+                    </div>
+                    <p class="text-sm text-gray-500">Perfect recall</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Trust Through Transparency -->
+    <section class="py-16 px-4">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-gray-900 rounded-lg p-8">
+                <h2 class="text-2xl font-bold mb-6">WHY DOCKER MATTERS</h2>
+                <div class="border-l-4 border-green-500 pl-6 space-y-4 text-gray-300">
+                    <p>We're not asking you to trust us with your data.</p>
+                    <p>We're giving you the code to run it yourself.</p>
+                    
+                    <div class="bg-black rounded p-4 terminal-text text-sm my-6">
+                        <code class="text-green-400">$ docker run -d -p 5678:5678 gnosis/memory</code><br>
+                        <code class="text-gray-500"># Your data never leaves your servers</code>
+                    </div>
+                    
+                    <p>This isn't a "lite" version. It's the EXACT same code we run in production. Because your privacy matters more than our convenience.</p>
+                    
+                    <div class="mt-6 pt-6 border-t border-gray-700">
+                        <p>Corporate? You'll need a license. Fair is fair.</p>
+                        <p>Personal use? Free forever. That's a promise.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Use Cases -->
+    <section class="py-16 px-4 bg-gray-800">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Use Cases That Resonate</h2>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Developers -->
+                <div class="bg-gray-900 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-400">For Developers</h3>
+                    <blockquote class="text-gray-300 italic">
+                        "I indexed our entire codebase docs. Now Claude can answer questions about our internal APIs without me copy-pasting."
+                    </blockquote>
+                    <p class="text-sm text-gray-500 mt-4">- Tom, Senior Dev</p>
+                </div>
+                
+                <!-- Researchers -->
+                <div class="bg-gray-900 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 text-purple-400">For Researchers</h3>
+                    <blockquote class="text-gray-300 italic">
+                        "50 research papers indexed. My AI assistant knows more about my field than I do now."
+                    </blockquote>
+                    <p class="text-sm text-gray-500 mt-4">- Ana, PhD Candidate</p>
+                </div>
+                
+                <!-- Business Users -->
+                <div class="bg-gray-900 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 text-green-400">For Business Users</h3>
+                    <blockquote class="text-gray-300 italic">
+                        "All our SOPs and policies indexed. New employees get AI assistance that actually knows our procedures."
+                    </blockquote>
+                    <p class="text-sm text-gray-500 mt-4">- Jay, Operations Manager</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Simple Sign In -->
+    <section class="py-16 px-4">
+        <div class="max-w-md mx-auto">
+            <div class="bg-gray-800 rounded-lg p-8 text-center">
+                <h2 class="text-2xl font-bold mb-6">Create Your Memory Bank</h2>
+                <p class="text-gray-400 mb-8">No password. No complexity.<br>Check email → Click link → Start indexing.</p>
+                <a href="/auth/login" class="block px-8 py-4 bg-green-600 hover:bg-green-700 rounded-lg text-lg font-semibold">
+                    <i class="fas fa-magic mr-2"></i>Send Magic Link
+                </a>
+                <p class="text-sm text-gray-500 mt-4">
+                    <i class="fas fa-shield-alt mr-1"></i>Enable Gnosis Secure SMS™ (recommended)
+                </p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- What Makes Gnosis Different -->
+    <section class="py-16 px-4 bg-gray-800">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">What Makes Gnosis Different</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-times text-red-500 mr-3 mt-1"></i>
+                        <div>
+                            <h3 class="font-semibold text-red-400">NOT ANOTHER CRAWLER</h3>
+                            <p class="text-gray-400 text-sm">We don't scrape the web. We create intelligent indexes of YOUR documents for YOUR AI conversations.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-check text-green-500 mr-3 mt-1"></i>
+                        <div>
+                            <h3 class="font-semibold text-green-400">PERSISTENT MEMORY</h3>
+                            <p class="text-gray-400 text-sm">Your AI remembers everything across all conversations</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <i class="fas fa-check text-green-500 mr-3 mt-1"></i>
+                        <div>
+                            <h3 class="font-semibold text-green-400">INTELLIGENT INDEXING</h3>
+                            <p class="text-gray-400 text-sm">Not just storage - semantic understanding of content</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <i class="fas fa-check text-green-500 mr-3 mt-1"></i>
+                        <div>
+                            <h3 class="font-semibold text-green-400">INSTANT RECALL</h3>
+                            <p class="text-gray-400 text-sm">No retraining. No context stuffing. Just memory.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start">
+                        <i class="fas fa-check text-green-500 mr-3 mt-1"></i>
+                        <div>
+                            <h3 class="font-semibold text-green-400">PRIVACY FIRST</h3>
+                            <p class="text-gray-400 text-sm">Your data is yours. Run it locally to prove it.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Developer Integration -->
+    <section class="py-16 px-4">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">Developer-Friendly Integration</h2>
+            
+            <div class="bg-gray-800 rounded-lg p-6 overflow-x-auto">
+                <pre class="terminal-text text-sm"><code># Cloud API
+curl -X POST https://api.gnosis.ai/index \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -d '{"url": "https://docs.yoursite.com"}'
+
+# Or Self-Hosted
+curl -X POST http://localhost:5678/index \
+  -H "Authorization: Bearer LOCAL_KEY" \
+  -d '{"url": "https://internal-docs.local"}'
+
+# Python SDK (works with both)
+from gnosis import Memory
+memory = Memory(
+    api_key="YOUR_KEY",
+    endpoint="https://api.gnosis.ai"  # or http://localhost:5678
+)
+memory.index("https://important-docs.com")</code></pre>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Final CTA -->
+    <section class="py-24 px-4 text-center bg-gradient-to-b from-gray-800 to-gray-900">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-4xl font-bold mb-8">
+                <span class="gradient-text">Gnosis gives your AI perfect memory</span><br>
+                <span class="text-2xl text-gray-400 font-normal">of everything you've ever shown it - on our cloud or yours.</span>
+            </h2>
+            
+            <div class="flex flex-col md:flex-row gap-4 justify-center">
+                <a href="/auth/login" class="px-8 py-4 bg-green-600 hover:bg-green-700 rounded-lg text-lg font-semibold inline-block">
+                    Get Started Free
+                </a>
+                <button onclick="showMCPConfig()" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-lg font-semibold">
+                    View MCP Config
+                </button>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="py-8 px-4 bg-black text-gray-500 text-center">
+        <p>&copy; 2024 Gnosis. Your data, your choice.</p>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script>
+        function showMCPConfig() {
+            // In a real implementation, this would show a modal with the MCP config
+            alert('MCP configuration modal would appear here');
+        }
+        
+        function showLocalSetup() {
+            // Show local setup instructions
+            alert('Docker setup instructions would appear here');
+        }
+        
+        function showDockerDocs() {
+            // Show docker documentation
+            window.open('https://github.com/gnosis/docs', '_blank');
+        }
+        
+        function copyMCPConfig() {
+            const config = `{
+  "mcpServers": {
+    "gnosis": {
+      "command": "npx",
+      "args": ["@gnosis/memory-mcp"],
+      "env": {
+        "GNOSIS_API_KEY": "YOUR_API_KEY_HERE"
+      }
+    }
+  }
+}`;
+            navigator.clipboard.writeText(config).then(() => {
+                alert('MCP configuration copied to clipboard!');
+            });
+        }
+        
+        function contactSales() {
+            window.location.href = 'mailto:sales@gnosis.ai?subject=Perfect Memory Plan Inquiry';
+        }
+    </script>
+</body>
+</html>

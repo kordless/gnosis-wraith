@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Token - {{ config.BRAND or 'Gnosis Wraith' }}</title>
+    <link rel="icon" type="image/x-icon" href="{{ brand.favicon or '/static/favicon.ico' }}">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+        }
+        .ghost-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        .glow {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+        .token-input {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.1em;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="max-w-md w-full space-y-8 p-8">
+        <!-- Ghost Logo/Icon -->
+        <div class="text-center">
+            <div class="ghost-float text-6xl mb-4">🔐</div>
+            <h2 class="text-3xl font-bold text-white">
+                Enter Your Token
+            </h2>
+            <p class="mt-2 text-gray-400">
+                Check your email for the login token
+            </p>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                <div class="bg-blue-900 border border-blue-700 text-blue-200 px-4 py-3 rounded relative" role="alert">
+                    <span class="block sm:inline">{{ message }}</span>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Token Form -->
+        <form class="mt-8 space-y-6" method="POST" action="/auth/token">
+            <input type="hidden" name="op" value="{{ op or '0' }}">
+            {% if next %}
+            <input type="hidden" name="next" value="{{ next }}">
+            {% endif %}
+            {% if email %}
+            <input type="hidden" name="email" value="{{ email }}">
+            {% endif %}
+
+            <div>
+                <label for="mail_token" class="block text-sm font-medium text-gray-300">
+                    Login Token
+                </label>
+                <div class="mt-1">
+                    <input 
+                        id="mail_token" 
+                        name="mail_token" 
+                        type="text" 
+                        required 
+                        class="token-input appearance-none relative block w-full px-3 py-3 border border-gray-600 placeholder-gray-500 text-white bg-gray-800 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 text-center text-lg"
+                        placeholder="Enter your token here"
+                        autocomplete="off"
+                        spellcheck="false"
+                    >
+                </div>
+                <p class="mt-2 text-sm text-gray-500">
+                    The token was sent to your email address
+                </p>
+            </div>
+
+            <div>
+                <button 
+                    type="submit" 
+                    class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 glow transition-all duration-200"
+                >
+                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                        <svg class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                    Verify Token
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between">
+                <div class="text-sm">
+                    <a href="/auth/login" class="font-medium text-indigo-400 hover:text-indigo-300">
+                        ← Back to login
+                    </a>
+                </div>
+                <div class="text-sm">
+                    <a href="/auth/login?use_token=1{% if email %}&email={{ email }}{% endif %}" class="font-medium text-indigo-400 hover:text-indigo-300">
+                        Resend token
+                    </a>
+                </div>
+            </div>
+        </form>
+
+        <!-- Info Box -->
+        <div class="mt-6 bg-gray-800 bg-opacity-50 rounded-lg p-4 text-sm text-gray-400">
+            <p class="mb-2">
+                <strong class="text-white">Didn't receive the email?</strong>
+            </p>
+            <ul class="list-disc list-inside space-y-1">
+                <li>Check your spam/junk folder</li>
+                <li>Make sure you entered the correct email</li>
+                <li>Wait a few minutes and try resending</li>
+                {% if config.DEV == "True" %}
+                <li class="text-yellow-400">Dev mode: Check console for token</li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <!-- Alternative Login Methods -->
+        {% if email %}
+        <div class="text-center">
+            <p class="text-sm text-gray-500">
+                Token sent to: <strong class="text-white">{{ email }}</strong>
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // Auto-focus the token input
+        document.getElementById('mail_token').focus();
+        
+        // Handle paste events to clean up token
+        document.getElementById('mail_token').addEventListener('paste', function(e) {
+            e.preventDefault();
+            let paste = (e.clipboardData || window.clipboardData).getData('text');
+            // Remove any whitespace - but keep underscores as they're valid in tokens
+            paste = paste.trim().replace(/[\s\-]/g, '');
+            this.value = paste;
+        });
+    </script>
+</body>
+</html>

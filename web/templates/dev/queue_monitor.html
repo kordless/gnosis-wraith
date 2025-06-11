@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Queue Monitor - Development Only</title>
+    <style>
+        body {
+            font-family: 'Monaco', 'Consolas', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            color: #4ec9b0;
+            margin-bottom: 30px;
+        }
+        .monitor {
+            background: #252526;
+            border: 1px solid #464647;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .monitor h2 {
+            color: #569cd6;
+            margin-top: 0;
+        }
+        .status {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .status-label {
+            color: #9cdcfe;
+        }
+        .status-value {
+            color: #ce9178;
+            font-weight: bold;
+        }
+        .log {
+            background: #1e1e1e;
+            border: 1px solid #464647;
+            border-radius: 4px;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid #007acc;
+        }
+        .log-entry.error {
+            border-left-color: #f44747;
+            color: #f48771;
+        }
+        .log-entry.success {
+            border-left-color: #89d185;
+            color: #b5cea8;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        button {
+            background: #0e639c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #1177bb;
+        }
+        button:disabled {
+            background: #464647;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        select {
+            background: #3c3c3c;
+            color: #cccccc;
+            border: 1px solid #464647;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        .indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .indicator.active {
+            background: #89d185;
+            animation: pulse 1s infinite;
+        }
+        .indicator.inactive {
+            background: #f44747;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .test-controls {
+            background: #2d2d30;
+            border: 1px solid #464647;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .test-controls h3 {
+            color: #dcdcaa;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .test-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .warning {
+            background: #5a1d1d;
+            border: 1px solid #a13030;
+            color: #f48771;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔄 Queue Monitor (Development Only)</h1>
+    
+    <div class="monitor">
+        <h2>
+            <span id="polling-indicator" class="indicator inactive"></span>
+            Polling Status
+        </h2>
+        <div class="controls">
+            <button id="start-btn" onclick="startPolling()">Start Polling</button>
+            <button id="stop-btn" onclick="stopPolling()" disabled>Stop Polling</button>
+            <button onclick="processOnce()">Process Once</button>
+            <label>
+                Interval: 
+                <select id="interval-select" onchange="updateInterval()">
+                    <option value="1000">1 second</option>
+                    <option value="5000" selected>5 seconds</option>
+                    <option value="10000">10 seconds</option>
+                    <option value="30000">30 seconds</option>
+                </select>
+            </label>
+        </div>
+        
+        <div class="status">
+            <div class="status-label">Redis Status:</div>
+            <div class="status-value" id="redis-status">Checking...</div>
+            
+            <div class="status-label">Queue Size:</div>
+            <div class="status-value" id="queue-size">-</div>
+            
+            <div class="status-label">Processed Total:</div>
+            <div class="status-value" id="processed-total">0</div>
+            
+            <div class="status-label">Failed Total:</div>
+            <div class="status-value" id="failed-total">0</div>
+            
+            <div class="status-label">Last Poll:</div>
+            <div class="status-value" id="last-poll">Never</div>
+            
+            <div class="status-label">Next Poll:</div>
+            <div class="status-value" id="next-poll">Not scheduled</div>
+        </div>
+    </div>
+    
+    <div class="monitor">
+        <h2>📋 Processing Log</h2>
+        <div id="log" class="log"></div>
+    </div>
+    
+    <div class="monitor">
+        <h2>🧪 Test Controls</h2>
+        <div class="test-controls">
+            <h3>Add Test Tasks</h3>
+            <div class="test-buttons">
+                <button onclick="addTestTask('crawl')">Add Crawl Task</button>
+                <button onclick="addTestTask('ai_analysis')">Add AI Analysis Task</button>
+                <button onclick="addTestTask('report_generation')">Add Report Task</button>
+            </div>
+        </div>
+        <div class="test-controls">
+            <h3>Queue Management</h3>
+            <div class="warning">⚠️ Warning: This will clear all pending tasks!</div>
+            <button onclick="clearQueue()" style="background: #a13030;">Clear Queue</button>
+        </div>
+    </div>
+
+    <script>
+        let pollInterval = null;
+        let pollIntervalMs = 5000;
+        let processedTotal = 0;
+        
+        function addLogEntry(message, type = 'info') {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.insertBefore(entry, log.firstChild);
+            
+            // Keep only last 100 entries
+            while (log.children.length > 100) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        async function updateQueueStatus() {
+            try {
+                const response = await fetch('/dev/api/queue-status');
+                const data = await response.json();
+                
+                // Update Redis status
+                if (data.redis_available) {
+                    document.getElementById('redis-status').textContent = '✅ Connected';
+                    document.getElementById('redis-status').style.color = '#89d185';
+                } else {
+                    document.getElementById('redis-status').textContent = '❌ Not Available';
+                    document.getElementById('redis-status').style.color = '#f44747';
+                }
+                
+                // Update queue stats
+                document.getElementById('queue-size').textContent = data.queue_size || 0;
+                document.getElementById('processed-total').textContent = data.processed_total || 0;
+                document.getElementById('failed-total').textContent = data.failed_total || 0;
+                
+            } catch (error) {
+                addLogEntry(`Failed to get queue status: ${error.message}`, 'error');
+                document.getElementById('redis-status').textContent = '❌ Error';
+                document.getElementById('redis-status').style.color = '#f44747';
+            }
+        }
+        
+        async function processQueue() {
+            document.getElementById('last-poll').textContent = new Date().toLocaleTimeString();
+            
+            try {
+                const response = await fetch('/dev/api/process-queue', {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    addLogEntry(`Error: ${data.error}`, 'error');
+                } else if (data.processed > 0) {
+                    addLogEntry(`Processed ${data.processed} items`, 'success');
+                    
+                    // Log individual results
+                    data.results.forEach(result => {
+                        const status = result.status === 'success' ? 'success' : 'error';
+                        addLogEntry(`  ↳ [${result.type}] ${result.task_id}: ${result.message}`, status);
+                    });
+                } else {
+                    addLogEntry('No items to process', 'info');
+                }
+                
+                await updateQueueStatus();
+                
+            } catch (error) {
+                addLogEntry(`Processing error: ${error.message}`, 'error');
+            }
+            
+            // Update next poll time
+            if (pollInterval) {
+                const nextTime = new Date(Date.now() + pollIntervalMs);
+                document.getElementById('next-poll').textContent = nextTime.toLocaleTimeString();
+            }
+        }
+        
+        function startPolling() {
+            if (pollInterval) return;
+            
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('stop-btn').disabled = false;
+            document.getElementById('polling-indicator').className = 'indicator active';
+            
+            addLogEntry('Started polling', 'success');
+            
+            // Process immediately
+            processQueue();
+            
+            // Then set interval
+            pollInterval = setInterval(processQueue, pollIntervalMs);
+        }
+        
+        function stopPolling() {
+            if (!pollInterval) return;
+            
+            clearInterval(pollInterval);
+            pollInterval = null;
+            
+            document.getElementById('start-btn').disabled = false;
+            document.getElementById('stop-btn').disabled = true;
+            document.getElementById('polling-indicator').className = 'indicator inactive';
+            document.getElementById('next-poll').textContent = 'Not scheduled';
+            
+            addLogEntry('Stopped polling', 'error');
+        }
+        
+        async function processOnce() {
+            addLogEntry('Manual process triggered', 'info');
+            await processQueue();
+        }
+        
+        function updateInterval() {
+            pollIntervalMs = parseInt(document.getElementById('interval-select').value);
+            
+            if (pollInterval) {
+                stopPolling();
+                startPolling();
+                addLogEntry(`Interval changed to ${pollIntervalMs/1000} seconds`, 'info');
+            }
+        }
+        
+        async function addTestTask(type) {
+            try {
+                const response = await fetch('/dev/api/add-test-task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: type,
+                        data: {
+                            test: true,
+                            timestamp: new Date().toISOString()
+                        }
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    addLogEntry(`Added test ${type} task: ${data.task.id}`, 'success');
+                    await updateQueueStatus();
+                } else {
+                    addLogEntry(`Failed to add test task: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addLogEntry(`Error adding test task: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearQueue() {
+            if (!confirm('Are you sure you want to clear the queue? This cannot be undone!')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/dev/api/clear-queue', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    addLogEntry('Queue cleared successfully', 'success');
+                    await updateQueueStatus();
+                } else {
+                    addLogEntry(`Failed to clear queue: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                addLogEntry(`Error clearing queue: ${error.message}`, 'error');
+            }
+        }
+        
+        // Initial status update
+        updateQueueStatus();
+        addLogEntry('Queue monitor loaded', 'info');
+        
+        // Stop polling on page unload
+        window.addEventListener('beforeunload', () => {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+        });
+    </script>
+</body>
+</html>

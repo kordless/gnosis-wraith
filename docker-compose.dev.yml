@@ -5,20 +5,30 @@ services:
     container_name: gnosis-wraith-dev
     ports:
       - "5678:5678"
+    env_file:
+      - .env
     environment:
       - RUNNING_IN_CLOUD=false
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - STORAGE_PATH=/app/storage
-      - QUART_APP=app_with_jobs:app
+      - GNOSIS_WRAITH_STORAGE_PATH=/data
+      - STORAGE_PATH=/data
+      - QUART_APP=app:app
       - QUART_ENV=development
       - QUART_DEBUG=1
+      - ENVIRONMENT=development
+      - ENABLE_DEV_ENDPOINTS=true
+      - REDIS_URL=redis://redis:6379
+      - PYTHONUNBUFFERED=1
+      - ENABLE_USER_PARTITIONING=false
     volumes:
       - ./:/app
+      - ./storage:/data
       - ./storage:/app/storage
+      - ./local_datastore:/app/local_datastore
     depends_on:
       - redis
-    command: python app_with_jobs.py
+    command: hypercorn --bind 0.0.0.0:5678 --access-logfile - --error-logfile - --log-level debug app:app
 
   redis:
     image: redis:6-alpine

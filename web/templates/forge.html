@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gnosis Wraith | Forge</title>
+    
+    <!-- React and ReactDOM -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.21.2/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'terminal-green': '#4ade80',
+            }
+          }
+        }
+      }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Prism.js for code highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-powershell.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/gnosis.css">
+    
+    <!-- Utility functions - Load BEFORE components -->
+    <script src="/static/js/gnosis-utils.js"></script>
+    <script src="/static/js/global-utils.js"></script>
+    
+    <style>
+        /* Custom CSS for forge */
+        .break-words {
+            word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        html, body {
+            min-height: 100vh;
+            background-color: #111827;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            overflow-y: auto; 
+            min-height: 100vh;
+            max-height: 100vh;
+        }
+        
+        .code-container {
+            overflow-y: auto !important;
+        }
+        
+        pre.code-block {
+            background-color: #1e1e1e !important;
+            color: #d4d4d4;
+            padding: 20px;
+            margin: 0;
+            font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 p-0 m-0">
+    <div id="root"></div>
+    
+    <!-- Template variables for JavaScript -->
+    <script>
+        // Pass template variables to JavaScript
+        window.GNOSIS_CONFIG = {
+            active_page: "forge"
+        };
+    </script>
+    
+    <!-- Component modules - Load AFTER utilities -->
+    <script src="/static/js/components/auth-component.js" type="text/babel"></script>
+    
+    <!-- Token Management Components -->
+    <script src="/static/js/components/token-status-button.js" type="text/babel"></script>
+    <script src="/static/js/components/token-manager-modal.js" type="text/babel"></script>
+    <script src="/static/js/components/logout-modal.js" type="text/babel"></script>
+    
+    <!-- Display Components -->
+    <script src="/static/js/components/full-height-display.js" type="text/babel"></script>
+    
+    <!-- Template code includes - BEFORE the JavaScript -->
+    <!-- Fallback to hardcoded examples if includes fail -->
+    <script>
+    window.FORGE_CODE_EXAMPLES = {
+        python: `import requests
+import json
+
+# Gnosis Wraith API endpoint
+url = "http://localhost:5678/api/crawl"
+
+# Configure the crawl request
+payload = {
+    "url": "https://example.com",
+    "llm_provider": "anthropic",
+    "llm_model": "claude-3-5-haiku-20241022",
+    "api_key": "your-api-key-here"
+}
+
+# Send the request
+response = requests.post(url, json=payload)
+
+# Handle the response
+if response.status_code == 200:
+    result = response.json()
+    if result["success"]:
+        print(f"Crawl successful!")
+        print(f"Content: {result['content'][:500]}...")
+    else:
+        print(f"Crawl failed: {result['error']}")
+else:
+    print(f"HTTP Error: {response.status_code}")`,
+        
+        javascript: `const axios = require('axios');
+
+// Gnosis Wraith API endpoint
+const url = 'http://localhost:5678/api/crawl';
+
+// Configure the crawl request
+const payload = {
+    url: 'https://example.com',
+    llm_provider: 'anthropic',
+    llm_model: 'claude-3-5-haiku-20241022',
+    api_key: 'your-api-key-here'
+};
+
+// Send the request
+axios.post(url, payload)
+    .then(response => {
+        if (response.data.success) {
+            console.log('Crawl successful!');
+            console.log('Content:', response.data.content.substring(0, 500) + '...');
+        } else {
+            console.log('Crawl failed:', response.data.error);
+        }
+    })
+    .catch(error => {
+        console.error('HTTP Error:', error.message);
+    });`,
+        
+        bash: `#!/bin/bash
+
+# Gnosis Wraith API endpoint
+URL="http://localhost:5678/api/crawl"
+
+# Configure the crawl request
+PAYLOAD=$(cat <<EOF
+{
+    "url": "https://example.com",
+    "llm_provider": "anthropic",
+    "llm_model": "claude-3-5-haiku-20241022",
+    "api_key": "your-api-key-here"
+}
+EOF
+)
+
+# Send the request
+RESPONSE=$(curl -s -X POST \\
+    -H "Content-Type: application/json" \\
+    -d "$PAYLOAD" \\
+    "$URL")
+
+# Check if successful
+if echo "$RESPONSE" | jq -e '.success' > /dev/null; then
+    echo "Crawl successful!"
+    echo "$RESPONSE" | jq -r '.content' | head -c 500
+else
+    echo "Crawl failed:"
+    echo "$RESPONSE" | jq -r '.error'
+fi`,
+        
+        powershell: `# Gnosis Wraith API endpoint
+$url = "http://localhost:5678/api/crawl"
+
+# Configure the crawl request
+$payload = @{
+    url = "https://example.com"
+    llm_provider = "anthropic"
+    llm_model = "claude-3-5-haiku-20241022"
+    api_key = "your-api-key-here"
+} | ConvertTo-Json
+
+# Send the request
+try {
+    $response = Invoke-RestMethod -Uri $url -Method Post -Body $payload -ContentType "application/json"
+    
+    if ($response.success) {
+        Write-Host "Crawl successful!" -ForegroundColor Green
+        Write-Host "Content: $($response.content.Substring(0, [Math]::Min(500, $response.content.Length)))..."
+    } else {
+        Write-Host "Crawl failed: $($response.error)" -ForegroundColor Red
+    }
+} catch {
+    Write-Host "HTTP Error: $_" -ForegroundColor Red
+}`
+    };
+    
+    window.FORGE_GENERATED_TEMPLATES = {
+        python: `# Generated code will appear here`,
+        javascript: `// Generated code will appear here`,
+        bash: `# Generated code will appear here`,
+        powershell: `# Generated code will appear here`
+    };
+    </script>
+    
+    <!-- Forge-specific components -->
+    <script type="text/babel">
+        {% raw %}
+        // Enhanced Language Button Component with click-and-hold deletion
+        const LanguageButton = ({ languageKey, language, isSelected, onSelect, onDelete, disabled }) => {
+            const { useState } = React;
+            const [deleteState, setDeleteState] = useState({
+                isHolding: false,
+                progress: 0,
+                timer: null
+            });
+            
+            const handleMouseDown = (e) => {
+                // Only handle click-and-hold for custom languages
+                if (!language.isCustom) return;
+                
+                const startTime = Date.now();
+                setDeleteState(prev => ({ ...prev, isHolding: true }));
+                
+                const timer = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / 5000, 1); // 5 second hold
+                    
+                    setDeleteState(prev => ({ ...prev, progress }));
+                    
+                    if (progress >= 1) {
+                        clearInterval(timer);
+                        onDelete(languageKey);
+                        setDeleteState({ isHolding: false, progress: 0, timer: null });
+                    }
+                }, 50);
+                
+                setDeleteState(prev => ({ ...prev, timer }));
+            };
+            
+            const handleMouseUp = () => {
+                if (deleteState.timer) {
+                    clearInterval(deleteState.timer);
+                    setDeleteState({ isHolding: false, progress: 0, timer: null });
+                }
+            };
+            
+            return (
+                <label 
+                    className={`
+                        cursor-pointer w-8 h-8 flex items-center justify-center rounded relative overflow-hidden
+                        ${isSelected ? 'bg-purple-800 text-white' : ''} 
+                        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                        ${deleteState.isHolding ? 'bg-red-600' : 'hover:bg-gray-700'}
+                        ${language.isLoading ? 'animate-pulse' : ''}
+                        transition-colors duration-200
+                    `} 
+                    title={language.isCustom ? `${language.name} (hold to delete)` : language.name}
+                    onMouseDown={handleMouseDown}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                >
+                    {deleteState.isHolding && (
+                        <div 
+                            className="absolute bottom-0 left-0 h-1 bg-red-300 transition-all duration-75"
+                            style={{ width: `${deleteState.progress * 100}%` }}
+                        />
+                    )}
+                    <input
+                        type="radio"
+                        name="language"
+                        value={languageKey}
+                        checked={isSelected}
+                        onChange={() => !disabled && !deleteState.isHolding && onSelect(languageKey)}
+                        className="sr-only"
+                        disabled={disabled}
+                    />
+                    <i className={`${language.icon} ${language.color || ''} text-sm`}></i>
+                </label>
+            );
+        };
+        
+        // Forge Language Selector Component
+        const ForgeLanguageSelector = ({ 
+            selectedLanguage, 
+            setSelectedLanguage, 
+            customLanguage, 
+            setCustomLanguage,
+            commentsLevel,
+            setCommentsLevel,
+            includeErrorHandling,
+            setIncludeErrorHandling,
+            disabled = false,
+            authStatus = 'unauthorized',
+            languages = {},
+            onAddCustomLanguage,
+            onDeleteLanguage
+        }) => {
+
+
+            // Create 8 slots (4 built-in + 4 custom)
+            const languageSlots = ['python', 'javascript', 'bash', 'powershell', 'slot5', 'slot6', 'slot7', 'slot8'];
+            
+            return (
+                <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center space-x-6 text-xs text-gray-400">
+                        <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1 bg-gray-900 p-1 rounded">
+                                {languageSlots.map((slot, index) => {
+                                    // For built-in languages (first 4 slots)
+                                    if (index < 4 && languages[slot]) {
+                                        return (
+                                            <LanguageButton
+                                                key={slot}
+                                                languageKey={slot}
+                                                language={languages[slot]}
+                                                isSelected={selectedLanguage === slot}
+                                                onSelect={setSelectedLanguage}
+                                                onDelete={onDeleteLanguage}
+                                                disabled={disabled}
+                                            />
+                                        );
+                                    }
+                                    
+                                    // For custom slots, find the first custom language to fill it
+                                    const customLanguages = Object.entries(languages)
+                                        .filter(([key, lang]) => lang.isCustom)
+                                        .sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
+                                    
+                                    const customIndex = index - 4;
+                                    if (customIndex < customLanguages.length) {
+                                        const [key, lang] = customLanguages[customIndex];
+                                        return (
+                                            <LanguageButton
+                                                key={key}
+                                                languageKey={key}
+                                                language={lang}
+                                                isSelected={selectedLanguage === key}
+                                                onSelect={setSelectedLanguage}
+                                                onDelete={onDeleteLanguage}
+                                                disabled={disabled}
+                                            />
+                                        );
+                                    }
+                                    
+                                    // Empty slot
+                                    return (
+                                        <div
+                                            key={`empty-${index}`}
+                                            className="w-8 h-8 border border-gray-700 border-dashed rounded flex items-center justify-center text-gray-600"
+                                            title="Empty slot"
+                                        >
+                                            <i className="fas fa-plus text-xs"></i>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            
+                            {/* Custom Language Input */}
+                            <div className="flex space-x-1">
+                                <input 
+                                    type="text"
+                                    className={`w-20 px-2 py-1 bg-gray-900 border border-gray-700 rounded text-xs ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    placeholder="Custom..."
+                                    value={customLanguage}
+                                    onChange={(e) => {
+                                        if (!disabled) {
+                                            setCustomLanguage(e.target.value);
+                                        }
+                                    }}
+                                    onKeyPress={(e) => {
+                                        if (e.key === 'Enter' && customLanguage.trim()) {
+                                            onAddCustomLanguage(customLanguage);
+                                        }
+                                    }}
+                                    disabled={disabled}
+                                />
+                                <button
+                                    className={`px-2 py-1 bg-green-700 hover:bg-green-600 rounded text-xs ${disabled || !customLanguage.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    onClick={() => {
+                                        if (!disabled && customLanguage && customLanguage.trim()) {
+                                            onAddCustomLanguage(customLanguage);
+                                        }
+                                    }}
+                                    disabled={disabled}
+                                >
+                                    Add
+                                </button>
+                            </div>
+                            
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 bg-gray-900 p-1 rounded">
+                                {[1, 2, 3].map(level => (
+                                    <label key={level} className={`cursor-pointer px-2 py-1 rounded hover:bg-gray-700 ${commentsLevel === level ? 'bg-yellow-800 text-white' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`} title={`Comments: ${level === 1 ? 'Minimal' : level === 2 ? 'Standard' : 'Maximum'}`}>
+                                        <input
+                                            type="radio"
+                                            name="comments"
+                                            value={level}
+                                            checked={commentsLevel === level}
+                                            onChange={() => !disabled && setCommentsLevel(level)}
+                                            className="sr-only"
+                                            disabled={disabled}
+                                        />
+                                        {level === 1 ? 'MIN' : level === 2 ? 'STD' : 'MAX'}
+                                        {commentsLevel === level && authStatus === 'authorized' && <span className="ml-1">💬</span>}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2 bg-gray-900 p-1 rounded">
+                                <label className={`cursor-pointer px-2 py-1 rounded transition-colors hover:bg-gray-700 ${includeErrorHandling ? 'bg-purple-800 text-white' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`} title={`Error Handling: ${includeErrorHandling ? 'Enabled' : 'Disabled'}`}>
+                                    <input
+                                        type="checkbox"
+                                        checked={includeErrorHandling}
+                                        onChange={(e) => !disabled && setIncludeErrorHandling(e.target.checked)}
+                                        className="sr-only"
+                                        disabled={disabled}
+                                    />
+                                    <i className={`fas ${includeErrorHandling ? 'fa-shield-alt' : 'fa-exclamation-triangle'}`}></i>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Forge Code Input Component
+        const ForgeCodeInput = ({ 
+            authStatus,
+            inputValue, 
+            setInputValue, 
+            handleGenerateCode,
+            isGenerating,
+            disabled = false
+        }) => {
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter' && authStatus === 'authorized') {
+                    handleGenerateCode();
+                }
+            };
+
+            // Only show input when authorized
+            if (authStatus !== 'authorized') {
+                return null;
+            }
+
+            return (
+                <div className="flex space-x-2">
+                    <input
+                        type="text"
+                        placeholder="Describe the code you want to generate..."
+                        className={`flex-grow px-3 py-2 bg-gray-900 border border-gray-700 rounded focus:outline-none focus:border-purple-500 ${
+                            disabled ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        value={inputValue}
+                        onChange={(e) => !disabled && setInputValue(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        disabled={disabled || isGenerating}
+                    />
+                    <button
+                        className={`px-4 py-2 bg-purple-800 hover:bg-purple-700 text-white rounded disabled:opacity-50 ${
+                            disabled || isGenerating || !inputValue.trim() ? 'cursor-not-allowed' : ''
+                        }`}
+                        onClick={handleGenerateCode}
+                        disabled={isGenerating || !inputValue.trim() || disabled}
+                    >
+                        {isGenerating ? (
+                            <>
+                                <i className="fas fa-spinner fa-spin mr-2"></i>
+                                Forging...
+                            </>
+                        ) : (
+                            'Generate'
+                        )}
+                    </button>
+                </div>
+            );
+        };
+
+        // Forge Code Display Component
+        const ForgeCodeDisplay = ({ 
+            generatedCode, 
+            selectedLanguage, 
+            customLanguage,
+            codeOutputRef,
+            copyToClipboard,
+            downloadCode
+        }) => {
+            const languages = {
+                python: { name: 'Python', icon: 'fab fa-python', color: 'text-blue-400' },
+                javascript: { name: 'JavaScript', icon: 'fab fa-js-square', color: 'text-yellow-400' },
+                bash: { name: 'Bash', icon: 'fas fa-dollar-sign', color: 'text-green-400' },
+                powershell: { name: 'PowerShell', icon: 'fas fa-terminal', color: 'text-blue-300' }
+            };
+
+
+            return (
+                <div className="bg-gray-800 border border-gray-700 rounded-md overflow-auto code-container">
+                    <div className="px-4 py-2 border-b border-gray-700 bg-gray-900 flex justify-between items-center">
+                        <div className="flex items-center space-x-2">
+                            <h2 className="text-lg font-semibold text-green-400">Generated Code</h2>
+                            <div className="flex items-center space-x-1">
+                                <i className={`${languages[selectedLanguage]?.icon || 'fas fa-code'} ${languages[selectedLanguage]?.color || 'text-gray-400'}`}></i>
+                                <span className="text-sm text-gray-400">{languages[selectedLanguage]?.name || customLanguage || 'Custom'}</span>
+                            </div>
+                        </div>
+                        <div className="flex space-x-2">
+                            <button 
+                                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded"
+                                onClick={async () => {
+                                    const success = await copyToClipboard(generatedCode);
+                                    // Visual feedback could be added here
+                                }}
+                            >
+                                <i className="fas fa-copy mr-1"></i>Copy
+                            </button>
+                            <button 
+                                className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded"
+                                onClick={() => downloadCode(generatedCode, selectedLanguage)}
+                            >
+                                <i className="fas fa-download mr-1"></i>Download
+                            </button>
+                        </div>
+                    </div>
+                    <div className="p-4" ref={codeOutputRef}>
+                        <pre className="code-block">
+                            <code className={`language-${selectedLanguage}`}>
+                                {generatedCode}
+                            </code>
+                        </pre>
+                    </div>
+                </div>
+            );
+        };
+
+        // Main Forge Application
+        const GnosisForgeInterface = () => {
+            const { useState, useEffect, useRef } = React;
+            
+            // Authentication state
+            const [authStatus, setAuthStatus] = useState('unauthorized');
+            const [inputValue, setInputValue] = useState('');
+            const [systemStatus, setSystemStatus] = useState('initializing');
+            
+            // Forge-specific state
+            const [selectedLanguage, setSelectedLanguage] = useState('python');
+            const [customLanguage, setCustomLanguage] = useState('');
+            const [generatedCode, setGeneratedCode] = useState('');
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [commentsLevel, setCommentsLevel] = useState(2);
+            const [includeErrorHandling, setIncludeErrorHandling] = useState(true);
+            const [isTokenModalOpen, setIsTokenModalOpen] = useState(false);
+            
+            const codeOutputRef = useRef(null);
+            
+            // Default language configurations
+            const defaultLanguages = {
+                python: { 
+                    name: 'Python', 
+                    icon: 'fab fa-python', 
+                    color: 'text-blue-400',
+                    defaultCode: window.FORGE_CODE_EXAMPLES.python,
+                    isBuiltIn: true
+                },
+                javascript: { 
+                    name: 'JavaScript', 
+                    icon: 'fab fa-js-square', 
+                    color: 'text-yellow-400',
+                    defaultCode: window.FORGE_CODE_EXAMPLES.javascript,
+                    isBuiltIn: true
+                },
+                bash: { 
+                    name: 'Bash', 
+                    icon: 'fas fa-dollar-sign', 
+                    color: 'text-green-400',
+                    defaultCode: window.FORGE_CODE_EXAMPLES.bash,
+                    isBuiltIn: true
+                },
+                powershell: { 
+                    name: 'PowerShell', 
+                    icon: 'fas fa-terminal', 
+                    color: 'text-blue-300',
+                    defaultCode: window.FORGE_CODE_EXAMPLES.powershell,
+                    isBuiltIn: true
+                }
+            };
+            
+            // Dynamic languages state
+            const [languages, setLanguages] = useState(defaultLanguages);
+            
+            // Storage key for custom languages
+            const STORAGE_KEY = 'forge_custom_languages';
+            
+            // Helper functions for custom languages
+            const loadCustomLanguages = () => {
+                try {
+                    const stored = localStorage.getItem(STORAGE_KEY);
+                    return stored ? JSON.parse(stored) : {};
+                } catch (error) {
+                    console.error('Failed to load custom languages:', error);
+                    return {};
+                }
+            };
+            
+            const saveCustomLanguage = (languageKey, config) => {
+                const customLanguages = loadCustomLanguages();
+                customLanguages[languageKey] = {
+                    ...config,
+                    createdAt: Date.now(),
+                    version: '1.0'
+                };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(customLanguages));
+            };
+            
+            const deleteCustomLanguage = (languageKey) => {
+                const customLanguages = loadCustomLanguages();
+                delete customLanguages[languageKey];
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(customLanguages));
+                
+                // Remove from current languages state
+                setLanguages(prev => {
+                    const newLangs = {...prev};
+                    delete newLangs[languageKey];
+                    return newLangs;
+                });
+            };
+            
+            const capitalizeFirst = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+            
+            // Known language icon mappings
+            const knownIcons = {
+                ruby: { icon: 'fab fa-gem', color: 'text-red-500' },
+                go: { icon: 'fab fa-golang', color: 'text-cyan-400' },
+                rust: { icon: 'fab fa-rust', color: 'text-orange-600' },
+                java: { icon: 'fab fa-java', color: 'text-red-600' },
+                php: { icon: 'fab fa-php', color: 'text-purple-400' },
+                swift: { icon: 'fab fa-swift', color: 'text-orange-500' },
+                kotlin: { icon: 'fas fa-mobile-alt', color: 'text-purple-500' },
+                r: { icon: 'fab fa-r-project', color: 'text-blue-600' },
+                c: { icon: 'fas fa-copyright', color: 'text-blue-700' },
+                'c++': { icon: 'fas fa-plus-plus', color: 'text-blue-700' },
+                cpp: { icon: 'fas fa-plus-plus', color: 'text-blue-700' },
+                'c#': { icon: 'fas fa-hashtag', color: 'text-purple-700' },
+                csharp: { icon: 'fas fa-hashtag', color: 'text-purple-700' },
+                scala: { icon: 'fas fa-code', color: 'text-red-700' },
+                dart: { icon: 'fas fa-rocket', color: 'text-blue-500' },
+                lua: { icon: 'fas fa-moon', color: 'text-blue-300' },
+                perl: { icon: 'fas fa-scroll', color: 'text-blue-800' },
+                haskell: { icon: 'fas fa-lambda', color: 'text-purple-600' },
+                elixir: { icon: 'fas fa-flask', color: 'text-purple-500' },
+                typescript: { icon: 'fab fa-js-square', color: 'text-blue-600' },
+                vue: { icon: 'fab fa-vuejs', color: 'text-green-500' },
+                react: { icon: 'fab fa-react', color: 'text-cyan-400' },
+                angular: { icon: 'fab fa-angular', color: 'text-red-600' }
+            };
+            
+            // Generate language configuration using LLM
+            const generateLanguageConfig = async (languageName) => {
+                const provider = localStorage.getItem('gnosis_wraith_llm_provider') || 'anthropic';
+                const cookieName = `gnosis_wraith_llm_token_${provider}`;
+                const apiKey = CookieUtils.getCookie(cookieName);
+                
+                if (!apiKey) {
+                    throw new Error('No API token configured');
+                }
+                
+                const prompt = `Generate configuration for programming language: ${languageName}
+
+Please respond in this exact JSON format:
+{
+  "icon": "appropriate font-awesome icon class",
+  "color": "tailwind color class", 
+  "defaultCode": "boilerplate code template"
+}
+
+Requirements:
+- Icon: Use Font Awesome classes (fab fa-python, fab fa-js-square, etc.)
+- Color: Use Tailwind color classes (text-blue-400, text-green-500, etc.)
+- Code: Write a complete example that shows API integration with Gnosis Wraith crawl API at http://localhost:5678/api/crawl
+
+Language: ${languageName}`;
+
+                try {
+                    const response = await fetch('/api/code-generation', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: prompt,
+                            language: 'json',
+                            provider: provider,
+                            api_key: apiKey,
+                            options: {
+                                comments_level: 1,
+                                include_error_handling: false
+                            }
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    if (result.success && result.code) {
+                        // Parse JSON from LLM response
+                        const cleanedCode = result.code.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                        const config = JSON.parse(cleanedCode);
+                        
+                        return {
+                            name: capitalizeFirst(languageName),
+                            icon: config.icon || 'fas fa-code',
+                            color: config.color || 'text-gray-400',
+                            defaultCode: config.defaultCode || `// ${languageName} template\n// Add your implementation here`
+                        };
+                    }
+                    throw new Error(result.error || 'Failed to generate configuration');
+                } catch (error) {
+                    console.error('Language config generation error:', error);
+                    throw error;
+                }
+            };
+            
+            // Enhanced custom language handler
+            const handleCustomLanguageAdd = async (languageName) => {
+                if (!languageName.trim()) return;
+                
+                const normalizedName = languageName.toLowerCase().trim();
+                
+                // Prevent duplicates
+                if (languages[normalizedName]) {
+                    setSelectedLanguage(normalizedName);
+                    setCustomLanguage('');
+                    return;
+                }
+                
+                // Check if we have a known icon mapping
+                const knownIcon = knownIcons[normalizedName];
+                
+                // Add to UI immediately with loading state
+                const tempLanguage = {
+                    name: capitalizeFirst(normalizedName),
+                    icon: knownIcon ? knownIcon.icon : 'fas fa-spinner fa-spin',
+                    color: knownIcon ? knownIcon.color : 'text-gray-400',
+                    defaultCode: '// Generating template...',
+                    isLoading: !knownIcon
+                };
+                
+                setLanguages(prev => ({...prev, [normalizedName]: tempLanguage}));
+                setSelectedLanguage(normalizedName);
+                setCustomLanguage('');
+                
+                try {
+                    // Call LLM to generate code (and icon if not known)
+                    const languageConfig = await generateLanguageConfig(normalizedName);
+                    
+                    // Update with generated content, but keep known icon if we have it
+                    setLanguages(prev => ({
+                        ...prev, 
+                        [normalizedName]: {
+                            ...languageConfig,
+                            icon: knownIcon ? knownIcon.icon : languageConfig.icon,
+                            color: knownIcon ? knownIcon.color : languageConfig.color,
+                            isLoading: false,
+                            isCustom: true
+                        }
+                    }));
+                    
+                    // Save to localStorage with enhanced config
+                    const enhancedConfig = {
+                        ...languageConfig,
+                        icon: knownIcon ? knownIcon.icon : languageConfig.icon,
+                        color: knownIcon ? knownIcon.color : languageConfig.color,
+                        isCustom: true
+                    };
+                    saveCustomLanguage(normalizedName, enhancedConfig);
+                    
+                } catch (error) {
+                    // Handle generation failure
+                    setLanguages(prev => ({
+                        ...prev,
+                        [normalizedName]: {
+                            name: capitalizeFirst(normalizedName),
+                            icon: 'fas fa-exclamation-triangle',
+                            color: 'text-red-400',
+                            defaultCode: `// Error generating ${normalizedName} template\n// ${error.message}\n\n// You can manually write your ${normalizedName} code here`,
+                            isLoading: false,
+                            hasError: true,
+                            isCustom: true
+                        }
+                    }));
+                }
+            };
+            
+            // Initialize authentication and load custom languages
+            useEffect(() => {
+                // Simple authentication check
+                const isAuthenticated = localStorage.getItem('forge_authenticated') === 'true';
+                if (isAuthenticated) {
+                    setAuthStatus('authorized');
+                }
+                
+                // Load custom languages
+                const customLangs = loadCustomLanguages();
+                setLanguages(prev => ({...prev, ...customLangs}));
+                
+                // Set initial code from includes
+                if (defaultLanguages[selectedLanguage]) {
+                    setGeneratedCode(defaultLanguages[selectedLanguage].defaultCode);
+                }
+                
+                // Check server health
+                checkServerHealth();
+                
+                setTimeout(() => setSystemStatus('online'), 1000);
+            }, []);
+            
+            // Update code when language changes
+            useEffect(() => {
+                if (languages[selectedLanguage] && !generatedCode.includes('Generated code for:')) {
+                    setGeneratedCode(languages[selectedLanguage].defaultCode);
+                }
+                
+                // Re-highlight code
+                setTimeout(() => {
+                    if (window.Prism && codeOutputRef.current) {
+                        Prism.highlightAllUnder(codeOutputRef.current);
+                    }
+                }, 100);
+            }, [selectedLanguage]);
+            
+            // Re-highlight when code changes
+            useEffect(() => {
+                setTimeout(() => {
+                    if (window.Prism && codeOutputRef.current) {
+                        Prism.highlightAllUnder(codeOutputRef.current);
+                    }
+                }, 100);
+            }, [generatedCode]);
+            
+            const checkServerHealth = async () => {
+                try {
+                    const response = await fetch('/health', { method: 'HEAD', cache: 'no-cache' });
+                    setSystemStatus(response.ok ? 'online' : 'degraded');
+                } catch (error) {
+                    setSystemStatus('offline');
+                }
+            };
+            
+            // Stub logging function for forge (no logs display)
+            const addLog = (message) => {
+                console.log('Forge Log:', message);
+            };
+
+            // Use the unified authentication component
+            const authComponent = AuthenticationComponent({
+                authStatus,
+                setAuthStatus,
+                inputValue,
+                setInputValue,
+                addLog
+            });
+
+            const handleLogin = () => {
+                // Simple login - just set authenticated state
+                setAuthStatus('authorized');
+                localStorage.setItem('forge_authenticated', 'true');
+                addLog('Login successful');
+                addLog('Forge interface ready');
+            };
+            
+            const handleGenerateCode = async () => {
+                if (!inputValue.trim() || authStatus !== 'authorized') return;
+                
+                setIsGenerating(true);
+                setGeneratedCode('// Generating code...');
+                
+                try {
+                    // Get current provider and token from unified token system
+                    const provider = localStorage.getItem('gnosis_wraith_llm_provider') || 'anthropic';
+                    const cookieName = `gnosis_wraith_llm_token_${provider}`;
+                    
+                    // Use the same CookieUtils that other components use
+                    const apiKey = CookieUtils.getCookie(cookieName);
+                    
+                    if (!apiKey) {
+                        setGeneratedCode('# Error: No API token configured for ' + provider + '\n# Please click the brain icon to configure your API token.');
+                        setIsTokenModalOpen(true); // Auto-open token modal
+                        return;
+                    }
+                    
+                    // Make API call to new code generation endpoint
+                    const response = await fetch('/api/code-generation', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            query: inputValue,
+                            language: selectedLanguage === 'custom' ? customLanguage : selectedLanguage,
+                            provider: provider,
+                            api_key: apiKey,
+                            options: {
+                                comments_level: commentsLevel,
+                                include_error_handling: includeErrorHandling
+                            }
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success && result.code) {
+                            setGeneratedCode(result.code);
+                        } else {
+                            setGeneratedCode('# Error: ' + (result.error || 'Failed to generate code'));
+                        }
+                    } else {
+                        const errorText = await response.text();
+                        setGeneratedCode('# Error: HTTP ' + response.status + ' - ' + errorText);
+                    }
+                    
+                } catch (error) {
+                    setGeneratedCode('# Error: Request failed - ' + error.message);
+                } finally {
+                    setIsGenerating(false);
+                    setInputValue('');
+                }
+            };
+            
+            const generateMockCode = (query, language, comments, errorHandling) => {
+                // Use window templates for generated code
+                const templates = window.FORGE_GENERATED_TEMPLATES;
+                
+                // For custom languages, create a generic template
+                if (language === 'custom' && customLanguage) {
+                    return '# Generated ' + customLanguage + ' code for: ' + query + '\n# Custom language: ' + customLanguage + '\n# Add your ' + customLanguage + ' implementation here\n\n# Example structure for Gnosis Wraith API integration:\n# 1. Set up HTTP client\n# 2. Create request payload with URL\n# 3. Send POST request to http://localhost:5678/api/crawl\n# 4. Handle response and extract data\n\n# Please adapt this template for ' + customLanguage + ' syntax and conventions';
+                }
+                
+                return templates[language] || templates.python;
+            };
+            
+            const copyToClipboard = async (text) => {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                } catch (err) {
+                    return false;
+                }
+            };
+            
+            const downloadCode = (code, language) => {
+                const extensions = {
+                    python: '.py',
+                    javascript: '.js',
+                    bash: '.sh',
+                    powershell: '.ps1'
+                };
+                
+                let extension = extensions[language] || '.txt';
+                let filename = 'gnosis_wraith_generated';
+                
+                if (language === 'custom' && customLanguage) {
+                    filename = 'gnosis_wraith_' + customLanguage.toLowerCase();
+                    const lang = customLanguage.toLowerCase();
+                    if (lang.includes('java')) extension = '.java';
+                    else if (lang.includes('php')) extension = '.php';
+                    else if (lang.includes('ruby')) extension = '.rb';
+                    else if (lang.includes('go')) extension = '.go';
+                    else if (lang.includes('rust')) extension = '.rs';
+                    else if (lang.includes('c++') || lang.includes('cpp')) extension = '.cpp';
+                    else if (lang.includes('c#') || lang.includes('csharp')) extension = '.cs';
+                    else extension = '.txt';
+                }
+                
+                const blob = new Blob([code], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename + extension;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+            
+            const handleLogout = () => {
+                if (confirm('Are you sure you want to log out?')) {
+                    localStorage.removeItem('forge_authenticated');
+                    setAuthStatus('unauthorized');
+                    setInputValue('');
+                    addLog('Logged out successfully');
+                }
+            };
+            
+            return (
+                <div className="full-height-container bg-gray-900 text-green-400 font-mono">
+                    {/* Top Navigation Bar */}
+                    <nav className="fixed-header flex justify-between items-center p-4 bg-gray-900 border-b border-gray-700">
+                        {/* Left: Title */}
+                        <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2">
+                                <h1 className="text-xl font-bold">GNOSIS WRAITH</h1>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <div className={`h-2 w-2 rounded-full ${
+                                    systemStatus === 'online' ? 'bg-green-500' : 
+                                    systemStatus === 'degraded' ? 'bg-yellow-500' :
+                                    systemStatus === 'offline' ? 'bg-red-500' : 
+                                    'bg-gray-500'
+                                }`}></div>
+                                <span className="text-xs text-gray-400 uppercase">System {systemStatus}</span>
+                            </div>
+                        </div>
+                        
+                        {/* Right: User Controls */}
+                        <div className="flex items-center space-x-4">
+                            {authStatus === 'authorized' ? (
+                                <>
+                                    {/* Token Status (Brain Icon) */}
+                                    <TokenStatusButton 
+                                        onTokenModalOpen={() => setIsTokenModalOpen(true)}
+                                        size="sm"
+                                    />
+                                    
+                                    {/* User Info */}
+                                    <span className="text-sm text-gray-400">
+                                        Authenticated User
+                                    </span>
+                                    
+                                    {/* Logout Button */}
+                                    <button
+                                        onClick={handleLogout}
+                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                                    >
+                                        <i className="fas fa-sign-out-alt mr-1"></i>
+                                        Logout
+                                    </button>
+                                </>
+                            ) : (
+                                /* Login button when not authenticated */
+                                <button
+                                    onClick={handleLogin}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                                >
+                                    <i className="fas fa-sign-in-alt mr-2"></i>
+                                    Login
+                                </button>
+                            )}
+                        </div>
+                    </nav>
+                    
+                    <div className="flex-content p-4 flex flex-col">
+
+                        {/* Navigation Tabs */}
+                        <div className="bg-gray-800 border border-gray-700 rounded-md p-4 mb-4 flex-shrink-0">
+                            <div className="flex mb-2 border-b border-gray-700 justify-between items-center">
+                                <div className="flex">
+                                    <a 
+                                        href="/wraith"
+                                        className="px-4 py-2 text-gray-400 hover:text-green-400">
+                                        <i className="fas fa-spider mr-2"></i>Crawler
+                                    </a>
+                                    <button 
+                                        className="px-4 py-2 border-b-2 border-purple-500 text-purple-400">
+                                        <i className="fas fa-hammer mr-2"></i>Forge
+                                    </button>
+                                    <a 
+                                        href="/vault" 
+                                        className="px-4 py-2 text-gray-400 hover:text-blue-400">
+                                        <i className="fas fa-archive mr-2"></i>Vault
+                                    </a>
+                                    <a 
+                                        href="/about"
+                                        className="px-4 py-2 text-gray-400 hover:text-orange-400">
+                                        <i className="fas fa-info-circle mr-2"></i>About
+                                    </a>
+                                </div>
+                                
+                                {/* Language and Options Row - Inline with tabs (like index.html) */}
+                                {authStatus === 'authorized' && (
+                                    <div className="flex items-center">
+                                        <ForgeLanguageSelector 
+                                            selectedLanguage={selectedLanguage}
+                                            setSelectedLanguage={setSelectedLanguage}
+                                            customLanguage={customLanguage}
+                                            setCustomLanguage={setCustomLanguage}
+                                            commentsLevel={commentsLevel}
+                                            setCommentsLevel={setCommentsLevel}
+                                            includeErrorHandling={includeErrorHandling}
+                                            setIncludeErrorHandling={setIncludeErrorHandling}
+                                            disabled={false}
+                                            authStatus={authStatus}
+                                            languages={languages}
+                                            onAddCustomLanguage={handleCustomLanguageAdd}
+                                            onDeleteLanguage={deleteCustomLanguage}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="flex flex-col">
+                                
+                                {authStatus === 'authorized' ? (
+                                    <ForgeCodeInput 
+                                        authStatus={authStatus}
+                                        inputValue={inputValue}
+                                        setInputValue={setInputValue}
+                                        handleGenerateCode={handleGenerateCode}
+                                        isGenerating={isGenerating}
+                                    />
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <button
+                                            onClick={handleLogin}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+                                        >
+                                            <i className="fas fa-sign-in-alt mr-2"></i>
+                                            Login to Forge
+                                        </button>
+                                        <p className="text-gray-400 text-sm mt-2">
+                                            Access the AI-powered code generation interface
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Code Output - Full Height Display */}
+                        <div className="flex-1">
+                            <FullHeightDisplay
+                                title="Generated Code"
+                                icon="fas fa-code"
+                                iconColor="text-blue-400"
+                                headerActions={
+                                    <div className="flex items-center space-x-2">
+                                        <button 
+                                            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded"
+                                            onClick={async () => {
+                                                const success = await copyToClipboard(generatedCode);
+                                            }}
+                                        >
+                                            <i className="fas fa-copy mr-1"></i>Copy
+                                        </button>
+                                        <button 
+                                            className="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded"
+                                            onClick={() => downloadCode(generatedCode, selectedLanguage)}
+                                        >
+                                            <i className="fas fa-download mr-1"></i>Download
+                                        </button>
+                                    </div>
+                                }
+                                contentRef={codeOutputRef}
+                                bodyClassName="bg-gray-900"
+                            >
+                                <pre className="code-block">
+                                    <code className={`language-${selectedLanguage}`}>
+                                        {generatedCode}
+                                    </code>
+                                </pre>
+                            </FullHeightDisplay>
+                        </div>
+                    </div>
+                    
+                    {/* Token Manager Modal */}
+                    <TokenManagerModal 
+                        isOpen={isTokenModalOpen}
+                        onClose={() => setIsTokenModalOpen(false)}
+                        onTokenUpdated={(provider, token) => {
+                            console.log(`Forge token updated for ${provider}:`, token ? 'SET' : 'CLEARED');
+                            // Token is automatically saved to cookies by the modal
+                        }}
+                    />
+                </div>
+            );
+        };
+        
+        // Render the application
+        ReactDOM.render(<GnosisForgeInterface />, document.getElementById('root'));
+        {% endraw %}
+    </script>
+</body>
+</html>

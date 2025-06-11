@@ -7,16 +7,17 @@ services:
     ports:
       - "5678:5678"
     volumes:
-      - wraith-data:/data
+      - ./storage:/data
       - ./host-files:/host-files
     restart: unless-stopped
     environment:
       - GNOSIS_WRAITH_STORAGE_PATH=/data
-      - QUART_APP=gnosis_wraith.server.app:app
+      - QUART_APP=app:app
       - QUART_ENV=production
       - RUNNING_IN_CLOUD=false
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - ENABLE_USER_PARTITIONING=true
     depends_on:
       - redis
     profiles: [cpu]
@@ -27,7 +28,7 @@ services:
     ports:
       - "5678:5678"
     volumes:
-      - wraith-data:/data
+      - ./storage:/data
       - ./host-files:/host-files
     restart: unless-stopped
     deploy:
@@ -39,12 +40,13 @@ services:
               capabilities: [gpu, utility, compute]
     environment:
       - GNOSIS_WRAITH_STORAGE_PATH=/data
-      - QUART_APP=gnosis_wraith.server.app:app
+      - QUART_APP=app:app
       - QUART_ENV=production
       - NVIDIA_VISIBLE_DEVICES=all
       - RUNNING_IN_CLOUD=false
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - ENABLE_USER_PARTITIONING=true
     depends_on:
       - redis
     profiles: [gpu]
@@ -72,7 +74,5 @@ services:
     profiles: [dev]
 
 volumes:
-  wraith-data:
-    driver: local
   redis-data:
     driver: local
