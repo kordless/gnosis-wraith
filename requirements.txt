@@ -22,3 +22,5 @@ python-dotenv>=1.0.0
 sendgrid>=6.10.0
 twilio>=8.0.0
 coolname>=2.0.0
+Pillow>=10.0.0
+

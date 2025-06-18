@@ -109,4 +109,4 @@ ENV PYTHONPATH=/app:$PYTHONPATH
 EXPOSE 5678
 
 # Command to run using Hypercorn
-CMD ["hypercorn", "--bind", "0.0.0.0:5678", "app:app"]
+CMD hypercorn --bind 0.0.0.0:${PORT:-5678} app:app
