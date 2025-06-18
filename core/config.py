@@ -43,17 +43,7 @@ LIGHTNING_NODE_URL = os.environ.get('GNOSIS_WRAITH_LIGHTNING_NODE_URL', 'localho
 DEFAULT_AI_PROVIDER = os.environ.get('GNOSIS_WRAITH_DEFAULT_AI', 'local')
 
 def check_gpu_availability():
-    """Check if GPU is available for acceleration."""
-    try:
-        import torch
-        gpu_available = torch.cuda.is_available()
-        if gpu_available:
-            device_name = torch.cuda.get_device_name(0)
-            logger.info(f"GPU available: {device_name}")
-            return True
-        else:
-            logger.info("No GPU available, using CPU only")
-            return False
-    except Exception as e:
-        logger.warning(f"Error checking GPU availability: {str(e)}")
-        return False
+    """Check if GPU is available for acceleration - DEPRECATED."""
+    # GPU support removed along with CUDA/PyTorch dependencies
+    logger.info("GPU support has been removed from Gnosis Wraith")
+    return False

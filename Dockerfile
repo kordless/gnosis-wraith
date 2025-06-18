@@ -4,33 +4,12 @@ FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy
 # Accept extension version as build argument
 ARG EXTENSION_VERSION=1.4.1
 
-# Install dependencies for NVIDIA CUDA
+# Install basic dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
-    gnupg \
     wget \
     zip \
     && rm -rf /var/lib/apt/lists/*
-
-# Add NVIDIA CUDA Repository
-RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb \
-    && dpkg -i cuda-keyring_1.1-1_all.deb \
-    && rm cuda-keyring_1.1-1_all.deb
-
-# Install CUDA libraries
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    cuda-cudart-12-3 \
-    cuda-libraries-12-3 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set environment variables for CUDA
-ENV PATH="/usr/local/cuda-12.3/bin:${PATH}"
-ENV LD_LIBRARY_PATH="/usr/local/cuda-12-3/lib64:${LD_LIBRARY_PATH:-/usr/local/lib}"
-
-# Disable NVIDIA driver capabilities that might cause conflicts
-ENV NVIDIA_VISIBLE_DEVICES=all
-ENV NVIDIA_DRIVER_CAPABILITIES=compute,utility
-ENV NVIDIA_DISABLE_REQUIRE=true
 
 # Set extension version environment variable
 ENV EXTENSION_VERSION=${EXTENSION_VERSION}
@@ -41,9 +20,6 @@ WORKDIR /app
 # Upgrade pip, setuptools, and wheel, and install required Python packages
 RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install openai openai[datalib] tenacity playwright aiohttp
-
-# Install PyTorch with CUDA 12.3 support
-RUN pip install --no-cache-dir torch==2.2.0 torchvision==0.17.0 torchaudio==2.2.0 --index-url https://download.pytorch.org/whl/cu121
 
 # Install Quart and Hypercorn
 RUN pip install --no-cache-dir quart httpx werkzeug hypercorn quart_cors
