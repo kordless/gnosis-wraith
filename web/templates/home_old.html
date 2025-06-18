@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GNOSIS WRAITH - Spectral Web Intelligence</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/images/favicon_new.svg">
+    
+    <style>
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes ghost-float {
+            0% { transform: translateY(0px) scale(1); opacity: 0.8; }
+            25% { transform: translateY(-15px) scale(1.05); opacity: 1; }
+            50% { transform: translateY(-10px) scale(1); opacity: 0.9; }
+            75% { transform: translateY(-5px) scale(1.02); opacity: 1; }
+            100% { transform: translateY(0px) scale(1); opacity: 0.8; }
+        }
+        
+        .ghost-float {
+            animation: ghost-float 4s ease-in-out infinite;
+        }
+        
+        @keyframes rocket-launch {
+            0% { transform: translateY(0) rotate(-45deg); }
+            50% { transform: translateY(-20px) rotate(-45deg); }
+            100% { transform: translateY(0) rotate(-45deg); }
+        }
+        
+        .rocket-animation {
+            animation: rocket-launch 2s ease-in-out infinite;
+        }
+        
+        .terminal-text {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #4ade80 0%, #22c55e 50%, #16a34a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .wraith-box {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #4ade80;
+            box-shadow: 0 0 30px rgba(74, 222, 128, 0.5);
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .dark-gradient {
+                background: linear-gradient(180deg, #0f0f0f 0%, #1a1a1a 100%);
+            }
+        }
+        
+        /* Glow effects */
+        .glow-green {
+            text-shadow: 0 0 20px #4ade80, 0 0 40px #4ade80;
+        }
+        
+        .hero-grid {
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(74, 222, 128, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(74, 222, 128, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(74, 222, 128, 0.08) 0%, transparent 50%);
+        }
+        
+        /* Pulse effect for CTA buttons */
+        @keyframes pulse-shadow {
+            0% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+        }
+        
+        .pulse-shadow {
+            animation: pulse-shadow 2s infinite;
+        }
+        
+        /* Terminal cursor */
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        .cursor {
+            animation: blink 1s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <!-- Hero Section -->
+    <section class="min-h-screen flex flex-col items-center justify-center px-4 py-16 dark-gradient relative hero-grid overflow-hidden">
+        <!-- Floating Ghosts Background -->
+        <div class="absolute top-20 left-10 text-6xl ghost-float opacity-20">👻</div>
+        <div class="absolute top-40 right-20 text-5xl ghost-float opacity-15" style="animation-delay: 1s;">👻</div>
+        <div class="absolute bottom-20 left-1/4 text-7xl ghost-float opacity-10" style="animation-delay: 2s;">👻</div>
+        
+        <div class="max-w-5xl w-full mx-auto text-center">
+            <!-- Main Title with Ghost and Rocket -->
+            <div class="flex items-center justify-center gap-4 mb-4">
+                <span class="text-7xl md:text-8xl ghost-float">👻</span>
+                <h1 class="text-5xl md:text-7xl font-bold gradient-text glow-green">
+                    GNOSIS WRAITH
+                </h1>
+                <span class="text-7xl md:text-8xl rocket-animation">🚀</span>
+            </div>
+            
+            <p class="text-2xl md:text-3xl mb-4 text-gray-300">
+                Spectral Web Intelligence Platform
+            </p>
+            <p class="text-xl mb-8 text-green-400">
+                Crawl • Extract • Analyze • Deploy
+            </p>
+            
+            <div class="mb-12">
+                <p class="text-xl mb-2 text-gray-400">Transform any website into structured knowledge</p>
+                <p class="text-xl text-gray-400">Run locally, use our cloud, or deploy anywhere!</p>
+            </div>
+            
+            <!-- CTA Buttons -->
+            <div class="flex flex-col md:flex-row gap-4 justify-center mb-8">
+                <a href="/crawl" class="px-8 py-4 bg-green-600 hover:bg-green-700 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 hover:shadow-lg hover:shadow-green-500/50 pulse-shadow">
+                    <i class="fas fa-ghost mr-2"></i>Try Cloud Now
+                </a>
+                <button onclick="showDockerCommand()" class="px-8 py-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-lg font-semibold transition-all transform hover:scale-105">
+                    <i class="fas fa-terminal mr-2"></i>Run Locally
+                </button>
+                <a href="https://github.com/gnosis/wraith" target="_blank" class="px-8 py-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-lg font-semibold transition-all transform hover:scale-105">
+                    <i class="fab fa-github mr-2"></i>View Source
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- What We Do Section -->
+    <section class="py-16 px-4 bg-gray-800">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-4xl font-bold text-center mb-12 flex items-center justify-center gap-3">
+                <span>👻</span>
+                <span class="gradient-text">What is Gnosis Wraith?</span>
+                <span>👻</span>
+            </h2>
+            
+            <div class="grid md:grid-cols-3 gap-8 text-center">
+                <!-- Web Crawler -->
+                <div class="wraith-box rounded-lg p-8 hover:shadow-2xl hover:shadow-green-500/20 transition-all">
+                    <div class="text-5xl mb-4">🕸️</div>
+                    <h3 class="text-2xl font-bold mb-4 text-green-400">Web Crawler</h3>
+                    <p class="text-gray-300">Extract content from any website. Handle JavaScript, capture screenshots, convert to clean Markdown.</p>
+                </div>
+                
+                <!-- AI Toolbag -->
+                <div class="wraith-box rounded-lg p-8 hover:shadow-2xl hover:shadow-green-500/20 transition-all">
+                    <div class="text-5xl mb-4">🤖</div>
+                    <h3 class="text-2xl font-bold mb-4 text-green-400">AI Integration</h3>
+                    <p class="text-gray-300">Built-in AI tools for URL suggestions, content analysis, and intelligent extraction.</p>
+                </div>
+                
+                <!-- Deployment -->
+                <div class="wraith-box rounded-lg p-8 hover:shadow-2xl hover:shadow-green-500/20 transition-all">
+                    <div class="text-5xl mb-4">🚀</div>
+                    <h3 class="text-2xl font-bold mb-4 text-green-400">Deploy Anywhere</h3>
+                    <p class="text-gray-300">Run locally with Docker, use our cloud service, or deploy to your own infrastructure.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Quick Start Section -->
+    <section class="py-16 px-4">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">🚀 Quick Start</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Cloud Option -->
+                <div class="bg-gray-800 rounded-lg p-8 border border-gray-700 hover:border-green-500 transition-all">
+                    <h3 class="text-2xl font-bold mb-6 text-blue-400 flex items-center">
+                        <i class="fas fa-cloud mr-3"></i>Cloud Service
+                    </h3>
+                    <p class="text-gray-300 mb-6">Zero setup. Instant access. Pay as you go.</p>
+                    <ol class="space-y-3 mb-8 text-gray-300">
+                        <li><span class="text-green-400 font-semibold">1.</span> Visit our crawler at <code class="bg-gray-900 px-2 py-1 rounded">/crawl</code></li>
+                        <li><span class="text-green-400 font-semibold">2.</span> Enter any URL or search term</li>
+                        <li><span class="text-green-400 font-semibold">3.</span> Get instant results in Markdown</li>
+                    </ol>
+                    <a href="/crawl" class="block text-center px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-all">
+                        Try Now →
+                    </a>
+                </div>
+                
+                <!-- Local Option -->
+                <div class="bg-gray-800 rounded-lg p-8 border border-gray-700 hover:border-green-500 transition-all">
+                    <h3 class="text-2xl font-bold mb-6 text-green-400 flex items-center">
+                        <i class="fas fa-server mr-3"></i>Self-Hosted
+                    </h3>
+                    <p class="text-gray-300 mb-6">Full control. Your data. Your infrastructure.</p>
+                    <div class="bg-black rounded p-4 terminal-text text-sm mb-6">
+                        <code class="text-green-400">$ docker run -d -p 5678:5678 \<br>
+                        &nbsp;&nbsp;gnosis/wraith:latest<span class="cursor">_</span></code>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-6">Runs the exact same code as our cloud!</p>
+                    <button onclick="showDockerDocs()" class="block w-full text-center px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold transition-all">
+                        View Docker Docs →
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Features Grid -->
+    <section class="py-16 px-4 bg-gray-800">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">✨ Core Features</h2>
+            
+            <div class="grid md:grid-cols-4 gap-6">
+                <div class="bg-gray-900 rounded-lg p-6 text-center">
+                    <i class="fas fa-globe text-3xl text-green-400 mb-3"></i>
+                    <h3 class="font-semibold mb-2">Universal Crawler</h3>
+                    <p class="text-sm text-gray-400">JavaScript rendering, dynamic content, authentication support</p>
+                </div>
+                
+                <div class="bg-gray-900 rounded-lg p-6 text-center">
+                    <i class="fas fa-camera text-3xl text-green-400 mb-3"></i>
+                    <h3 class="font-semibold mb-2">Screenshots</h3>
+                    <p class="text-sm text-gray-400">Full page captures with configurable quality</p>
+                </div>
+                
+                <div class="bg-gray-900 rounded-lg p-6 text-center">
+                    <i class="fas fa-file-alt text-3xl text-green-400 mb-3"></i>
+                    <h3 class="font-semibold mb-2">Clean Markdown</h3>
+                    <p class="text-sm text-gray-400">Perfect formatting for AI consumption</p>
+                </div>
+                
+                <div class="bg-gray-900 rounded-lg p-6 text-center">
+                    <i class="fas fa-brain text-3xl text-green-400 mb-3"></i>
+                    <h3 class="font-semibold mb-2">AI Analysis</h3>
+                    <p class="text-sm text-gray-400">Built-in LLM processing and summarization</p>
+                </div>
+                
+                <div class="bg-gray-900 rounded-lg p-6 text-center">
+                    <i class="fas fa-shield-alt text-3xl text-green-400 mb-3"></i>
+                    <h3 class="font-semibold mb-2">Privacy First</h3>
+                    <p class="text-sm text-gray-400">Your data stays yours, always</p>
+                </div>
+                
+                <div class="bg-gray-900 rounded-lg p-6 text-center">
+                    <i class="fas fa-rocket text-3xl text-green-400 mb-3"></i>
+                    <h3 class="font-semibold mb-2">API Ready</h3>
+                    <p class="text-sm text-gray-400">RESTful API for seamless integration</p>
+                </div>
+                
+                <div class="bg-gray-900 rounded-lg p-6 text-center">
+                    <i class="fas fa-chart-line text-3xl text-green-400 mb-3"></i>
+                    <h3 class="font-semibold mb-2">Real-time Logs</h3>
+                    <p class="text-sm text-gray-400">Watch the crawler work its magic</p>
+                </div>
+                
+                <div class="bg-gray-900 rounded-lg p-6 text-center">
+                    <i class="fas fa-code text-3xl text-green-400 mb-3"></i>
+                    <h3 class="font-semibold mb-2">Open Source</h3>
+                    <p class="text-sm text-gray-400">MIT licensed, community driven</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Use Cases Section -->
+    <section class="py-16 px-4">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">🎯 Perfect For</h2>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 text-purple-400">AI Training Data</h3>
+                    <p class="text-gray-300">Extract clean, structured content from any website for training your models or RAG systems.</p>
+                </div>
+                
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-400">Research & Analysis</h3>
+                    <p class="text-gray-300">Gather competitive intelligence, monitor changes, or archive important web content.</p>
+                </div>
+                
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-xl font-semibold mb-4 text-green-400">Content Migration</h3>
+                    <p class="text-gray-300">Convert websites to Markdown for documentation, wikis, or content management systems.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Pricing Section -->
+    <section class="py-16 px-4 bg-gray-800">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">💰 Simple Pricing</h2>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Free Tier -->
+                <div class="bg-gray-900 rounded-lg p-8 border border-gray-700">
+                    <h3 class="text-2xl font-bold mb-2">Open Source</h3>
+                    <p class="text-3xl font-bold mb-6 text-green-400">Free Forever</p>
+                    <ul class="space-y-3 mb-8 text-gray-300">
+                        <li>✓ Self-host anywhere</li>
+                        <li>✓ Full source code</li>
+                        <li>✓ Community support</li>
+                        <li>✓ No limitations</li>
+                    </ul>
+                    <a href="https://github.com/gnosis/wraith" target="_blank" class="block text-center px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg">
+                        Get Started
+                    </a>
+                </div>
+                
+                <!-- Cloud Tier -->
+                <div class="bg-gray-900 rounded-lg p-8 border-2 border-green-500 relative">
+                    <span class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-500 text-black px-4 py-1 rounded-full text-sm font-bold">
+                        POPULAR
+                    </span>
+                    <h3 class="text-2xl font-bold mb-2">Cloud Service</h3>
+                    <p class="text-3xl font-bold mb-6 text-green-400">$0.10<span class="text-lg">/crawl</span></p>
+                    <ul class="space-y-3 mb-8 text-gray-300">
+                        <li>✓ No setup required</li>
+                        <li>✓ Pay as you go</li>
+                        <li>✓ Auto-scaling</li>
+                        <li>✓ API included</li>
+                        <li>✓ Priority support</li>
+                    </ul>
+                    <a href="/crawl" class="block text-center px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-semibold">
+                        Start Crawling
+                    </a>
+                </div>
+                
+                <!-- Enterprise -->
+                <div class="bg-gray-900 rounded-lg p-8 border border-gray-700">
+                    <h3 class="text-2xl font-bold mb-2">Enterprise</h3>
+                    <p class="text-3xl font-bold mb-6 text-purple-400">Custom</p>
+                    <ul class="space-y-3 mb-8 text-gray-300">
+                        <li>✓ Dedicated infrastructure</li>
+                        <li>✓ SLA guarantees</li>
+                        <li>✓ Custom features</li>
+                        <li>✓ Training included</li>
+                        <li>✓ 24/7 support</li>
+                    </ul>
+                    <button onclick="contactSales()" class="block w-full text-center px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg">
+                        Contact Sales
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- API Example Section -->
+    <section class="py-16 px-4">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-12">🔧 Developer Friendly</h2>
+            
+            <div class="bg-gray-800 rounded-lg p-6 overflow-x-auto">
+                <pre class="terminal-text text-sm"><code># Crawl any URL with our API
+curl -X POST https://wraith.gnosis.services/api/crawl \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com",
+    "javascript_enabled": true,
+    "markdown_extraction": "enhanced"
+  }'
+
+# Or use Python
+import requests
+
+response = requests.post(
+    "https://wraith.gnosis.services/api/crawl",
+    json={
+        "url": "https://example.com",
+        "take_screenshot": True,
+        "ocr_extraction": True
+    }
+)
+
+print(response.json())</code></pre>
+            </div>
+            
+            <p class="text-center mt-6 text-gray-400">
+                <a href="/api/docs" class="text-green-400 hover:text-green-300 underline">View Full API Documentation →</a>
+            </p>
+        </div>
+    </section>
+    
+    <!-- Community Section -->
+    <section class="py-16 px-4 bg-gray-800">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl font-bold mb-8">🌟 Join the Wraith Community</h2>
+            
+            <div class="flex flex-col md:flex-row gap-6 justify-center mb-8">
+                <a href="https://github.com/gnosis/wraith" target="_blank" class="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-all">
+                    <i class="fab fa-github text-2xl"></i>
+                    <span>Star on GitHub</span>
+                </a>
+                <a href="https://discord.gg/gnosis" target="_blank" class="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all">
+                    <i class="fab fa-discord text-2xl"></i>
+                    <span>Join Discord</span>
+                </a>
+                <a href="https://twitter.com/gnosiswraith" target="_blank" class="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all">
+                    <i class="fab fa-twitter text-2xl"></i>
+                    <span>Follow Updates</span>
+                </a>
+            </div>
+            
+            <p class="text-gray-400 mb-4">Built with ❤️ by the Gnosis team</p>
+            <p class="text-sm text-gray-500">Supporting developers in their quest for knowledge extraction</p>
+        </div>
+    </section>
+    
+    <!-- Final CTA -->
+    <section class="py-24 px-4 text-center bg-gradient-to-b from-gray-800 to-gray-900">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-6xl mb-8">👻 🚀 👻</div>
+            <h2 class="text-4xl font-bold mb-8">
+                <span class="gradient-text">Ready to unleash the Wraith?</span>
+            </h2>
+            
+            <div class="flex flex-col md:flex-row gap-4 justify-center">
+                <a href="/crawl" class="px-8 py-4 bg-green-600 hover:bg-green-700 rounded-lg text-lg font-semibold inline-block transition-all transform hover:scale-105 pulse-shadow">
+                    Start Crawling Now
+                </a>
+                <button onclick="showDockerCommand()" class="px-8 py-4 bg-gray-700 hover:bg-gray-600 rounded-lg text-lg font-semibold transition-all transform hover:scale-105">
+                    Deploy Locally
+                </button>
+            </div>
+            
+            <p class="mt-8 text-gray-500">No credit card required • Open source • Privacy focused</p>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="py-8 px-4 bg-black text-gray-500 text-center">
+        <p>&copy; 2024 Gnosis Wraith. Spectral intelligence for the modern web.</p>
+        <p class="text-sm mt-2">
+            <a href="/privacy" class="hover:text-gray-300">Privacy</a> • 
+            <a href="/terms" class="hover:text-gray-300">Terms</a> • 
+            <a href="/docs" class="hover:text-gray-300">Docs</a> • 
+            <a href="/status" class="hover:text-gray-300">Status</a>
+        </p>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script>
+        function showDockerCommand() {
+            const command = `docker run -d -p 5678:5678 gnosis/wraith:latest`;
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-8 max-w-2xl w-full">
+                    <h3 class="text-2xl font-bold mb-4 text-green-400">🐳 Docker Quick Start</h3>
+                    <div class="bg-black rounded p-4 mb-4">
+                        <code class="text-green-400 break-all">${command}</code>
+                    </div>
+                    <p class="text-gray-300 mb-4">Then visit <code class="bg-gray-700 px-2 py-1 rounded">http://localhost:5678</code></p>
+                    <div class="flex gap-4">
+                        <button onclick="copyToClipboard('${command}')" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded">
+                            <i class="fas fa-copy mr-2"></i>Copy Command
+                        </button>
+                        <button onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+        }
+        
+        function showDockerDocs() {
+            window.open('https://github.com/gnosis/wraith/blob/main/docs/docker.md', '_blank');
+        }
+        
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Show success message
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+                toast.innerHTML = '<i class="fas fa-check mr-2"></i>Copied to clipboard!';
+                document.body.appendChild(toast);
+                
+                setTimeout(() => toast.remove(), 3000);
+            });
+        }
+        
+        function contactSales() {
+            window.location.href = 'mailto:sales@gnosis.services?subject=Gnosis Wraith Enterprise Inquiry';
+        }
+        
+        // Add some interactive ghost effects
+        document.addEventListener('DOMContentLoaded', () => {
+            const ghosts = document.querySelectorAll('.ghost-float');
+            ghosts.forEach(ghost => {
+                ghost.addEventListener('click', () => {
+                    ghost.style.transform = 'scale(1.5)';
+                    setTimeout(() => {
+                        ghost.style.transform = '';
+                    }, 300);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

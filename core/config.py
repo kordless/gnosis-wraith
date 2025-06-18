@@ -3,27 +3,21 @@ import logging
 import sys
 from pathlib import Path
 
-# Configuration
-STORAGE_PATH = os.environ.get('GNOSIS_WRAITH_STORAGE_PATH', os.path.join(os.path.expanduser("~"), ".gnosis-wraith"))
-SCREENSHOTS_DIR = os.path.join(STORAGE_PATH, "screenshots")
-REPORTS_DIR = os.path.join(STORAGE_PATH, "reports")
-DATA_DIR = os.path.join(STORAGE_PATH, "data")  # Added dedicated data directory
-SYSTEM_DIR = os.path.join(STORAGE_PATH, "system")  # System-wide data
-LOGS_DIR = os.path.join(STORAGE_PATH, "logs")  # Logs directory
+# Storage configuration now handled by storage_service.py
+# Only keep logging configuration here
+STORAGE_PATH = os.environ.get('STORAGE_PATH', os.path.join(os.path.dirname(os.path.dirname(__file__)), 'storage'))
+LOGS_DIR = os.path.join(STORAGE_PATH, "logs")
 LOG_FILE = os.path.join(LOGS_DIR, "gnosis-wraith.log")
 
-# Ensure directories exist
-os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
-os.makedirs(REPORTS_DIR, exist_ok=True)
-os.makedirs(DATA_DIR, exist_ok=True)  # Create data directory
-os.makedirs(SYSTEM_DIR, exist_ok=True)  # Create system directory
-os.makedirs(LOGS_DIR, exist_ok=True)  # Create logs directory
-os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+# Compatibility shims for old code that expects these paths
+# These are deprecated - use storage_service.py instead
+SCREENSHOTS_DIR = os.path.join(STORAGE_PATH, "screenshots")
+REPORTS_DIR = os.path.join(STORAGE_PATH, "reports")
 
-# Update environment variables for access in other modules
-os.environ['GNOSIS_WRAITH_SCREENSHOTS_DIR'] = SCREENSHOTS_DIR
-os.environ['GNOSIS_WRAITH_REPORTS_DIR'] = REPORTS_DIR
-os.environ['GNOSIS_WRAITH_DATA_DIR'] = DATA_DIR  # Add environment variable for data directory
+# Ensure only logs directory exists
+os.makedirs(LOGS_DIR, exist_ok=True)
+
+
 
 # Setup logging
 logger = logging.getLogger("gnosis_wraith")

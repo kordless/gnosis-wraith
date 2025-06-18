@@ -144,8 +144,15 @@ class BrowserControl:
             await asyncio.sleep(3)
             return False
 
-    async def navigate(self, url, javascript_enabled=False):
-        """Navigate to a URL with improved error handling and retry logic."""
+    async def navigate(self, url, javascript_enabled=False, timeout=30000):
+        """Navigate to a URL with improved error handling and retry logic.
+        
+        Args:
+            url: The URL to navigate to
+            javascript_enabled: Whether JavaScript is enabled
+            timeout: Navigation timeout in milliseconds (default: 30000)
+        """
+
         if not self.page:
             logger.info("Browser not started, initializing before navigation")
             await self.start_browser(javascript_enabled=javascript_enabled)
@@ -161,24 +168,15 @@ class BrowserControl:
                 
                 # Use consistent wait_until strategy regardless of JS setting
                 # This ensures the page is at least initially loaded before we apply custom waiting
-                await self.page.goto(url, timeout=60000, wait_until='domcontentloaded')
+                await self.page.goto(url, timeout=timeout, wait_until='domcontentloaded')
+
                 
                 # After basic loading, use our custom wait strategy
                 logger.info(f"Basic page load complete, waiting for render stability...")
                 await self.wait_for_render_stability(javascript_enabled)
                 
-                # Special case handling for known problematic sites
-                site_keywords = ["splunk", "tableau", "dashboard", "visualize", "analytics"]
-                is_complex_site = any(keyword in url.lower() for keyword in site_keywords)
-                
                 if javascript_enabled:
-                    if is_complex_site:
-                        # Force longer wait for complex sites when JS is enabled
-                        logger.info(f"Detected complex JS site, applying extended waiting period...")
-                        await asyncio.sleep(7)  # Long wait for complex JS sites
-                    else:
-                        # Default additional wait for JS-enabled sites
-                        await asyncio.sleep(3)
+                    await asyncio.sleep(3)
                 
                 logger.info(f"Successfully navigated to {url}")
                 return

@@ -46,7 +46,6 @@ class User(BaseModel):
     email = StringProperty()  # Email address (primary identifier)
     
     # Authentication tokens
-    api_token = StringProperty()  # API access token
     mail_token = StringProperty()  # Email verification token
     mail_confirm = BooleanProperty(default=False)  # Email confirmed
     mail_tries = IntegerProperty(default=0)  # Email send attempts
@@ -127,7 +126,6 @@ class User(BaseModel):
         user.phone = phone
         user.phone_code = generate_token()
         user.mail_token = generate_token()
-        user.api_token = generate_token()
         user.created = datetime.datetime.utcnow()
         user.updated = datetime.datetime.utcnow()
         user.expires = datetime.datetime.utcnow() + datetime.timedelta(days=30)
@@ -213,29 +211,6 @@ class User(BaseModel):
         else:
             return cls.query(cls.mail_token == mail_token).get()
     
-    @classmethod
-    @ndb_context_manager
-    def get_by_api_token(cls, api_token: str) -> Optional['User']:
-        """Get user by API token"""
-        if os.getenv('USE_LOCAL_DATASTORE', 'true').lower() == 'true':
-            # For local storage, manually search through users
-            all_users = cls._load_all()
-            for key, user_data in all_users.items():
-                if user_data.get('api_token') == api_token:
-                    user = cls()
-                    for k, v in user_data.items():
-                        if k in ['created', 'updated', 'expires', 'last_login', 'last_crawl'] and v:
-                            # Convert string dates back to datetime
-                            try:
-                                setattr(user, k, datetime.datetime.fromisoformat(v))
-                            except:
-                                setattr(user, k, v)
-                        else:
-                            setattr(user, k, v)
-                    return user
-            return None
-        else:
-            return cls.query(cls.api_token == api_token).get()
     
     @classmethod
     @ndb_context_manager
@@ -248,16 +223,6 @@ class User(BaseModel):
             user.put()
         return user
     
-    @classmethod
-    @ndb_context_manager
-    def reset_token(cls, uid: str) -> Optional['User']:
-        """Reset user's API token"""
-        user = cls.get_by_uid(uid)
-        if user:
-            user.api_token = generate_token()
-            user.updated = datetime.datetime.utcnow()
-            user.put()
-        return user
     
     @classmethod
     @ndb_context_manager
@@ -326,7 +291,6 @@ class User(BaseModel):
             anon.phone = "+1"
             anon.phone_code = "000000"
             anon.mail_token = "anonymous"
-            anon.api_token = "anonymous"
             anon.created = datetime.datetime.utcnow()
             anon.updated = datetime.datetime.utcnow()
             anon.expires = datetime.datetime.utcnow() + datetime.timedelta(days=36500)  # 100 years

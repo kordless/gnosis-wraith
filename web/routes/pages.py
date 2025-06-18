@@ -14,10 +14,29 @@ async def home():
     """Render the home/landing page."""
     return await render_template('home.html', active_page='home')
 
-@pages_bp.route('/philosophy')
-async def philosophy():
-    """Render the philosophy page."""
-    return await render_template('philosophy.html')
+@pages_bp.route('/crawl')
+@login_required
+async def crawl():
+    """Render the crawl page."""
+    from quart import session
+    user_data = {
+        'email': session.get('user_email'),
+        'name': session.get('user_name'),
+        'uid': session.get('user_uid')
+    }
+    return await render_template('index.html', active_page='crawl', user_data=user_data)
+
+@pages_bp.route('/forge')
+async def forge():
+    """Render the code forge page."""
+    return await render_template('forge.html', active_page='forge')
+
+@pages_bp.route('/rocket')
+async def rocket():
+    """Render the rocket explorer page."""
+    return await render_template('rocket.html', active_page='rocket')
+
+
 
 @pages_bp.route('/reports')
 @login_required
@@ -389,6 +408,40 @@ async def serve_screenshot_legacy(filename):
     
     return await send_from_directory(user_screenshots_dir, filename)
 
+@pages_bp.route('/storage/<user_hash>/<path:filename>')
+@login_required
+async def serve_storage_file(user_hash, filename):
+    """Serve any file from user-specific storage directory."""
+    # Get user email from session
+    from quart import session, abort
+    user_email = session.get('user_email', None)
+    
+    # Verify user hash matches current user
+    if user_email and user_email != 'anonymous':
+        import hashlib
+        expected_hash = hashlib.sha256(user_email.encode()).hexdigest()[:12]
+    else:
+        import hashlib
+        expected_hash = hashlib.sha256('anonymous@gnosis-wraith.local'.encode()).hexdigest()[:12]
+    
+    if user_hash != expected_hash:
+        logger.warning(f"User hash mismatch: expected {expected_hash}, got {user_hash}")
+        abort(403)  # Forbidden
+    
+    # Construct the user storage path
+    user_storage_path = os.path.join(STORAGE_PATH, 'users', user_hash)
+    
+    # Check if the file exists
+    file_path = os.path.join(user_storage_path, filename)
+    if not os.path.exists(file_path):
+        logger.error(f"Storage file not found: {file_path}")
+        abort(404)
+    
+    # Serve the file
+    logger.info(f"Serving storage file: {filename} from {user_storage_path}")
+    return await send_from_directory(user_storage_path, filename)
+
+
 @pages_bp.route('/extension')
 async def serve_extension():
     """Serve the extension zip file with version number."""
@@ -455,10 +508,6 @@ async def serve_extension():
             logger.error(f"Extension directory not found")
             return "Extension directory not found", 404
 
-@pages_bp.route('/wraith')
-async def wraith():
-    """Render the simplified wraith page (legacy route)."""
-    return redirect(url_for('pages.crawl'))
 
 # Path-based URL route - put this at the end to avoid conflicts
 @pages_bp.route('/http/<path:url>')
@@ -475,212 +524,3 @@ async def crawl_with_path(url):
     
     # Redirect to crawl page with the URL as a parameter
     return redirect(f'/crawl?q={full_url}')
-
-@pages_bp.route('/crawl')
-@login_required
-async def crawl():
-    """Render the crawl page."""
-    return await render_template('index.html', active_page='crawl')
-
-
-@pages_bp.route('/code')
-async def code():
-    """Render the code examples page."""
-    return await render_template('code_examples.html', active_page='code')
-
-@pages_bp.route('/terminal')
-async def terminal():
-    """Render the terminal page."""
-    return await render_template('terminal.html', active_page='terminal')
-
-@pages_bp.route('/settings')
-async def settings():
-    """Render the settings page."""
-    # Try to load settings from data directory if available
-    saved_settings = {}
-    try:
-        from core.config import DATA_DIR
-        settings_file = os.path.join(DATA_DIR, "server_settings.json")
-        
-        if os.path.exists(settings_file):
-            logger.info(f"Loading settings from {settings_file}")
-            try:
-                with open(settings_file, 'r') as f:
-                    saved_settings = json.load(f)
-                logger.info(f"Loaded settings: {saved_settings}")
-            except Exception as e:
-                logger.error(f"Error loading settings from file: {str(e)}")
-                # Continue with defaults if loading fails
-    except Exception as e:
-        logger.error(f"Error accessing data directory: {str(e)}")
-    
-    # Default settings (use saved values if available)
-    settings_data = {
-        'server_url': saved_settings.get('server_url', os.environ.get('GNOSIS_WRAITH_SERVER_URL', 'http://localhost:5678')),
-        'llm_api_token': os.environ.get('GNOSIS_WRAITH_LLM_API_TOKEN', ''),  # Don't load from saved settings for security
-        'screenshot_quality': saved_settings.get('screenshot_quality', os.environ.get('GNOSIS_WRAITH_SCREENSHOT_QUALITY', 'medium')),
-        'javascript_enabled': saved_settings.get('javascript_enabled', os.environ.get('GNOSIS_WRAITH_JAVASCRIPT_ENABLED', 'false') == 'true'),
-        'storage_path': saved_settings.get('storage_path', STORAGE_PATH),
-        'active_page': 'settings',  # Add active_page parameter for header navigation
-        'last_saved': saved_settings.get('saved_timestamp', 'Never')
-    }
-    
-    return await render_template('settings.html', **settings_data)
-
-@pages_bp.route('/min')
-async def minimal_interface():
-    """Render the minimal Gnosis interface."""
-    return await render_template('index.html', active_page='min')
-
-@pages_bp.route('/min/logs')
-async def minimal_interface_logs():
-    """View logs from the minimal interface.
-    
-    This route provides a simple interface for viewing the logs
-    generated by the minimal interface.
-    """
-    log_file_path = os.path.join(STORAGE_PATH, "minimal_interface_logs.json")
-    logs = []
-    
-    try:
-        if os.path.exists(log_file_path):
-            with open(log_file_path, 'r') as f:
-                logs = json.load(f)
-                
-            # Reverse logs to show newest first
-            logs.reverse()
-    except Exception as e:
-        logger.error(f"Error reading logs: {str(e)}")
-    
-    return await render_template('min_logs.html', 
-                          logs=logs, 
-                          log_count=len(logs),
-                          active_page='min_logs')
-
-@pages_bp.route('/forge')
-async def forge():
-    """Render the code forge page."""
-    return await render_template('forge.html', active_page='forge')
-
-@pages_bp.route('/about')
-async def about():
-    """Render the about page."""
-    return await render_template('about.html', active_page='about')
-
-@pages_bp.route('/vault')
-async def vault():
-    """Render the vault page - locked and offline system."""
-    return await render_template('vault.html', active_page='vault')
-
-@pages_bp.route('/chrome-error')
-async def chrome_error():
-    """Render a fake Chrome error page."""
-    return await render_template('chrome_error.html')
-
-@pages_bp.route('/shared-code/<share_id>')
-async def shared_code(share_id):
-    """Display shared code snippets."""
-    try:
-        # Find the shared code file
-        filename = f"shared_code_{share_id}.md"
-        file_path = os.path.join(REPORTS_DIR, filename)
-        
-        if not os.path.exists(file_path):
-            logger.warning(f"Shared code not found: {share_id}")
-            return await render_template('error.html',
-                                  error_title="Shared Code Not Found",
-                                  error_message=f"The shared code with ID '{share_id}' could not be found. It may have expired or been removed.",
-                                  error_type="not-found",
-                                  active_page='shared-code')
-        
-        # Read the markdown content
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # Parse metadata from the markdown
-        lines = content.split('\n')
-        title = "Shared Code"
-        language = "text"
-        created = ""
-        
-        for line in lines:
-            if line.startswith('# Shared Code:'):
-                title = line.strip('# ')
-            elif line.startswith('**Language:**'):
-                language = line.replace('**Language:**', '').strip()
-            elif line.startswith('**Created:**'):
-                created = line.replace('**Created:**', '').strip()
-        
-        # Extract just the code portion
-        code_start = content.find('```' + language)
-        code_end = content.find('```', code_start + 3)
-        
-        if code_start != -1 and code_end != -1:
-            code = content[code_start + len('```' + language):code_end].strip()
-        else:
-            code = "Code could not be extracted from the shared file."
-        
-        # Return a simple template that displays the code
-        return f"""<!DOCTYPE html>
-<html>
-<head>
-    <title>{title}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-{language}.min.js"></script>
-    <style>
-        body {{ font-family: 'SF Mono', 'Consolas', 'Monaco', monospace; background: #1e1e1e; color: #d4d4d4; margin: 20px; }}
-        .header {{ margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px; }}
-        .meta {{ font-size: 14px; color: #888; }}
-        pre {{ background: #1e1e1e !important; padding: 20px; border-radius: 8px; border: 1px solid #444; }}
-        .actions {{ margin: 20px 0; }}
-        .btn {{ background: #444; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-right: 10px; }}
-        .btn:hover {{ background: #555; }}
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>{title}</h1>
-        <div class="meta">
-            <strong>Language:</strong> {language}<br>
-            <strong>Created:</strong> {created}<br>
-            <strong>Share ID:</strong> {share_id}
-        </div>
-    </div>
-    
-    <div class="actions">
-        <button class="btn" onclick="copyCode()">Copy Code</button>
-        <button class="btn" onclick="downloadCode()">Download</button>
-        <a href="/forge" class="btn" style="text-decoration: none;">Open in Forge</a>
-    </div>
-    
-    <pre><code class="language-{language}">{code}</code></pre>
-    
-    <script>
-        async function copyCode() {{
-            await navigator.clipboard.writeText(`{code}`);
-            alert('Code copied to clipboard!');
-        }}
-        
-        function downloadCode() {{
-            const blob = new Blob([`{code}`], {{ type: 'text/plain' }});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'shared_code_{share_id}.{language}';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }}
-    </script>
-</body>
-</html>"""
-        
-    except Exception as e:
-        logger.error(f"Error displaying shared code {share_id}: {str(e)}")
-        return await render_template('error.html',
-                              error_title="Error Loading Shared Code",
-                              error_message=f"An error occurred while loading the shared code: {str(e)}",
-                              error_type="error",
-                              active_page='shared-code')

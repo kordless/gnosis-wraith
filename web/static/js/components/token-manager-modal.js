@@ -177,7 +177,7 @@ const TokenManagerModal = ({
   const providersWithTokens = getProvidersWithTokens();
   
   return (
-    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black transition-opacity duration-200 ${isVisible ? 'bg-opacity-75' : 'bg-opacity-0'} ${className}`}>
+    <div className={`fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 ${className}`}>
       <div 
         ref={modalRef}
         className={`bg-gray-800 border-2 border-gray-600 rounded-lg shadow-2xl w-full max-w-md mx-4 p-6 transform transition-all duration-200 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
@@ -243,7 +243,7 @@ const TokenManagerModal = ({
             }}
           />
           <p className="text-xs text-gray-500 mt-2">
-            Token is encrypted and stored securely in browser cookies
+            Token is stored locally in your browser only - never sent to our servers
           </p>
         </div>
         

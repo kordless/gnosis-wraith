@@ -1,0 +1,33 @@
+# Test environment
+.env
+.env.local
+.env.test
+
+# Test results
+results/
+*.log
+*.json
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary test files
+temp/
+tmp/
+*.tmp

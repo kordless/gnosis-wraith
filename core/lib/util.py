@@ -10,9 +10,8 @@ import zlib
 import base64
 import os
 
-from coolname import generate_slug
-
 from quart import current_app
+
 
 # Optional imports - only import if needed
 try:
@@ -37,7 +36,20 @@ def random_string(size=6, chars=string.ascii_letters + string.digits):
 
 
 def random_name(size=3):
-    return generate_slug(size)
+    # Generate a random name without coolname dependency
+    # Format: adjective-noun-number
+    adjectives = ['quick', 'lazy', 'happy', 'brave', 'bright', 'calm', 'eager', 'gentle', 'proud', 'witty']
+    nouns = ['fox', 'dog', 'cat', 'bird', 'fish', 'bear', 'wolf', 'hawk', 'deer', 'owl']
+    
+    parts = []
+    if size >= 1:
+        parts.append(random.choice(adjectives))
+    if size >= 2:
+        parts.append(random.choice(nouns))
+    if size >= 3:
+        parts.append(str(random.randint(100, 999)))
+    
+    return '-'.join(parts)
 
 
 def generate_token(size=30):

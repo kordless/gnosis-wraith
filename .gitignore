@@ -50,6 +50,14 @@ organize_docs*.py
 .env
 .env.local
 .env.*.local
+.env.cloudrun
 
 # Dependencies
 node_modules/
+
+# Gnosis Mystic
+.mystic/
+
+# User data files
+storage/users/
+storage/models/

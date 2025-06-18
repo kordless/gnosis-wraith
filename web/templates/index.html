@@ -135,7 +135,8 @@
     <script>
         // Pass template variables to JavaScript
         window.GNOSIS_CONFIG = {
-            active_page: "{{ active_page|default('crawl') }}"
+            active_page: "{{ active_page|default('crawl') }}",
+            user_data: {{ user_data|tojson|safe if user_data else 'null' }}
         };
     </script>
     

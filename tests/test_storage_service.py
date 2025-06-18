@@ -12,7 +12,7 @@ from datetime import datetime
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.enhanced_storage_service import StorageService, is_running_in_cloud
+from core.storage_service import StorageService, is_running_in_cloud
 
 
 async def test_storage_service():
@@ -153,7 +153,7 @@ async def test_migration():
     print("Testing Report Migration")
     print("=" * 60)
     
-    from core.enhanced_storage_service import migrate_existing_reports
+    # Migration function removed - no longer needed
     
     storage = StorageService()
     

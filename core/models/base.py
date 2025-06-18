@@ -86,8 +86,19 @@ class LocalQuery:
             if match:
                 # Convert dict to model instance
                 instance = self.model_class()
+                # Set internal storage attributes for property descriptors
                 for k, v in data.items():
-                    setattr(instance, k, v)
+                    if hasattr(instance.__class__, k):
+                        prop = getattr(instance.__class__, k)
+                        if isinstance(prop, (StringProperty, BooleanProperty, IntegerProperty, DateTimeProperty, JsonProperty)):
+                            # Use the property descriptor setter
+                            setattr(instance, k, v)
+                        else:
+                            # Regular attribute
+                            setattr(instance, k, v)
+                    else:
+                        # Dynamic attribute not defined in class
+                        setattr(instance, k, v)
                 results.append(instance)
         
         if limit:
@@ -101,15 +112,17 @@ class BaseModel:
     @classmethod
     def _get_storage_dir(cls):
         """Get storage directory for this model"""
-        base_path = os.getenv('LOCAL_DATASTORE_PATH', './local_datastore')
-        model_dir = os.path.join(base_path, cls.__name__.lower())
+        # Use the unified storage path from environment or default
+        base_path = os.getenv('STORAGE_PATH', os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'storage'))
+        model_dir = os.path.join(base_path, 'models')
         Path(model_dir).mkdir(parents=True, exist_ok=True)
         return model_dir
     
     @classmethod
     def _get_storage_path(cls):
         """Get JSON file path for this model"""
-        return os.path.join(cls._get_storage_dir(), 'data.json')
+        model_dir = cls._get_storage_dir()
+        return os.path.join(model_dir, f'{cls.__name__}.json')
     
     @classmethod
     def _load_all(cls):
@@ -129,22 +142,37 @@ class BaseModel:
     
     def put(self):
         """Save this entity to storage"""
-        # Get primary key (email for User, tid for Transaction, or uid as fallback)
-        key = getattr(self, 'email', None) or getattr(self, 'tid', None) or getattr(self, 'uid', None)
+        # Get primary key (email for User, tid for Transaction, token_id for ApiToken, or uid as fallback)
+        key = getattr(self, 'email', None) or getattr(self, 'tid', None) or getattr(self, 'token_id', None) or getattr(self, 'uid', None)
         if not key:
-            raise ValueError("Entity must have email, tid, or uid")
+            raise ValueError("Entity must have email, tid, token_id, or uid")
         
         # Load existing data
         all_data = self._load_all()
         
         # Convert instance to dict
         entity_data = {}
-        for attr in dir(self):
-            if not attr.startswith('_') and not callable(getattr(self, attr)):
-                value = getattr(self, attr)
-                if isinstance(value, datetime):
-                    value = value.isoformat()
-                entity_data[attr] = value
+        
+        # First, handle all property descriptors
+        for attr_name in dir(self.__class__):
+            if not attr_name.startswith('_'):
+                attr = getattr(self.__class__, attr_name)
+                if isinstance(attr, (StringProperty, BooleanProperty, IntegerProperty, DateTimeProperty, JsonProperty)):
+                    # Get the actual value using the descriptor
+                    value = getattr(self, attr_name)
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    entity_data[attr_name] = value
+        
+        # Then handle any additional attributes that were set dynamically
+        for attr_name in dir(self):
+            if not attr_name.startswith('_') and not callable(getattr(self, attr_name)):
+                # Skip if already handled by property descriptor
+                if attr_name not in entity_data:
+                    value = getattr(self, attr_name)
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    entity_data[attr_name] = value
         
         # Save
         all_data[key] = entity_data
@@ -160,17 +188,33 @@ class BaseModel:
     def to_dict(self):
         """Convert entity to dictionary"""
         result = {}
-        for attr in dir(self):
-            if not attr.startswith('_') and not callable(getattr(self, attr)):
-                value = getattr(self, attr)
-                if isinstance(value, datetime):
-                    value = value.isoformat()
-                result[attr] = value
+        
+        # First, handle all property descriptors
+        for attr_name in dir(self.__class__):
+            if not attr_name.startswith('_'):
+                attr = getattr(self.__class__, attr_name)
+                if isinstance(attr, (StringProperty, BooleanProperty, IntegerProperty, DateTimeProperty, JsonProperty)):
+                    # Get the actual value using the descriptor
+                    value = getattr(self, attr_name)
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    result[attr_name] = value
+        
+        # Then handle any additional attributes that were set dynamically
+        for attr_name in dir(self):
+            if not attr_name.startswith('_') and not callable(getattr(self, attr_name)):
+                # Skip if already handled by property descriptor
+                if attr_name not in result:
+                    value = getattr(self, attr_name)
+                    if isinstance(value, datetime):
+                        value = value.isoformat()
+                    result[attr_name] = value
+        
         return result
     
     def delete(self):
         """Delete this entity"""
-        key = getattr(self, 'email', None) or getattr(self, 'uid', None)
+        key = getattr(self, 'email', None) or getattr(self, 'tid', None) or getattr(self, 'token_id', None) or getattr(self, 'uid', None)
         if not key:
             return False
         
@@ -185,22 +229,113 @@ class BaseModel:
 class StringProperty:
     def __init__(self, default=None):
         self.default = default
+        self.name = None
+    
+    def __set_name__(self, owner, name):
+        self.name = f"_{name}"
+    
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return getattr(obj, self.name, self.default)
+    
+    def __set__(self, obj, value):
+        # Handle corrupted data from old property object strings
+        if isinstance(value, str) and '<core.models.base.' in value and 'Property object at' in value:
+            value = self.default
+        setattr(obj, self.name, value)
 
 class BooleanProperty:
     def __init__(self, default=False):
         self.default = default
+        self.name = None
+    
+    def __set_name__(self, owner, name):
+        self.name = f"_{name}"
+    
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return getattr(obj, self.name, self.default)
+    
+    def __set__(self, obj, value):
+        setattr(obj, self.name, bool(value) if value is not None else self.default)
 
 class IntegerProperty:
     def __init__(self, default=0):
         self.default = default
+        self.name = None
+    
+    def __set_name__(self, owner, name):
+        self.name = f"_{name}"
+    
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return getattr(obj, self.name, self.default)
+    
+    def __set__(self, obj, value):
+        # Handle corrupted data from old property object strings
+        if isinstance(value, str) and '<core.models.base.' in value and 'Property object at' in value:
+            value = self.default
+        else:
+            try:
+                value = int(value) if value is not None else self.default
+            except (ValueError, TypeError):
+                value = self.default
+        setattr(obj, self.name, value)
 
 class DateTimeProperty:
     def __init__(self, default=None):
         self.default = default
+        self.name = None
+    
+    def __set_name__(self, owner, name):
+        self.name = f"_{name}"
+    
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        value = getattr(obj, self.name, self.default)
+        # Convert string back to datetime if needed
+        if isinstance(value, str) and value:
+            try:
+                return datetime.fromisoformat(value)
+            except:
+                return value
+        return value
+    
+    def __set__(self, obj, value):
+        # Handle corrupted data from old property object strings
+        if isinstance(value, str) and '<core.models.base.' in value and 'Property object at' in value:
+            value = self.default
+        # Store as string if datetime
+        elif isinstance(value, datetime):
+            value = value.isoformat()
+        setattr(obj, self.name, value)
 
 class JsonProperty:
     def __init__(self, default=None):
         self.default = default or {}
-
-# TODO: Implement these property types for validation and type conversion
-# For now, they're just markers for documentation purposes
+        self.name = None
+    
+    def __set_name__(self, owner, name):
+        self.name = f"_{name}"
+    
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        value = getattr(obj, self.name, self.default)
+        # Parse JSON string if needed
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except:
+                return value
+        return value
+    
+    def __set__(self, obj, value):
+        # Store as JSON string if dict/list
+        if isinstance(value, (dict, list)):
+            value = json.dumps(value)
+        setattr(obj, self.name, value)

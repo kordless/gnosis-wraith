@@ -22,22 +22,7 @@ if (Test-Path $manifestPath) {
     Write-Host "Using default version: $extensionVersion" -ForegroundColor Yellow
 }
 
-# Check if old Docker volume exists and offer migration
-$volumeExists = docker volume ls -q | Select-String -Pattern "gnosis-wraith_wraith-data"
-if ($volumeExists) {
-    Write-Host "`nDetected old Docker volume 'wraith-data'" -ForegroundColor Yellow
-    $migrate = Read-Host "Would you like to migrate data from the old Docker volume? (y/N)"
-    
-    if ($migrate -eq 'y' -or $migrate -eq 'Y') {
-        Write-Host "Migrating data from Docker volume to host directory..." -ForegroundColor Yellow
-        
-        # Create a temporary container to copy data
-        docker run --rm -v gnosis-wraith_wraith-data:/source -v ${PWD}/storage:/target alpine sh -c "cp -av /source/* /target/" 2>&1 | Out-Null
-        
-        Write-Host "Migration complete!" -ForegroundColor Green
-        Write-Host "Old volume will be preserved. To remove it later, run: docker volume rm gnosis-wraith_wraith-data" -ForegroundColor Gray
-    }
-}
+
 
 # Change to project root directory
 $projectRoot = Join-Path -Path $PSScriptRoot -ChildPath "..\..\"
@@ -70,32 +55,6 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 Write-Host "`nWaiting for services to start..." -ForegroundColor Yellow
 Start-Sleep -Seconds 3
 
-# Run migration scripts if needed
-Write-Host "`nChecking for storage migrations..." -ForegroundColor Yellow
-
-# First run the old user storage migration if needed
-$migrationPath = "$PSScriptRoot\..\maintenance\migrate_to_user_storage.py"
-if (Test-Path $migrationPath) {
-    docker exec gnosis-wraith python /app/scripts/maintenance/migrate_to_user_storage.py
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "User storage migration completed successfully!" -ForegroundColor Green
-    } else {
-        Write-Host "User storage migration was not needed or already completed" -ForegroundColor Gray
-    }
-}
-
-# Then run the NDB migration
-$ndbMigrationPath = "$PSScriptRoot\..\maintenance\migrate_to_ndb_storage.py"
-if (Test-Path $ndbMigrationPath) {
-    docker exec gnosis-wraith python /app/scripts/maintenance/migrate_to_ndb_storage.py
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "NDB storage migration completed successfully!" -ForegroundColor Green
-    } else {
-        Write-Host "NDB storage migration was not needed or already completed" -ForegroundColor Gray
-    }
-} else {
-    Write-Host "NDB migration script not found, skipping..." -ForegroundColor Gray
-}
 
 # Check container status
 Write-Host "`nContainer Status:" -ForegroundColor Cyan

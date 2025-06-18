@@ -81,10 +81,8 @@ const GnosisWraithInterface = () => {
       storedAuthCode = CookieUtils.getCookie('gnosis_auth_code');
     }
     
-    if (storedAuthCode && /^c0d3z\d{4}$/i.test(storedAuthCode)) {
-      // Auto-authenticate if valid code exists
-      setAuthStatus('authorized');
-    }
+    // Removed c0d3z pattern check - authentication now handled differently
+
     
     // Load URL history from localStorage
     try {
@@ -173,14 +171,9 @@ const GnosisWraithInterface = () => {
       
       // Check localStorage directly instead of relying on authStatus state
       const storedAuthCode = localStorage.getItem('gnosis_auth_code');
-      if (storedAuthCode && /^c0d3z\d{4}$/i.test(storedAuthCode)) {
-        addLog('Authentication found in local storage');
-        addLog('Distributed crawler system online');
-        addLog('Memory banks accessible');
-      } else {
-        addLog('Awaiting authentication...');
-        addLog('Required format: c0d3zXXXX where XXXX is a 4-digit number');
-      }
+      // Removed c0d3z authentication check
+      addLog('System ready');
+
       
       // Load stored crawl stats if they exist
       const storedStats = localStorage.getItem('gnosis_crawl_stats');
@@ -331,8 +324,18 @@ const GnosisWraithInterface = () => {
   // Floating Ghost Buddy Animation System 👻
   useEffect(() => {
     const startGhostCycle = () => {
-      // Random delay before ghost appears (3-8 seconds)
-      const appearDelay = Math.random() * 5000 + 3000;
+      // Random delay before ghost appears (5-45 minutes)
+      // Weighted towards longer times - using exponential distribution
+      const minMinutes = 5;
+      const maxMinutes = 45;
+      
+      // Generate a random number with exponential distribution (favoring higher values)
+      const random = Math.random();
+      const exponentialRandom = 1 - Math.exp(-2 * random); // Exponential distribution
+      const delayMinutes = minMinutes + (maxMinutes - minMinutes) * exponentialRandom;
+      const appearDelay = delayMinutes * 60 * 1000; // Convert to milliseconds
+      
+      console.log(`Ghost will appear in ${Math.round(delayMinutes)} minutes`);
       
       setTimeout(() => {
         // POP! Ghost appears
@@ -356,18 +359,19 @@ const GnosisWraithInterface = () => {
               setGhostPhase('gone');
               
               // Wait a bit then start the cycle again
-              setTimeout(startGhostCycle, Math.random() * 10000 + 5000); // 5-15 seconds
+              setTimeout(startGhostCycle, 5000); // Short delay before calculating next appearance
             }, 800); // shrinking animation duration
           }, wiggleTime);
         }, 600); // popping animation duration
       }, appearDelay);
     };
     
-    // Start the ghost cycle after component mounts
-    const initialDelay = setTimeout(startGhostCycle, 2000); // First ghost appears after 2 seconds
+    // Start the ghost cycle after component mounts with initial delay of 2-5 minutes
+    const initialDelay = (Math.random() * 3 + 2) * 60 * 1000; // 2-5 minutes for first appearance
+    const initialTimer = setTimeout(startGhostCycle, initialDelay);
     
     return () => {
-      clearTimeout(initialDelay);
+      clearTimeout(initialTimer);
     };
   }, []);
   
@@ -1055,7 +1059,7 @@ const GnosisWraithInterface = () => {
               {/* Floating Ghost Buddy 👻 */}
               {ghostVisible && (
                 <div 
-                  className={`ml-4 text-2xl ghost-buddy ${
+                  className={`ml-2 text-2xl ghost-buddy ${
                     ghostPhase === 'popping' ? 'scale-110' :
                     ghostPhase === 'shrinking' ? 'scale-50 opacity-50' : ''
                   }`}
@@ -1196,6 +1200,7 @@ const GnosisWraithInterface = () => {
           isOpen={isProfileModalOpen}
           onClose={() => setIsProfileModalOpen(false)}
           apiToken={localStorage.getItem('gnosis_auth_code') || ''}
+          userName={window.GNOSIS_CONFIG && window.GNOSIS_CONFIG.user_data && window.GNOSIS_CONFIG.user_data.name ? window.GNOSIS_CONFIG.user_data.name : null}
           onOpenTokenManager={() => {
             setIsProfileModalOpen(false);
             setIsTokenModalOpen(true);

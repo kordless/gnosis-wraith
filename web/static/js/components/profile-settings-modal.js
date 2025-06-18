@@ -4,11 +4,15 @@ class ProfileSettingsModal extends React.Component {
         this.state = {
             showCopiedMessage: false,
             confirmLogout: false,
-            apiToken: null,
+            tokens: [],
             tokenLoading: false,
             tokenError: null,
-            showToken: false,
-            confirmRegenerate: false
+            showCreateForm: false,
+            newTokenName: '',
+            newTokenCreated: null,
+            tokensLoading: false,
+            tokenJustCreated: false,  // Add flag to track if token was just created
+            deleteConfirmations: {}   // Track delete confirmations for each token
         };
         this.modalRef = React.createRef();
     }
@@ -19,8 +23,24 @@ class ProfileSettingsModal extends React.Component {
         if (this.modalRef.current) {
             this.modalRef.current.focus();
         }
-        // Check if user has an API token
-        this.checkExistingToken();
+        // Load user's API tokens
+        this.loadTokens();
+    }
+
+    componentDidUpdate(prevProps) {
+        // Reset tokenJustCreated flag when modal is reopened
+        if (this.props.isOpen && !prevProps.isOpen) {
+            this.setState({ 
+                tokenJustCreated: false,
+                newTokenCreated: null,
+                showCreateForm: false,
+                newTokenName: '',
+                tokenError: null,
+                deleteConfirmations: {}  // Reset all delete confirmations
+            });
+            // Reload tokens when modal opens
+            this.loadTokens();
+        }
     }
 
     componentWillUnmount() {
@@ -39,81 +59,109 @@ class ProfileSettingsModal extends React.Component {
         }
     };
 
-    checkExistingToken = async () => {
+    loadTokens = async () => {
+        this.setState({ tokensLoading: true });
         try {
-            const response = await fetch('/auth/token/check', {
+            console.log('Loading API tokens...');
+            const response = await fetch('/auth/tokens', {
                 method: 'GET',
                 credentials: 'include'
             });
             
+            console.log('Token response status:', response.status);
+            
             if (response.ok) {
                 const data = await response.json();
-                if (data.has_token) {
-                    this.setState({ 
-                        apiToken: data.token_preview || 'Token exists (hidden for security)',
-                        showToken: false 
-                    });
-                }
+                console.log('Token data received:', data);
+                this.setState({ tokens: data.tokens || [] });
+            } else {
+                const errorText = await response.text();
+                console.error('Token loading failed:', response.status, errorText);
             }
         } catch (error) {
-            console.error('Error checking token:', error);
+            console.error('Error loading tokens:', error);
+        } finally {
+            this.setState({ tokensLoading: false });
         }
     };
 
-    generateApiToken = async () => {
-        if (!this.state.confirmRegenerate && this.state.apiToken) {
-            this.setState({ confirmRegenerate: true });
-            setTimeout(() => {
-                this.setState({ confirmRegenerate: false });
-            }, 3000);
+    createApiToken = async () => {
+        if (!this.state.newTokenName.trim()) {
+            this.setState({ tokenError: 'Please enter a token name' });
             return;
         }
 
         this.setState({ tokenLoading: true, tokenError: null });
         
         try {
-            const response = await fetch('/auth/token/regenerate', {
+            console.log('Creating API token with name:', this.state.newTokenName);
+            const response = await fetch('/auth/tokens', {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({
+                    name: this.state.newTokenName
+                })
             });
+            
+            console.log('Create token response status:', response.status);
             
             if (response.ok) {
                 const data = await response.json();
+                console.log('Token created:', data);
                 this.setState({ 
-                    apiToken: data.token,
-                    showToken: true,
-                    confirmRegenerate: false
+                    newTokenCreated: data.token,
+                    showCreateForm: false,
+                    newTokenName: '',
+                    tokenJustCreated: true  // Set flag when token is created
                 });
+                
+                // Reload tokens
+                this.loadTokens();
                 
                 // Log the token generation
                 if (this.props.onTokenGenerated) {
                     this.props.onTokenGenerated();
                 }
             } else {
-                const error = await response.text();
-                this.setState({ tokenError: `Failed to generate token: ${error}` });
+                const error = await response.json();
+                console.error('Token creation failed:', error);
+                this.setState({ tokenError: error.error || 'Failed to generate token' });
             }
         } catch (error) {
+            console.error('Token creation error:', error);
             this.setState({ tokenError: `Error: ${error.message}` });
         } finally {
             this.setState({ tokenLoading: false });
         }
     };
 
-    copyApiToken = async () => {
-        if (this.state.apiToken && this.state.showToken) {
-            try {
-                await navigator.clipboard.writeText(this.state.apiToken);
-                this.setState({ showCopiedMessage: true });
-                setTimeout(() => {
-                    this.setState({ showCopiedMessage: false });
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy API token:', err);
+    deleteToken = async (tokenId) => {
+        try {
+            const response = await fetch(`/auth/tokens/${tokenId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                this.loadTokens();
             }
+        } catch (error) {
+            console.error('Failed to delete token:', error);
+        }
+    };
+
+    copyToken = async (token) => {
+        try {
+            await navigator.clipboard.writeText(token);
+            this.setState({ showCopiedMessage: true });
+            setTimeout(() => {
+                this.setState({ showCopiedMessage: false });
+            }, 2000);
+        } catch (err) {
+            console.error('Failed to copy token:', err);
         }
     };
 
@@ -168,7 +216,7 @@ class ProfileSettingsModal extends React.Component {
         if (!this.props.isOpen) return null;
 
         return React.createElement('div', {
-            className: 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4',
+            className: 'fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4',
             onClick: this.handleOverlayClick,
             'aria-modal': 'true',
             'role': 'dialog',
@@ -176,15 +224,18 @@ class ProfileSettingsModal extends React.Component {
         },
             React.createElement('div', {
                 ref: this.modalRef,
-                className: 'bg-gray-900 rounded-lg shadow-xl w-full max-w-md border border-gray-700',
+                className: 'bg-gray-900 rounded-lg shadow-xl w-full max-w-2xl border border-gray-700',
                 tabIndex: -1
             },
                 // Header
                 React.createElement('div', { className: 'flex items-center justify-between p-6 border-b border-gray-700' },
-                    React.createElement('h2', { 
-                        id: 'profile-modal-title',
-                        className: 'text-xl font-semibold text-gray-100' 
-                    }, 'Profile Settings'),
+                    React.createElement('div', { className: 'flex items-center space-x-2' },
+                        React.createElement('i', { className: 'fas fa-user-circle text-purple-400' }),
+                        React.createElement('h2', { 
+                            id: 'profile-modal-title',
+                            className: 'text-xl font-bold text-purple-400' 
+                        }, 'Profile Settings')
+                    ),
                     React.createElement('button', {
                         onClick: this.props.onClose,
                         className: 'text-gray-400 hover:text-gray-200 transition-colors',
@@ -199,80 +250,143 @@ class ProfileSettingsModal extends React.Component {
                     // User Information Section
                     React.createElement('div', { className: 'space-y-2' },
                         React.createElement('h3', { className: 'text-sm font-medium text-gray-400 uppercase tracking-wider' }, 'User Information'),
-                        React.createElement('div', { className: 'flex items-center space-x-3' },
-                            React.createElement('div', { className: 'w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center' },
-                                React.createElement('i', { className: 'fas fa-user text-gray-400 text-lg' })
-                            ),
-                            React.createElement('div', null,
-                                React.createElement('p', { className: 'text-gray-100 font-medium' }, 'Authenticated User'),
-                                React.createElement('p', { className: 'text-sm text-gray-400' }, 'Active Session')
+                        React.createElement('div', { className: 'bg-gray-800 rounded-lg p-4' },
+                            React.createElement('div', { className: 'flex items-center space-x-4' },
+                                React.createElement('div', { className: 'w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center' },
+                                    React.createElement('i', { className: 'fas fa-user text-gray-400 text-lg' })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('p', { className: 'text-sm text-gray-500 mb-1' }, 
+                                        'Name'
+                                    ),
+                                    React.createElement('p', { className: 'text-lg text-gray-100 font-medium' }, 
+                                        this.props.userName || 'Anonymous User'
+                                    )
+                                )
                             )
                         )
                     ),
 
                     // API Token Section
                     React.createElement('div', { className: 'space-y-3' },
-                        React.createElement('h3', { className: 'text-sm font-medium text-gray-400 uppercase tracking-wider' }, 'API Token'),
+                        React.createElement('div', { className: 'flex items-center justify-between mb-2' },
+                            React.createElement('h3', { className: 'text-sm font-medium text-gray-400 uppercase tracking-wider' }, 'API Tokens'),
+                            React.createElement('button', {
+                                onClick: () => this.setState({ showCreateForm: true, tokenError: null }),
+                                className: `text-sm px-3 py-1 rounded transition-colors ${
+                                    this.state.tokenJustCreated 
+                                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                                        : 'bg-green-600 hover:bg-green-700 text-white'
+                                }`,
+                                disabled: this.state.tokenJustCreated
+                            }, this.state.tokenJustCreated ? 'Token Created' : 'Create New Token')
+                        ),
                         
-                        // Token display area
-                        this.state.apiToken ? (
-                            React.createElement('div', { className: 'space-y-2' },
-                                // Token value box
-                                React.createElement('div', { className: 'relative' },
-                                    React.createElement('div', { 
-                                        className: 'bg-gray-800 rounded-lg p-3 pr-12 font-mono text-sm break-all',
-                                        style: this.state.showToken ? {} : { filter: 'blur(8px)' }
+                        // Token created warning
+                        this.state.newTokenCreated && React.createElement('div', { 
+                            className: 'bg-green-900 bg-opacity-30 border border-green-700 rounded p-3 text-sm' 
+                        },
+                            React.createElement('p', { className: 'text-green-400 font-semibold mb-2' }, '⚠️ Copy this token now - it won\'t be shown again!'),
+                            React.createElement('div', { className: 'flex items-center space-x-2' },
+                                React.createElement('code', { className: 'bg-gray-800 p-2 rounded flex-1 font-mono text-xs text-gray-100' }, this.state.newTokenCreated),
+                                React.createElement('button', {
+                                    onClick: () => {
+                                        this.copyToken(this.state.newTokenCreated);
                                     },
-                                        this.state.showToken ? this.state.apiToken : '••••••••••••••••••••••••••••••••'
-                                    ),
-                                    this.state.showToken && React.createElement('button', {
-                                        onClick: this.copyApiToken,
-                                        className: 'absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors',
-                                        'aria-label': 'Copy API token'
-                                    },
-                                        React.createElement('i', { className: this.state.showCopiedMessage ? 'fas fa-check text-green-400' : 'fas fa-copy' })
-                                    )
-                                ),
-                                
-                                // Token controls
-                                React.createElement('div', { className: 'flex items-center justify-between' },
-                                    React.createElement('button', {
-                                        onClick: () => this.setState({ showToken: !this.state.showToken }),
-                                        className: 'text-sm text-gray-400 hover:text-gray-200 transition-colors flex items-center space-x-1'
-                                    },
-                                        React.createElement('i', { className: this.state.showToken ? 'fas fa-eye-slash' : 'fas fa-eye' }),
-                                        React.createElement('span', null, this.state.showToken ? 'Hide token' : 'Show token')
-                                    ),
-                                    React.createElement('button', {
-                                        onClick: this.generateApiToken,
-                                        disabled: this.state.tokenLoading,
-                                        className: `text-sm ${this.state.confirmRegenerate ? 'text-red-400 hover:text-red-300' : 'text-yellow-400 hover:text-yellow-300'} transition-colors flex items-center space-x-1 disabled:opacity-50`
-                                    },
-                                        React.createElement('i', { className: this.state.tokenLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync-alt' }),
-                                        React.createElement('span', null, 
-                                            this.state.confirmRegenerate ? 'Click to confirm' : 'Regenerate token'
-                                        )
-                                    )
-                                ),
-                                
-                                // Messages
-                                this.state.showCopiedMessage && React.createElement('p', { className: 'text-sm text-green-400' }, 'Copied to clipboard!'),
-                                this.state.confirmRegenerate && React.createElement('p', { className: 'text-sm text-yellow-400' }, 
-                                    '⚠️ Warning: Regenerating will invalidate your current token'
-                                )
+                                    className: 'bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm'
+                                }, 'Copy')
                             )
-                        ) : (
-                            // No token state
-                            React.createElement('div', { className: 'space-y-3' },
-                                React.createElement('div', { className: 'bg-gray-800 rounded-lg p-4 text-center' },
-                                    React.createElement('p', { className: 'text-gray-400 mb-3' }, 'No API token generated yet'),
-                                    React.createElement('button', {
-                                        onClick: this.generateApiToken,
-                                        disabled: this.state.tokenLoading,
-                                        className: 'bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-4 py-2 rounded transition-colors flex items-center space-x-2 mx-auto'
+                        ),
+                        
+                        // Create form
+                        this.state.showCreateForm && React.createElement('div', { className: 'bg-gray-800 rounded-lg p-3' },
+                            React.createElement('input', {
+                                type: 'text',
+                                value: this.state.newTokenName,
+                                onChange: (e) => this.setState({ newTokenName: e.target.value }),
+                                placeholder: 'Token name (e.g., Production API)',
+                                className: 'w-full bg-gray-700 text-gray-100 px-3 py-2 rounded mb-2'
+                            }),
+                            React.createElement('div', { className: 'flex space-x-2' },
+                                React.createElement('button', {
+                                    onClick: this.createApiToken,
+                                    disabled: this.state.tokenLoading,
+                                    className: 'bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white px-3 py-1 rounded text-sm'
+                                }, this.state.tokenLoading ? 'Creating...' : 'Create'),
+                                React.createElement('button', {
+                                    onClick: () => this.setState({ showCreateForm: false, newTokenName: '', tokenError: null }),
+                                    className: 'bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm'
+                                }, 'Cancel')
+                            )
+                        ),
+                        
+                        // Token list
+                        React.createElement('div', { 
+                            className: 'max-h-48 overflow-y-auto space-y-2 bg-gray-800 rounded-lg p-2',
+                            style: { scrollbarWidth: 'thin' }
+                        },
+                            this.state.tokensLoading ? (
+                                React.createElement('p', { className: 'text-gray-400 text-center py-4' }, 'Loading tokens...')
+                            ) : this.state.tokens.length === 0 && !this.state.newTokenCreated ? (
+                                React.createElement('p', { className: 'text-gray-400 text-center py-4' }, 'No API tokens yet')
+                            ) : this.state.tokens.length === 0 && this.state.newTokenCreated ? (
+                                React.createElement('p', { className: 'text-gray-400 text-center py-4' }, 'Token created! Copy it above before closing.')
+                            ) : (
+                                this.state.tokens.map(token => 
+                                    React.createElement('div', { 
+                                        key: token.token_id,
+                                        className: 'flex items-center justify-between bg-gray-700 rounded p-2'
                                     },
-                                        this.state.tokenLoading && React.createElement('i', { className: 'fas fa-spinner fa-spin' }),
-                                        React.createElement('span', null, this.state.tokenLoading ? 'Generating...' : 'Generate API Token')
+                                        React.createElement('div', { className: 'flex-1' },
+                                            React.createElement('p', { className: 'text-gray-100 text-sm font-medium' }, token.name),
+                                            React.createElement('p', { className: 'text-gray-400 text-xs font-mono' }, 
+                                                token.token_display || 'Token ID: ' + token.token_id
+                                            ),
+                                            React.createElement('p', { className: 'text-gray-400 text-xs' }, 
+                                                `Last used: ${token.last_used ? new Date(token.last_used).toLocaleDateString() : 'Never'}`
+                                            )
+                                        ),
+                                        React.createElement('button', {
+                                            onClick: () => {
+                                                const tokenId = token.token_id;
+                                                if (this.state.deleteConfirmations[tokenId]) {
+                                                    // Second click - actually delete
+                                                    this.deleteToken(tokenId);
+                                                    // Clear confirmation state
+                                                    const newConfirmations = {...this.state.deleteConfirmations};
+                                                    delete newConfirmations[tokenId];
+                                                    this.setState({ deleteConfirmations: newConfirmations });
+                                                } else {
+                                                    // First click - set confirmation state
+                                                    const newConfirmations = {...this.state.deleteConfirmations};
+                                                    newConfirmations[tokenId] = true;
+                                                    this.setState({ deleteConfirmations: newConfirmations });
+                                                    
+                                                    // Reset confirmation after 3 seconds
+                                                    setTimeout(() => {
+                                                        const currentConfirmations = {...this.state.deleteConfirmations};
+                                                        delete currentConfirmations[tokenId];
+                                                        this.setState({ deleteConfirmations: currentConfirmations });
+                                                    }, 3000);
+                                                }
+                                            },
+                                            className: `w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
+                                                this.state.deleteConfirmations[token.token_id]
+                                                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                                                    : 'bg-gray-700 hover:bg-red-600 text-gray-400 hover:text-white'
+                                            }`,
+                                            title: this.state.deleteConfirmations[token.token_id] 
+                                                ? 'Click again to confirm deletion' 
+                                                : 'Delete token'
+                                        }, 
+                                            React.createElement('i', { 
+                                                className: `fas ${
+                                                    this.state.deleteConfirmations[token.token_id] 
+                                                        ? 'fa-exclamation-triangle' 
+                                                        : 'fa-times'
+                                                } text-sm` 
+                                            })
+                                        )
                                     )
                                 )
                             )
@@ -283,37 +397,28 @@ class ProfileSettingsModal extends React.Component {
                             className: 'bg-red-900 bg-opacity-30 border border-red-700 rounded p-3 text-sm text-red-400'
                         }, this.state.tokenError),
                         
-                        // API usage info
-                        React.createElement('div', { className: 'bg-gray-800 bg-opacity-50 rounded p-3 text-xs text-gray-400' },
-                            React.createElement('p', { className: 'font-medium mb-1' }, 'Usage:'),
-                            React.createElement('code', { className: 'block bg-black bg-opacity-50 p-2 rounded' },
-                                'Authorization: Bearer YOUR_API_TOKEN'
-                            )
-                        )
+                        // Copied message
+                        this.state.showCopiedMessage && React.createElement('p', { className: 'text-sm text-green-400 text-center' }, 'Copied to clipboard!')
                     ),
 
-                    // LLM Configuration Link
-                    React.createElement('div', { className: 'space-y-2' },
+                    // Bottom buttons
+                    React.createElement('div', { className: 'pt-4 border-t border-gray-700 flex space-x-3' },
+                        // LLM Configuration
                         React.createElement('button', {
                             onClick: this.openTokenManager,
-                            className: 'w-full bg-gray-800 hover:bg-gray-700 text-gray-100 rounded-lg p-3 flex items-center justify-between transition-colors'
+                            className: 'flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-3 flex items-center justify-center space-x-2 transition-colors'
                         },
-                            React.createElement('div', { className: 'flex items-center space-x-3' },
-                                React.createElement('i', { className: 'fas fa-brain text-blue-400' }),
-                                React.createElement('span', null, 'LLM Configuration')
-                            ),
-                            React.createElement('i', { className: 'fas fa-chevron-right text-gray-400' })
-                        )
-                    ),
-
-                    // Logout Section
-                    React.createElement('div', { className: 'pt-4 border-t border-gray-700' },
+                            React.createElement('i', { className: 'fas fa-brain' }),
+                            React.createElement('span', null, 'LLM Configuration')
+                        ),
+                        
+                        // Logout
                         React.createElement('button', {
                             onClick: this.handleLogout,
-                            className: `w-full ${this.state.confirmLogout ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-800 hover:bg-gray-700'} text-gray-100 rounded-lg p-3 flex items-center justify-center space-x-2 transition-colors`
+                            className: `flex-1 ${this.state.confirmLogout ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-600'} text-white rounded-lg p-3 flex items-center justify-center space-x-2 transition-colors`
                         },
                             React.createElement('i', { className: 'fas fa-sign-out-alt' }),
-                            React.createElement('span', null, this.state.confirmLogout ? 'Click again to confirm logout' : 'Logout')
+                            React.createElement('span', null, this.state.confirmLogout ? 'Confirm Logout' : 'Logout')
                         )
                     )
                 )

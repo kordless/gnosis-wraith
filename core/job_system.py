@@ -59,12 +59,12 @@ def add_job_system_to_context():
     """
     # Import components
     from core.job_manager import JobManager
-    from core.storage_service import StorageService
+    from core.enhanced_storage_service import EnhancedStorageService
     from core.task_manager import TaskManager
     
     # Initialize components
     job_manager = JobManager()
-    storage_service = StorageService()
+    storage_service = EnhancedStorageService()
     task_manager = TaskManager()
     
     # Return components to be added to app context

@@ -6,7 +6,7 @@ supporting multiple AI providers (Anthropic, OpenAI, Ollama, etc.).
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 from ai.tools.calculate import get_calculation_tools
 from ai.tools.url_suggestion import get_url_suggestion_tools
 from ai.tools.cryptocurrency import get_cryptocurrency_tools
@@ -19,7 +19,35 @@ import ai.tools.url_suggestion
 import ai.tools.cryptocurrency
 import ai.tools.check_for_odd_user
 
+# Import new tool modules
+try:
+    from ai.tools.web_crawling import get_web_crawling_tools
+    import ai.tools.web_crawling
+except ImportError:
+    get_web_crawling_tools = lambda: []
+
+try:
+    from ai.tools.content_processing import get_content_processing_tools
+    import ai.tools.content_processing
+except ImportError:
+    get_content_processing_tools = lambda: []
+
 logger = logging.getLogger("gnosis_wraith")
+
+# Tool usage limits (per execution)
+TOOL_LIMITS = {
+    # Singleton tools (once only)
+    "initialize_browser_session": 1,
+    "generate_final_crawl_report": 1,
+    "cleanup_browser_sessions": 1,
+    
+    # Limited use tools
+    "perform_expensive_ai_analysis": 3,
+    "execute_complex_javascript_injection": 5,
+    "capture_full_page_screenshot": 10,
+    
+    # Unlimited tools (not listed) can be used as many times as needed
+}
 
 # Tool categories and their corresponding loader functions
 TOOL_CATEGORIES = {
@@ -34,7 +62,13 @@ TOOL_CATEGORIES = {
     "finance": get_cryptocurrency_tools,  # Alias
     "check_odd_user": get_check_for_odd_user_tools,
     "odd_user": get_check_for_odd_user_tools,  # Alias
-    "user_behavior": get_check_for_odd_user_tools  # Alias
+    "user_behavior": get_check_for_odd_user_tools,  # Alias
+    "web_crawling": get_web_crawling_tools,
+    "crawling": get_web_crawling_tools,  # Alias
+    "scraping": get_web_crawling_tools,  # Alias
+    "content_processing": get_content_processing_tools,
+    "content": get_content_processing_tools,  # Alias
+    "processing": get_content_processing_tools  # Alias
 }
 
 def get_tools_for_query(query: str, categories: Optional[List[str]] = None) -> List[Dict[str, Any]]:
@@ -211,6 +245,18 @@ def list_available_tools() -> Dict[str, str]:
         "check_for_odd_user": "Check if user is acting oddly or trying to chat with the crawler"
     }
 
+def get_tool_with_limit(tool_name: str) -> Tuple[str, int]:
+    """
+    Get tool with its usage limit.
+    
+    Args:
+        tool_name: Name of the tool
+        
+    Returns:
+        Tuple of (tool_name, limit) where limit is -1 for unlimited
+    """
+    return tool_name, TOOL_LIMITS.get(tool_name, -1)  # -1 = unlimited
+
 # Export main functions
 __all__ = [
     "get_tools_for_query",
@@ -218,5 +264,7 @@ __all__ = [
     "get_tools_by_names",
     "analyze_query_for_tools",
     "list_available_categories",
-    "list_available_tools"
+    "list_available_tools",
+    "get_tool_with_limit",
+    "TOOL_LIMITS"
 ]

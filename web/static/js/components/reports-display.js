@@ -17,6 +17,8 @@ const ReportsDisplay = ({
   const [pageOffset, setPageOffset] = React.useState(0);
   const [lastRefresh, setLastRefresh] = React.useState(Date.now());
   const [autoRefresh, setAutoRefresh] = React.useState(true);
+  const [showStats, setShowStats] = React.useState(true); // Add state for showing/hiding stats
+  const [clearStatsConfirm, setClearStatsConfirm] = React.useState(false); // State for clear stats confirmation
 
   // Load all reports on component mount
   React.useEffect(() => {
@@ -109,8 +111,105 @@ const ReportsDisplay = ({
 
   return (
     <div className="h-full">
-      {/* Elegant Dashboard Metrics */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      {/* Auto-refresh Controls - Moved to top */}
+      <div className="flex items-center justify-between mb-4 p-3 bg-gray-900/50 border border-gray-700/50 rounded-lg">
+        {/* Left group */}
+        <div className="flex items-center space-x-4">
+          {/* Auto-refresh toggle */}
+          <button
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            className={`px-3 py-1 rounded text-sm transition-colors ${
+              autoRefresh 
+                ? 'bg-green-800 text-white' 
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+            title={autoRefresh ? 'Auto-refresh ON (every 10s)' : 'Auto-refresh OFF'}
+          >
+            <i className={`fas ${autoRefresh ? 'fa-toggle-on' : 'fa-toggle-off'} mr-2`}></i>
+            Auto-refresh {autoRefresh ? 'ON' : 'OFF'}
+          </button>
+          
+          {/* Manual refresh button */}
+          <button
+            onClick={() => {
+              loadAllReports(0, false);
+              setLastRefresh(Date.now());
+            }}
+            disabled={loadingAllReports}
+            className="px-3 py-1 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-700 disabled:opacity-50 text-white rounded text-sm transition-colors"
+            title="Refresh reports now"
+          >
+            <i className={`fas fa-sync-alt mr-2 ${loadingAllReports ? 'fa-spin' : ''}`}></i>
+            Refresh Now
+          </button>
+          
+          {/* Last refresh time */}
+          <div className="flex items-center space-x-2">
+            <i className="fas fa-clock text-gray-400 text-sm"></i>
+            <span className="text-gray-400 text-sm">Last updated:</span>
+            <span className="text-gray-300 text-sm font-mono">
+              {new Date(lastRefresh).toLocaleTimeString()}
+            </span>
+          </div>
+          
+          {/* Reports count */}
+          <div className="flex items-center space-x-2 text-sm text-gray-400">
+            <i className="fas fa-file-alt"></i>
+            <span>
+              {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''}
+            </span>
+            {loadingAllReports && (
+              <i className="fas fa-sync-alt fa-spin ml-2 text-blue-400"></i>
+            )}
+          </div>
+        </div>
+        
+        {/* Right group */}
+        <div className="flex items-center space-x-2">
+          {/* Show/Hide Stats toggle */}
+          <button
+            onClick={() => setShowStats(!showStats)}
+            className={`px-3 py-1 rounded text-sm transition-colors ${
+              showStats 
+                ? 'bg-purple-800 text-white' 
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+            title={showStats ? 'Hide statistics' : 'Show statistics'}
+          >
+            <i className={`fas fa-chart-bar mr-2`}></i>
+            Stats {showStats ? 'ON' : 'OFF'}
+          </button>
+          
+          {/* Clear stats button */}
+          <button
+            onClick={() => {
+              if (clearStatsConfirm) {
+                // Second click - actually clear stats
+                localStorage.removeItem('gnosis_crawl_stats');
+                window.location.reload(); // Reload to reset stats
+              } else {
+                // First click - show confirmation state
+                setClearStatsConfirm(true);
+                // Reset confirmation state after 3 seconds
+                setTimeout(() => setClearStatsConfirm(false), 3000);
+              }
+            }}
+            className={`px-3 py-1 rounded text-sm transition-colors ${
+              clearStatsConfirm 
+                ? 'bg-red-600 hover:bg-red-500 text-white' 
+                : 'bg-red-700 hover:bg-red-600 text-white'
+            }`}
+            title={clearStatsConfirm ? 'Click again to confirm' : 'Clear all statistics'}
+          >
+            <i className={`fas ${clearStatsConfirm ? 'fa-exclamation-triangle' : 'fa-trash-alt'} mr-2`}></i>
+            {clearStatsConfirm ? 'Click Again to Confirm' : 'Clear Stats'}
+          </button>
+        </div>
+      </div>
+
+      {/* Elegant Dashboard Metrics - Conditionally shown */}
+      {showStats && (
+        <div className="grid grid-cols-4 gap-4 mb-6">
         {/* Total Crawls Widget */}
         <div className="bg-gradient-to-br from-blue-900/40 to-blue-800/20 backdrop-blur-sm border border-blue-500/30 rounded-lg p-4 shadow-lg hover:shadow-blue-500/20 transition-all duration-300">
           <div className="flex items-center justify-between mb-3">
@@ -193,61 +292,7 @@ const ReportsDisplay = ({
           </div>
         </div>
       </div>
-
-      {/* Auto-refresh Controls */}
-      <div className="flex items-center justify-between mb-4 p-3 bg-gray-900/50 border border-gray-700/50 rounded-lg">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <i className="fas fa-sync-alt text-gray-400 text-sm"></i>
-            <span className="text-gray-400 text-sm">Last refresh:</span>
-            <span className="text-gray-300 text-xs font-mono">
-              {new Date(lastRefresh).toLocaleTimeString()}
-            </span>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              className={`px-2 py-1 rounded text-xs transition-colors ${
-                autoRefresh 
-                  ? 'bg-green-800 text-white' 
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-              title={autoRefresh ? 'Auto-refresh ON (every 10s)' : 'Auto-refresh OFF'}
-            >
-              <i className={`fas ${autoRefresh ? 'fa-toggle-on' : 'fa-toggle-off'} mr-1`}></i>
-              Auto
-            </button>
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => {
-              loadAllReports(0, false);
-              setLastRefresh(Date.now());
-            }}
-            disabled={loadingAllReports}
-            className="px-3 py-1 bg-blue-700 hover:bg-blue-600 disabled:bg-gray-700 disabled:opacity-50 text-white rounded text-xs transition-colors"
-            title="Refresh reports now"
-          >
-            <i className={`fas fa-sync-alt mr-1 ${loadingAllReports ? 'fa-spin' : ''}`}></i>
-            Refresh
-          </button>
-          
-          <div className="flex items-center space-x-2 text-xs text-gray-500">
-            <span>
-              {filteredReports.length} report{filteredReports.length !== 1 ? 's' : ''}
-            </span>
-            {loadingAllReports && (
-              <div className="flex items-center text-blue-400">
-                <i className="fas fa-sync-alt fa-spin mr-1"></i>
-                <span>Updating...</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      )}
 
       {loadingAllReports && allReports.length === 0 ? (
         <div className="text-center py-8">

@@ -16,10 +16,9 @@ const AuthenticationComponent = ({
       setAuthStatus('authenticating');
       addLog(`Authentication attempt: ${inputValue.substring(0, 3)}${'*'.repeat(inputValue.length - 3)}`);
       
-      // Check if input is a valid code
-      const codePattern = /^c0d3z\d{4}$/i;
+      // Removed c0d3z pattern validation
+      if (inputValue.trim()) {
 
-      if (codePattern.test(inputValue)) {
         setTimeout(() => {
           // Check if this is a different code than what's currently stored
           const currentStoredCode = localStorage.getItem('gnosis_auth_code') || CookieUtils.getCookie('gnosis_auth_code');
@@ -72,7 +71,8 @@ const AuthenticationComponent = ({
           setAuthStatus('unauthorized');
           addLog('Authentication failed');
           addLog('Access denied: Invalid code format');
-          addLog('Required format: c0d3zXXXX where XXXX is a 4-digit number');
+          addLog('Invalid authentication code');
+
           setInputValue('');
         }, 1000);
       }

@@ -180,9 +180,9 @@
     <!-- Main Navigation Tabs (centered with random offset) -->
     <div class="main-nav" style="margin-left: {{ range(-50, 50) | random }}px; transition: margin-left 0.5s ease; margin-top: 1px;">
       <div class="nav-tabs" id="main-nav-tabs">
-        <a href="{{ url_for('pages.wraith') }}" class="nav-item {% if active_page == 'crawl' %}active{% endif %}" data-page="crawl">Crawl</a>
-        <a href="{{ url_for('pages.code') }}" class="nav-item {% if active_page == 'code' %}active{% endif %}" data-page="code">Code</a>
-        <a href="{{ url_for('pages.list_reports') }}" class="nav-item {% if active_page == 'reports' %}active{% endif %}" data-page="reports">Report</a>
+        <a href="{{ url_for('pages.wraith') }}" class="nav-item {% if active_page == 'crawl' %}active{% endif %}" data-page="crawl">Crawler</a>
+        <a href="{{ url_for('pages.code') }}" class="nav-item {% if active_page == 'code' %}active{% endif %}" data-page="code">Forge</a>
+        <a href="{{ url_for('pages.list_reports') }}" class="nav-item {% if active_page == 'reports' %}active{% endif %}" data-page="reports">Storage</a>
         <div class="slider" id="main-nav-slider"></div>
       </div>
     </div>

@@ -272,6 +272,9 @@ async def execute_tools(context: Dict[str, Any]) -> Dict[str, Any]:
             - model: Model to use
             - api_key: Optional API key for authentication
             - previous_result: Previous tool result for chaining
+            - previous_results: List of all previous results for context
+            - execution_context: Shared execution context
+            - session_store: Browser session store
     
     Returns:
         Dictionary with execution results
@@ -282,6 +285,11 @@ async def execute_tools(context: Dict[str, Any]) -> Dict[str, Any]:
         prompt = context.get('prompt', '')
         model = context.get('model', 'claude-3-5-sonnet-20241022')
         previous_result = context.get('previous_result')
+        
+        # Extract enhanced context
+        previous_results = context.get('previous_results', [])
+        execution_context = context.get('execution_context', {})
+        session_store = context.get('session_store', {})
         
         logger.info(f"Executing tools via Anthropic: {tools}")
         
@@ -336,10 +344,26 @@ INCORRECT: "Hacker News"
 
 SPECIAL TEST MODE: If query contains "TESTFALLBACK", intentionally return just a site name to test fallback."""
         
-        # Build the user query text
+        # Build the user query text with enhanced context
         user_text = query
+        
+        # Add context from previous tool executions
+        if previous_results and len(previous_results) > 0:
+            context_info = "\n\nPrevious tool results:"
+            for i, result in enumerate(previous_results):
+                if isinstance(result, dict):
+                    tool_name = result.get('tool_name', 'Unknown')
+                    summary = result.get('summary', result.get('response', 'No summary'))
+                    context_info += f"\n{i+1}. {tool_name}: {summary[:200]}..."
+            user_text += context_info
+        
+        # Add immediate previous result for backward compatibility
         if previous_result:
             user_text += f"\n\nPrevious result: {json.dumps(previous_result)}"
+        
+        # Add session information if available
+        if session_store:
+            user_text += f"\n\nActive sessions: {list(session_store.keys())}"
         
         # Call Anthropic with tools
         result = await process_with_anthropic_tools(
@@ -351,13 +375,27 @@ SPECIAL TEST MODE: If query contains "TESTFALLBACK", intentionally return just a
             max_iterations=3
         )
         
-        return {
+        # Add execution metadata
+        final_result = {
             "success": True,
             "provider": "anthropic",
             "model": model,
             "tools_used": tools,
+            "execution_metadata": {
+                "context_used": bool(previous_results),
+                "sessions_active": len(session_store),
+                "execution_context_size": len(execution_context)
+            },
             **result
         }
+        
+        # Pass through session information if tools created any
+        if "session_id" in result:
+            final_result["session_id"] = result["session_id"]
+        if "session_data" in result:
+            final_result["session_data"] = result["session_data"]
+            
+        return final_result
         
     except Exception as e:
         logger.error(f"Error in execute_tools: {str(e)}")

@@ -59,31 +59,6 @@ if IS_DEVELOPMENT and ENABLE_DEV_ENDPOINTS:
 # Initialize job system
 init_job_system(app)
 
-# Health check endpoint for Google Cloud Run
-@app.route('/health')
-async def health_check():
-    """Health check endpoint"""
-    return {'status': 'healthy', 'service': 'gnosis-wraith'}, 200
-
-# Test protected endpoint
-@app.route('/test-auth')
-@login_required
-async def test_auth():
-    """Test endpoint that requires authentication"""
-    from quart import session
-    return {
-        'status': 'authenticated',
-        'user': session.get('user_email', 'unknown'),
-        'uid': session.get('user_uid', 'unknown')
-    }, 200
-
-# Root endpoint
-@app.route('/')
-async def root():
-    """Root endpoint - redirect to main page"""
-    from quart import redirect
-    return redirect('/wraith')
-
 # Log startup information
 logger.info(f"Gnosis Wraith Server starting...")
 logger.info(f"Storage path: {STORAGE_PATH}")

@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GNOSIS - Rocket Explorer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/images/favicon_new.svg">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Neon text */
+        .neon-green {
+            color: #4ade80;
+            text-shadow: 0 0 10px #4ade80, 0 0 20px #4ade80, 0 0 30px #4ade80;
+        }
+        
+        /* Rocket container */
+        .rocket-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            z-index: 50;
+        }
+        
+        /* Word field container */
+        #word-field {
+            position: fixed;
+            width: 200vw;
+            height: 200vh;
+            top: -50vh;
+            left: -50vw;
+            pointer-events: none;
+        }
+
+        
+        /* Code particles */
+        .code-trail {
+            position: absolute;
+            color: #4ade80;
+            font-size: 1.2rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 0 0 8px #4ade80;
+            z-index: 10;
+        }
+        
+        /* Floating words */
+        .floating-word {
+            position: absolute;
+            color: #4ade80;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px #4ade80, 0 0 20px #4ade80;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 20;
+        }
+        
+        .floating-word.visible {
+            opacity: 1;
+        }
+        
+        /* Hidden quadrant system for debugging */
+        .quadrant-debug {
+            position: fixed;
+            border: 1px dashed rgba(74, 222, 128, 0.2);
+            pointer-events: none;
+            display: none;
+        }
+        
+        body.debug .quadrant-debug {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-black text-gray-100 overflow-hidden">
+    <!-- Word field - 3x3 grid where only center is visible -->
+    <div id="word-field">
+        <!-- Words will be added here -->
+    </div>
+    
+    <!-- Rocket (always centered) -->
+    <div class="rocket-container">🚀</div>
+
+    
+    <!-- JavaScript -->
+    <script>
+        // All possible words
+        const allWords = [
+            'MEMORY', 'KNOWLEDGE', 'WISDOM', 'INSIGHT', 'PATTERN', 'NEURAL', 'QUANTUM',
+            'DISCOVER', 'EXPLORE', 'SEARCH', 'CRAWL', 'ANALYZE', 'PROCESS', 'LEARN',
+            'CREATE', 'BUILD', 'GENERATE', 'EVOLVE', 'TRANSFORM', 'IMAGINE', 'DESIGN',
+            'CONNECT', 'LINK', 'NETWORK', 'CLUSTER', 'MERGE', 'SYNC', 'BIND',
+            'PERCEIVE', 'UNDERSTAND', 'COMPUTE', 'INTEGRATE', 'SYNTHESIZE', 'ABSTRACT',
+            'NAVIGATE', 'COMPILE', 'RENDER', 'PARSE', 'DECODE', 'ENCRYPT', 'STREAM'
+        ];
+        
+        // World state
+        let worldX = 0;
+        let worldY = 0;
+        
+        // Rocket state
+        let rocketRotation = 0;
+        let rotationVelocity = 0;
+        const moveSpeed = 2.5; // Speed of background movement
+        
+        // Get elements
+        const rocket = document.querySelector('.rocket-container');
+        const wordField = document.getElementById('word-field');
+        
+        // Grid configuration
+        const GRID_SIZE = 3; // 3x3 grid
+        const WORDS_PER_CELL = 2; // Average words per cell (increased for better coverage)
+        const TOTAL_WORDS = GRID_SIZE * GRID_SIZE * WORDS_PER_CELL; // ~18 words
+
+        
+        // Track all words
+        const words = [];
+        
+        function createWord(customX = null, customY = null) {
+            const word = allWords[Math.floor(Math.random() * allWords.length)];
+            
+            const wordEl = document.createElement('div');
+            wordEl.className = 'floating-word visible';
+            wordEl.textContent = word;
+            
+            // Position randomly in the extended field (3x3 viewport sizes)
+            const viewWidth = window.innerWidth;
+            const viewHeight = window.innerHeight;
+            
+            let x, y;
+            if (customX !== null && customY !== null) {
+                x = customX;
+                y = customY;
+            } else {
+                // Position in the 3x3 grid (from -1.5 to +1.5 viewport sizes)
+                x = (Math.random() - 0.5) * 3 * viewWidth;
+                y = (Math.random() - 0.5) * 3 * viewHeight;
+            }
+            
+            wordEl.style.position = 'absolute';
+            wordEl.style.left = (viewWidth * 1.5 + x) + 'px'; // Center is at 1.5x viewport
+            wordEl.style.top = (viewHeight * 1.5 + y) + 'px';
+            
+            // Random initial rotation
+            const rotation = Math.random() * 360;
+            wordEl.dataset.rotation = rotation;
+            wordEl.dataset.rotationSpeed = (Math.random() - 0.5) * 0.5; // Slow rotation
+            wordEl.style.transform = `rotate(${rotation}deg)`;
+            
+            wordField.appendChild(wordEl);
+            words.push(wordEl);
+            
+            return wordEl;
+        }
+
+        
+        function updateWordPositions() {
+            // Move the entire word field based on world position
+            wordField.style.transform = `translate(${-worldX}px, ${-worldY}px)`;
+            
+            // Update individual word rotations
+            words.forEach(wordEl => {
+                if (wordEl.parentElement) {
+                    const rotation = parseFloat(wordEl.dataset.rotation) + parseFloat(wordEl.dataset.rotationSpeed);
+                    wordEl.dataset.rotation = rotation;
+                    wordEl.style.transform = `rotate(${rotation}deg)`;
+                }
+            });
+            
+            // Check if we need more words (if some have gone too far off-screen)
+            maintainWordCount();
+        }
+        
+        function maintainWordCount() {
+            // Remove words that are too far away (more than 2 viewport sizes from center)
+            const viewWidth = window.innerWidth;
+            const viewHeight = window.innerHeight;
+            const maxDistance = Math.max(viewWidth, viewHeight) * 2;
+            
+            // Clean up far away words
+            for (let i = words.length - 1; i >= 0; i--) {
+                const wordEl = words[i];
+                if (!wordEl.parentElement) {
+                    words.splice(i, 1);
+                    continue;
+                }
+                
+                const rect = wordEl.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const distX = Math.abs(centerX - viewWidth / 2);
+                const distY = Math.abs(centerY - viewHeight / 2);
+                
+                if (distX > maxDistance || distY > maxDistance) {
+                    wordEl.remove();
+                    words.splice(i, 1);
+                }
+            }
+            
+            // Add new words to maintain count
+            const currentCount = words.length;
+            const needed = Math.ceil(TOTAL_WORDS) - currentCount;
+            
+            for (let i = 0; i < needed; i++) {
+                const word = allWords[Math.floor(Math.random() * allWords.length)];
+                
+                const wordEl = document.createElement('div');
+                wordEl.className = 'floating-word visible';
+                wordEl.textContent = word;
+                
+                // Spawn words ahead of where we're traveling
+                // Get the direction we're moving (opposite of rocket direction)
+                const travelAngle = (rocketRotation + 180) * Math.PI / 180;
+                
+                // Random spread around the travel direction
+                const spread = (Math.random() - 0.5) * Math.PI; // ±90 degrees
+                const spawnAngle = travelAngle + spread;
+                
+                // Spawn distance (1-2 viewport sizes away)
+                const spawnDistance = viewWidth * (1 + Math.random());
+                
+                // Calculate spawn position relative to current world position
+                const spawnX = worldX + Math.cos(spawnAngle) * spawnDistance;
+                const spawnY = worldY + Math.sin(spawnAngle) * spawnDistance;
+                
+                // Add some randomness
+                const randomOffset = 200;
+                const x = spawnX + (Math.random() - 0.5) * randomOffset;
+                const y = spawnY + (Math.random() - 0.5) * randomOffset;
+                
+                wordEl.style.position = 'absolute';
+                wordEl.style.left = (viewWidth * 1.5 + x) + 'px';
+                wordEl.style.top = (viewHeight * 1.5 + y) + 'px';
+                
+                // Random rotation
+                const rotation = Math.random() * 360;
+                wordEl.dataset.rotation = rotation;
+                wordEl.dataset.rotationSpeed = (Math.random() - 0.5) * 0.5;
+                wordEl.style.transform = `rotate(${rotation}deg)`;
+                
+                wordField.appendChild(wordEl);
+                words.push(wordEl);
+            }
+        }
+
+        
+        function animateRocket() {
+            if (!rocket) return;
+            
+            // Apply random force to rotation velocity (same as original)
+            const randomForce = Math.random();
+            let force = 0;
+            
+            if (randomForce < 0.7) {
+                force = (Math.random() - 0.5) * 0.5;
+            } else if (randomForce < 0.95) {
+                force = (Math.random() - 0.5) * 1.5;
+            } else {
+                force = (Math.random() - 0.5) * 3;
+            }
+            
+            rotationVelocity += force;
+            rotationVelocity *= 0.92; // Friction
+            rocketRotation += rotationVelocity;
+            
+            // Keep rotation in bounds (320 to 70 degrees range)
+            if (rocketRotation > 70 && rocketRotation < 180) {
+                rocketRotation = 70;
+                rotationVelocity *= -0.5;
+            } else if (rocketRotation < 320 && rocketRotation > 180) {
+                rocketRotation = 320;
+                rotationVelocity *= -0.5;
+            }
+            
+            // Move the world in opposite direction of rocket heading
+            const angleRad = rocketRotation * Math.PI / 180;
+            worldX -= Math.cos(angleRad) * moveSpeed;
+            worldY -= Math.sin(angleRad) * moveSpeed;
+            
+            // Vibration
+            const vibrateX = (Math.random() - 0.5) * 2;
+            const vibrateY = (Math.random() - 0.5) * 2;
+            
+            // Update rocket rotation (stays centered)
+            rocket.style.transform = `translate(calc(-50% + ${vibrateX}px), calc(-50% + ${vibrateY}px)) rotate(${rocketRotation + 180 + 45}deg)`;
+            
+            // Update word positions
+            updateWordPositions();
+            
+            requestAnimationFrame(animateRocket);
+        }
+        
+        // Initialize words
+        for (let i = 0; i < TOTAL_WORDS; i++) {
+            createWord();
+        }
+        
+        animateRocket();
+        
+        // Code particles (same as before but fixed position)
+        function createCodeParticle() {
+            const rocket = document.querySelector('.rocket-container');
+            if (!rocket) return;
+            
+            const particle = document.createElement('span');
+            particle.className = 'code-trail';
+            particle.textContent = Math.random() > 0.5 ? '1' : '0';
+            
+            // Position at rocket center
+            particle.style.position = 'fixed';
+            particle.style.left = '50%';
+            particle.style.top = '50%';
+            particle.style.transform = 'translate(-50%, -50%)';
+            
+            document.body.appendChild(particle);
+            
+            // Calculate exhaust direction
+            const exhaustAngle = rocketRotation;
+            const spread = (Math.random() - 0.5) * 30;
+            const angle = exhaustAngle + spread;
+            
+            // Animate particle
+            let opacity = 1;
+            let distance = 0;
+            
+            const animate = () => {
+                distance += 3;
+                opacity -= 0.008;
+                
+                const x = Math.cos(angle * Math.PI / 180) * distance;
+                const y = Math.sin(angle * Math.PI / 180) * distance;
+                
+                particle.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${Math.max(0.5, opacity)})`;
+                particle.style.opacity = opacity;
+                
+                if (opacity > 0) {
+                    requestAnimationFrame(animate);
+                } else {
+                    particle.remove();
+                }
+            };
+            
+            requestAnimationFrame(animate);
+        }
+        
+        setInterval(createCodeParticle, 80);
+    </script>
+
+</body>
+</html>

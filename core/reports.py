@@ -10,9 +10,9 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 # Get logger from config
 logger = logging.getLogger("gnosis_wraith")
-REPORTS_DIR = os.environ.get('GNOSIS_WRAITH_REPORTS_DIR', os.path.join(os.path.expanduser("~"), ".gnosis-wraith/reports"))
-STORAGE_PATH = os.environ.get('GNOSIS_WRAITH_STORAGE_PATH', os.path.join(os.path.expanduser("~"), ".gnosis-wraith"))
-SCREENSHOTS_DIR = os.environ.get('GNOSIS_WRAITH_SCREENSHOTS_DIR', os.path.join(os.path.expanduser("~"), ".gnosis-wraith/screenshots"))
+# Storage paths now handled by storage service
+STORAGE_PATH = os.environ.get('STORAGE_PATH', os.path.join(os.path.dirname(os.path.dirname(__file__)), 'storage'))
+
 ENABLE_USER_PARTITIONING = os.environ.get('ENABLE_USER_PARTITIONING', 'false').lower() == 'true'
 
 def get_user_reports_dir(email: Optional[str] = None) -> str:
@@ -304,21 +304,30 @@ async def save_markdown_report(title: str, crawl_results: List[Dict[str, Any]], 
     
     report_content = generate_markdown_report(title, crawl_results)
 
-    # Use unified hash-based naming for better organization
-    from core.filename_utils import generate_report_filename, extract_url_from_crawl_results
+    # Generate filename based on title and timestamp
+    # Since filename_utils.py was removed, implement inline
+    import string
     
-    # Extract primary URL from crawl results for filename generation
-    primary_url = extract_url_from_crawl_results(crawl_results)
+    # Extract primary URL from crawl results if available
+    primary_url = None
+    for result in crawl_results:
+        if isinstance(result, dict) and 'url' in result:
+            primary_url = result.get('url')
+            break
     
     if primary_url:
-        # Use hash-based naming with optional custom title
-        filename = generate_report_filename(primary_url, title, "md")
+        # Create hash-based filename from URL
+        url_hash = hashlib.sha256(primary_url.encode()).hexdigest()[:8]
+        # Clean title for filename
+        valid_chars = string.ascii_letters + string.digits + '-_'
+        safe_title = ''.join(c if c in valid_chars else '_' for c in title)
+        filename = f"{safe_title}_{url_hash}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
     else:
         # Fallback to old naming if no URL found
-        import string
         valid_chars = string.ascii_letters + string.digits + '-_'
         safe_title = ''.join(c if c in valid_chars else '_' for c in title)
         filename = f"{safe_title}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+
 
     # Get user-specific reports directory
     user_reports_dir = get_user_reports_dir(email)
@@ -456,21 +465,30 @@ async def save_json_report(title: str, crawl_results: List[Dict[str, Any]], emai
     # Generate the JSON report
     json_report = generate_json_report(title, crawl_results)
 
-    # Use unified hash-based naming for better organization
-    from core.filename_utils import generate_report_filename, extract_url_from_crawl_results
+    # Generate filename based on title and timestamp
+    # Since filename_utils.py was removed, implement inline
+    import string
     
-    # Extract primary URL from crawl results for filename generation
-    primary_url = extract_url_from_crawl_results(crawl_results)
+    # Extract primary URL from crawl results if available
+    primary_url = None
+    for result in crawl_results:
+        if isinstance(result, dict) and 'url' in result:
+            primary_url = result.get('url')
+            break
     
     if primary_url:
-        # Use hash-based naming with optional custom title
-        filename = generate_report_filename(primary_url, title, "json")
+        # Create hash-based filename from URL
+        url_hash = hashlib.sha256(primary_url.encode()).hexdigest()[:8]
+        # Clean title for filename
+        valid_chars = string.ascii_letters + string.digits + '-_'
+        safe_title = ''.join(c if c in valid_chars else '_' for c in title)
+        filename = f"{safe_title}_{url_hash}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     else:
         # Fallback to old naming if no URL found
-        import string
         valid_chars = string.ascii_letters + string.digits + '-_'
         safe_title = ''.join(c if c in valid_chars else '_' for c in title)
         filename = f"{safe_title}_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+
 
     # Get user-specific reports directory
     user_reports_dir = get_user_reports_dir(email)
