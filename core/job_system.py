@@ -34,16 +34,22 @@ def setup_job_system(app):
         import asyncio
         
         async def schedule_cleanup_task():
-            task_manager = TaskManager()
-            
-            # Schedule a daily cleanup task
-            await task_manager.create_task(
-                "cleanup-old-jobs",
-                {"days_to_keep": 30},  # Keep jobs for 30 days
-                "cleanup"  # Use a fixed ID for this system task
-            )
-            
-            logger.info("Scheduled cleanup task")
+            try:
+                task_manager = TaskManager()
+                
+                # Schedule a daily cleanup task
+                await task_manager.create_task(
+                    "cleanup-old-jobs",
+                    {"days_to_keep": 30},  # Keep jobs for 30 days
+                    "cleanup"  # Use a fixed ID for this system task
+                )
+                
+                logger.info("Scheduled cleanup task")
+            except ValueError as e:
+                if "Missing required Cloud Tasks configuration" in str(e):
+                    logger.warning("Cloud Tasks not configured - skipping scheduled cleanup")
+                else:
+                    raise
         
         # Schedule the cleanup task asynchronously
         @app.before_serving
