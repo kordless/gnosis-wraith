@@ -73,8 +73,8 @@
             </div>
 
             <!-- Hidden password field to catch bots -->
-            <div style="position: absolute; left: -9999px;">
-                <input type="password" name="password" tabindex="-1" autocomplete="off">
+            <div id="hp-container" style="position: absolute; left: -9999px;">
+                <input type="password" name="password" id="hp-field" tabindex="-1" autocomplete="off">
             </div>
 
             <div>
@@ -139,5 +139,19 @@
             {% endif %}
         </div>
     </div>
+
+    <script>
+        // Remove honeypot field after page loads to prevent autofill
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const hpContainer = document.getElementById('hp-container');
+                const hpField = document.getElementById('hp-field');
+                if (hpContainer) {
+                    hpContainer.remove();
+                    console.log('Honeypot removed');
+                }
+            }, 100); // Small delay to ensure page is fully loaded
+        });
+    </script>
 </body>
 </html>
