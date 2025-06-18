@@ -33,7 +33,7 @@ def ndb_context_manager(func):
     """
     def wrapper(*args, **kwargs):
         # Check if we're using local or real NDB
-        if os.getenv('USE_LOCAL_DATASTORE', 'true').lower() == 'true':
+        if os.getenv('RUNNING_IN_CLOUD', 'false').lower() != 'true':
             with LocalClient().context():
                 result = func(*args, **kwargs)
         else:

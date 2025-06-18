@@ -6,7 +6,7 @@ import json
 import datetime
 from typing import Optional, List, Dict
 
-if os.getenv('USE_LOCAL_DATASTORE', 'true').lower() == 'true':
+if os.getenv('RUNNING_IN_CLOUD', 'false').lower() != 'true':
     from .base import BaseModel, ndb_context_manager
     from .base import StringProperty, BooleanProperty, IntegerProperty, DateTimeProperty
 else:

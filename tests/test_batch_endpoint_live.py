@@ -7,8 +7,8 @@ import aiohttp
 import json
 import time
 
-API_KEY = "uiBv8UPjRORy5XLL5mCMwekdxmuseFJ1wcfTuWDHftwXyfzsFrhfxg"
-BASE_URL = "http://localhost:5678"
+API_KEY = "AUwKJ2AWbXZ0noqMnN97j2b_RKbzxWDKPNtTOhSQ5u3ZChx_Dt2cw"
+BASE_URL = "http://wraith.nuts.services"
 
 
 async def test_single_url_still_works():

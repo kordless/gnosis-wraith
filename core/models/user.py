@@ -10,7 +10,7 @@ import datetime
 from typing import Optional
 
 # Import based on environment
-if os.getenv('USE_LOCAL_DATASTORE', 'true').lower() == 'true':
+if os.getenv('RUNNING_IN_CLOUD', 'false').lower() != 'true':
     from .base import BaseModel, ndb_context_manager
     from .base import StringProperty, BooleanProperty, IntegerProperty, DateTimeProperty
 else:
@@ -146,7 +146,7 @@ class User(BaseModel):
     @ndb_context_manager
     def get_by_email(cls, email: str) -> Optional['User']:
         """Get user by email address"""
-        if os.getenv('USE_LOCAL_DATASTORE', 'true').lower() == 'true':
+        if os.getenv('RUNNING_IN_CLOUD', 'false').lower() != 'true':
             # For local storage, email is the key
             all_users = cls._load_all()
             if email in all_users:
@@ -167,7 +167,7 @@ class User(BaseModel):
     @ndb_context_manager
     def get_by_uid(cls, uid: str) -> Optional['User']:
         """Get user by unique ID"""
-        if os.getenv('USE_LOCAL_DATASTORE', 'true').lower() == 'true':
+        if os.getenv('RUNNING_IN_CLOUD', 'false').lower() != 'true':
             # For local storage, manually search through users
             all_users = cls._load_all()
             for key, user_data in all_users.items():
@@ -191,7 +191,7 @@ class User(BaseModel):
     @ndb_context_manager
     def get_by_mail_token(cls, mail_token: str) -> Optional['User']:
         """Get user by email verification token"""
-        if os.getenv('USE_LOCAL_DATASTORE', 'true').lower() == 'true':
+        if os.getenv('RUNNING_IN_CLOUD', 'false').lower() != 'true':
             # For local storage, manually search through users
             all_users = cls._load_all()
             for key, user_data in all_users.items():
@@ -343,7 +343,7 @@ class Transaction(BaseModel):
     @ndb_context_manager
     def query(cls):
         """Query all transactions"""
-        if os.getenv('USE_LOCAL_DATASTORE', 'true').lower() == 'true':
+        if os.getenv('RUNNING_IN_CLOUD', 'false').lower() != 'true':
             # For local storage, return a LocalQuery that can actually find transactions
             from core.models.base import LocalQuery
             return LocalQuery(cls)
