@@ -105,15 +105,10 @@ async def api_crawl():
     if isinstance(take_screenshot, str):
         take_screenshot = take_screenshot.lower() == 'true'
     
-    # Process OCR extraction settings
-    ocr_extraction = data.get('ocr_extraction', True)
-    if isinstance(ocr_extraction, str):
-        ocr_extraction = ocr_extraction.lower() == 'true'
-    
     # Process markdown extraction settings
     markdown_extraction = data.get('markdown_extraction', 'enhanced')
     
-    logger.info(f"Crawl settings: JS={javascript_enabled}, Screenshot={take_screenshot}, OCR={ocr_extraction}, Markdown={markdown_extraction}, ResponseFormat={response_format}")
+    logger.info(f"Crawl settings: JS={javascript_enabled}, Screenshot={take_screenshot}, Markdown={markdown_extraction}, ResponseFormat={response_format}")
     
     # Get LLM configuration from request
     llm_provider = data.get('llm_provider', '')
@@ -142,7 +137,6 @@ async def api_crawl():
             javascript_enabled=javascript_enabled,
             take_screenshot=take_screenshot,
             screenshot_mode=data.get('screenshot_mode', 'full'),  # Pass screenshot mode
-            ocr_extraction=ocr_extraction,
             markdown_extraction=markdown_extraction,
             email=user_email
         )
@@ -277,7 +271,6 @@ async def api_crawl():
                 "title": result.get('title', 'Untitled Page'),
                 "javascript_enabled": result.get('javascript_enabled', javascript_enabled),
                 "take_screenshot": result.get('take_screenshot', take_screenshot),
-                "ocr_extraction": result.get('ocr_extraction', ocr_extraction),
                 "markdown_extraction": result.get('markdown_extraction', markdown_extraction)
             }
             

@@ -108,7 +108,6 @@ async def _crawl_sync(
         javascript_enabled=crawl_options.get('javascript', False),
         take_screenshot=crawl_options.get('screenshot', False),
         screenshot_mode=crawl_options.get('screenshot_mode', 'full'),
-        ocr_extraction=crawl_options.get('ocr_extraction', True),
         markdown_extraction=crawl_options.get('markdown_extraction', 'enhanced'),
         llm_provider=crawl_options.get('llm_provider'),
         llm_token=crawl_options.get('llm_token'),

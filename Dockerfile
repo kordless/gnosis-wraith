@@ -60,12 +60,6 @@ RUN pip install --no-cache-dir beautifulsoup4
 # Install all browsers supported by this version of Playwright
 RUN playwright install chromium
 
-# Pre-download EasyOCR models
-RUN python -c "import easyocr; reader = easyocr.Reader(['en'])" && \
-    mkdir -p /root/.cache && \
-    # Create symlink for Cloud Run environment
-    ln -s /root/.EasyOCR /root/.cache/EasyOCR
-
 # Copy application code
 COPY . .
 

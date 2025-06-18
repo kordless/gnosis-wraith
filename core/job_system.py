@@ -66,16 +66,17 @@ def add_job_system_to_context():
     # Import components
     from core.job_manager import JobManager
     from core.enhanced_storage_service import EnhancedStorageService
-    from core.task_manager import TaskManager
     
     # Initialize components
     job_manager = JobManager()
     storage_service = EnhancedStorageService()
-    task_manager = TaskManager()
+    
+    # Don't create TaskManager here - it should be created async when needed
+    # to avoid Redis connection attempts in cloud mode
     
     # Return components to be added to app context
     return {
         'job_manager': job_manager,
         'storage_service': storage_service,
-        'task_manager': task_manager
+        # 'task_manager' removed - create it on demand instead
     }

@@ -34,7 +34,6 @@ def crawl_with_wraith(url, server_url="http://localhost:5678"):
         "url": url,
         "take_screenshot": True,
         "javascript_enabled": False,
-        "ocr_extraction": False,
         "markdown_extraction": "enhanced",
         "use_cache": True,
         "timeout": 30

@@ -377,8 +377,12 @@ async def login_post():
         print(f"Form data received: {dict(form_data)}")
         
         # Bot protection - check for password field
-        if form_data.get('password'):
-            print("Bot detected - password field filled")
+        password_value = form_data.get('password')
+        if password_value is not None and password_value != '':
+            print(f"Bot detected - password field filled with: '{password_value}'")
+            print(f"Password field length: {len(password_value)}")
+            print(f"All form fields: {list(form_data.keys())}")
+            print(f"User-Agent: {request.headers.get('User-Agent', 'Not provided')}")
             return "( ︶︿︶)_╭∩╮ PASSWORD REQUIRED!\nALSO, GET OFF MY LAWN.", 500
         
         # Validate email

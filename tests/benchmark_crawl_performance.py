@@ -111,7 +111,6 @@ class CrawlBenchmark:
                 "params": {
                     "markdown_extraction": "basic",
                     "take_screenshot": False,
-                    "ocr_extraction": False
                 }
             },
             {
@@ -120,7 +119,6 @@ class CrawlBenchmark:
                 "params": {
                     "markdown_extraction": "enhanced", 
                     "take_screenshot": False,
-                    "ocr_extraction": False
                 }
             },
             {
@@ -130,7 +128,6 @@ class CrawlBenchmark:
                     "markdown_extraction": "basic",
                     "take_screenshot": True,
                     "screenshot_mode": "top",
-                    "ocr_extraction": False
                 }
             },
             {
@@ -140,7 +137,6 @@ class CrawlBenchmark:
                     "markdown_extraction": "enhanced",
                     "take_screenshot": True, 
                     "screenshot_mode": "top",
-                    "ocr_extraction": False
                 }
             }
         ]
