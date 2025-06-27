@@ -407,6 +407,73 @@ async function testErrorHandling() {
 }
 
 /**
+ * Test minimal response format
+ */
+async function testMinimalResponseFormat() {
+    console.log("\n=== Testing Minimal Response Format ===");
+    
+    const payload = {
+        url: "https://example.com",
+        javascript_enabled: false, // Faster without JS
+        screenshot_mode: null,
+        response_format: "minimal" // Request minimal format
+    };
+    
+    try {
+        const startTime = Date.now();
+        const response = await makeRequest(
+            `${REMOTE_SERVER}/api/markdown`,
+            { method: 'POST' },
+            payload
+        );
+        const elapsed = (Date.now() - startTime) / 1000;
+        
+        console.log(`URL: ${payload.url}`);
+        console.log(`Response Format: ${payload.response_format}`);
+        console.log(`Status: ${response.status}`);
+        console.log(`Time: ${elapsed.toFixed(2)}s`);
+        
+        if (response.status === 200) {
+            const data = response.data;
+            console.log("✅ Success");
+            console.log(`Response keys: ${Object.keys(data).join(', ')}`);
+            
+            // Output the content
+            console.log("\n--- CONTENT OUTPUT ---");
+            if ('content' in data) {
+                console.log("Content field:");
+                console.log(data.content ? data.content.substring(0, 500) + '...' : 'No content');
+            }
+            if ('markdown' in data) {
+                console.log("\nMarkdown field:");
+                console.log(data.markdown ? data.markdown.substring(0, 500) + '...' : 'No markdown');
+            }
+            console.log("--- END CONTENT ---\n");
+            
+            // Check what fields are included in minimal format
+            console.log("\nFields included:");
+            const fields = ['success', 'url', 'title', 'content', 'markdown', 'markdown_url', 'json_url', 'stats', 'html_content', 'extracted_text'];
+            fields.forEach(field => {
+                if (field in data) {
+                    console.log(`  ✓ ${field}: ${typeof data[field] === 'string' && data[field].length > 50 ? data[field].substring(0, 50) + '...' : JSON.stringify(data[field])}`);
+                } else {
+                    console.log(`  ✗ ${field}: not included`);
+                }
+            });
+            
+        } else {
+            console.log(`❌ Error:`, response.data);
+        }
+        
+        return response.status === 200;
+        
+    } catch (error) {
+        console.log(`❌ Exception: ${error.message}`);
+        return false;
+    }
+}
+
+/**
  * Main test runner
  */
 async function main() {
@@ -418,6 +485,7 @@ async function main() {
     
     // Run tests
     const tests = [
+        { name: "Minimal Response Format", func: testMinimalResponseFormat }, // Run this first
         { name: "Single URL", func: testSingleUrlMarkdown },
         { name: "Batch Sync", func: testBatchSync },
         { name: "Batch Async", func: testBatchAsync },
@@ -425,6 +493,7 @@ async function main() {
         { name: "Content Filters", func: testWithFilters },
         { name: "Error Handling", func: testErrorHandling }
     ];
+
     
     const results = [];
     for (const test of tests) {
