@@ -1,0 +1,17 @@
+{
+  "name": "gnosis-wraith-node-tests",
+  "version": "1.0.0",
+  "description": "Node.js tests for Gnosis Wraith API",
+  "scripts": {
+    "test:batch": "node test_batch_urls.js",
+    "test:callbacks": "node test_callbacks.js",
+    "test:job-status": "node test_job_status.js",
+    "test:collate": "node test_collate_batch.js",
+    "test:all": "npm run test:batch && npm run test:callbacks && npm run test:job-status"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.7",
+    "dotenv": "^17.0.0",
+    "express": "^4.18.2"
+  }
+}
